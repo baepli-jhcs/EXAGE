@@ -2,14 +2,13 @@
 
 #include <cstdint>
 #include <string_view>
+#include <memory>
 
+#include "Core/Core.h"
 #include "Input/KeyCode.h"
 #include "glm/glm.hpp"
 #include "utils/classes.h"
-
-#ifndef EXAGE_EXPORT
-#    define EXAGE_EXPORT __declspec(dllexport)
-#endif
+#include "tl/expected.hpp"
 
 namespace exage
 {
@@ -18,6 +17,8 @@ namespace exage
         eGLFW,
         eSDL  // TODO: Implement SDL
     };
+
+    enum class WindowError;
 
     enum class FullScreenMode
     {
@@ -57,27 +58,33 @@ namespace exage
         virtual void update() = 0;
         virtual void close() = 0;
 
-        virtual void addResizeCallback(const ResizeCallback& callback) = 0;
-        virtual void removeResizeCallback(const ResizeCallback& callback) = 0;
+        virtual void addResizeCallback(const ResizeCallback& callback) noexcept = 0;
+        virtual void removeResizeCallback(const ResizeCallback& callback) noexcept = 0;
 
-        virtual void addKeyCallback(const KeyCallback& callback) = 0;
-        virtual void removeKeyCallback(const KeyCallback& callback) = 0;
+        virtual void addKeyCallback(const KeyCallback& callback) noexcept = 0;
+        virtual void removeKeyCallback(const KeyCallback& callback) noexcept = 0;
 
-        virtual auto getName() const -> std::string_view = 0;
+        [[nodiscard]] virtual auto getName() const noexcept -> std::string_view = 0;
 
-        virtual auto getWidth() const -> uint32_t = 0;
-        virtual auto getHeight() const -> uint32_t = 0;
-        virtual auto getExtent() const -> glm::uvec2 = 0;
+        [[nodiscard]] virtual auto getWidth() const noexcept -> uint32_t = 0;
+        [[nodiscard]] virtual auto getHeight() const noexcept -> uint32_t = 0;
+        [[nodiscard]] virtual auto getExtent() const noexcept -> glm::uvec2 = 0;
 
-        virtual auto getRefreshRate() const -> uint32_t = 0;
-        virtual auto getFullScreenMode() const -> FullScreenMode = 0;
+        [[nodiscard]] virtual auto getRefreshRate() const -> uint32_t = 0;
+        [[nodiscard]] virtual auto getFullScreenMode() const -> FullScreenMode = 0;
 
-        virtual void resize(glm::uvec2 extent) = 0;
-        virtual void setFullScreenMode(FullScreenMode mode) = 0;
+        virtual void resize(glm::uvec2 extent) noexcept = 0;
+        virtual void setFullScreenMode(FullScreenMode mode) noexcept = 0;
 
-        virtual auto shouldClose() const -> bool = 0;
+        [[nodiscard]] virtual auto shouldClose() const  noexcept-> bool = 0;
 
-        virtual auto getAPI() const -> WindowAPI = 0;
-        static auto create(const WindowInfo& info, WindowAPI api) -> Window*;
+        [[nodiscard]] virtual auto getAPI() const noexcept -> WindowAPI = 0;
+        static auto create(const WindowInfo& info, WindowAPI api) noexcept -> tl::expected<std::unique_ptr<Window>, WindowError>;
+    };
+
+    enum class WindowError
+    {
+        eInvalidAPI,
+        eUnsupportedAPI,
     };
 }  // namespace exage

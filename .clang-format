@@ -35,8 +35,8 @@ BreakConstructorInitializersBeforeComma: true
 BreakConstructorInitializers: BeforeComma
 BreakAfterJavaFieldAnnotations: true
 BreakStringLiterals: true
-ColumnLimit: 80
-CommentPragmas: '^ IWYU pragma:'
+ColumnLimit: 100
+CommentPragmas: "^ IWYU pragma:"
 CompactNamespaces: false
 ConstructorInitializerAllOnOneLineOrOnePerLine: false
 ConstructorInitializerIndentWidth: 4
@@ -54,16 +54,16 @@ ForEachMacros:
 IncludeBlocks: Regroup
 IncludeCategories:
   # Standard library headers come before anything else
-  - Regex: '^<[a-z_]+>'
+  - Regex: "^<[a-z_]+>"
     Priority: -1
   - Regex: '^<.+\.h(pp)?>'
     Priority: 1
-  - Regex: '^<.*'
+  - Regex: "^<.*"
     Priority: 2
-  - Regex: '.*'
+  - Regex: ".*"
     Priority: 3
-IncludeIsMainRegex: ''
-IncludeIsMainSourceRegex: ''
+IncludeIsMainRegex: ""
+IncludeIsMainSourceRegex: ""
 IndentCaseLabels: true
 IndentCaseBlocks: false
 IndentGotoLabels: true
@@ -75,8 +75,8 @@ InsertTrailingCommas: Wrapped
 JavaScriptQuotes: Double
 JavaScriptWrapImports: true
 KeepEmptyLinesAtTheStartOfBlocks: false
-MacroBlockBegin: ''
-MacroBlockEnd: ''
+MacroBlockBegin: ""
+MacroBlockEnd: ""
 MaxEmptyLinesToKeep: 1
 NamespaceIndentation: All
 ObjCBinPackProtocolList: Never
@@ -101,9 +101,9 @@ RawStringFormats:
       - cpp
       - Cpp
       - CPP
-      - 'c++'
-      - 'C++'
-    CanonicalDelimiter: ''
+      - "c++"
+      - "C++"
+    CanonicalDelimiter: ""
     BasedOnStyle: google
   - Language: TextProto
     Delimiters:
@@ -121,7 +121,7 @@ RawStringFormats:
       - ParseTextProtoOrDie
       - ParseTestProto
       - ParsePartialTestProto
-    CanonicalDelimiter: ''
+    CanonicalDelimiter: ""
     BasedOnStyle: google
 ReflowComments: true
 SortIncludes: true
@@ -156,4 +156,3 @@ WhitespaceSensitiveMacros:
   - STRINGIZE
   - PP_STRINGIZE
   - BOOST_PP_STRINGIZE
-...

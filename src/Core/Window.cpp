@@ -5,14 +5,14 @@
 namespace exage
 {
 
-    auto Window::create(const WindowInfo& info, WindowAPI api) -> Window*
+    auto Window::create(const WindowInfo& info, WindowAPI api) noexcept -> tl::expected<std::unique_ptr<Window>, WindowError>
     {
         switch (api)
         {
             case WindowAPI::eGLFW:
-                return new GLFWindow(info);
+                return std::make_unique<GLFWindow>(info);
             default:
-                return nullptr;
+                return tl::make_unexpected(WindowError::eInvalidAPI);
         }
     }
 }  // namespace exage

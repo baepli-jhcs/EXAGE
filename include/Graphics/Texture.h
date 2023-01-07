@@ -5,7 +5,7 @@
 
 namespace exage::Graphics
 {
-    class Texture
+    class EXAGE_EXPORT Texture
     {
       public:
         enum class Format;

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Core/Core.h"
+#include "glm/glm.hpp"
 #include "utils/classes.h"
 
 namespace exage::Graphics
@@ -11,14 +13,15 @@ namespace exage::Graphics
         eTripleBufferVSync,
     };
 
-    struct SwapchainInfo;
+    struct SwapchainCreateInfo
+    {
+        PresentMode presentMode = PresentMode::eImmediate;
+        size_t maxFramesInFlight = 2;
+    };
 
-    class Swapchain
+    class EXAGE_EXPORT Swapchain
     {
       public:
-        enum class PresentMode;
-        struct CreateInfo;
-
         Swapchain() = default;
         virtual ~Swapchain() = default;
         EXAGE_DELETE_COPY(Swapchain);
@@ -26,17 +29,6 @@ namespace exage::Graphics
 
         virtual auto getPresentMode() const -> PresentMode = 0;
 
-        enum class PresentMode
-        {
-            eImmediate,
-            eDoubleBufferVSync,
-            eTripleBufferVSync,
-        };
-
-        struct CreateInfo
-        {
-            PresentMode presentMode = PresentMode::eImmediate;
-            size_t maxFramesInFlight = 2;
-        };
+        virtual void resize(glm::uvec2 extent);
     };
 }  // namespace exage::Graphics

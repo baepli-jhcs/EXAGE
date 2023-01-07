@@ -3,14 +3,23 @@
 
 namespace exage::Graphics
 {
-    auto Context::create(API api, WindowAPI windowAPI) -> Context*
+    auto Context::create(API api, WindowAPI windowAPI) noexcept
+        -> tl::expected<std::unique_ptr<Context>, ContextError>
     {
         switch (api)
         {
             case API::eVulkan:
-                return new VulkanContext(windowAPI);
+                try
+                {
+                    return std::make_unique<VulkanContext>(windowAPI);
+                }
+                catch (const std::exception& e)
+                {
+                    return tl::make_unexpected(ContextError::eInvalidWindow);
+                }
+
             default:
-                return nullptr;
+                return tl::make_unexpected(ContextError::eInvalidAPI);
         }
     }
 }  // namespace exage::Graphics

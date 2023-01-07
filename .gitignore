@@ -8,6 +8,10 @@ build/
 # VSCode
 .vscode/
 
+# Visual Studio
+.vs/
+vsxmake*/
+
 # CMake
 CMakeLists.txt
 cmake-build-debug/

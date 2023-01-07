@@ -14,10 +14,6 @@ TEST_CASE("Creating GLFW Window", "[Window]")
     };
 
     std::unique_ptr<Window> window(Window::create(info, WindowAPI::eGLFW));
-    while (!window->shouldClose())
-    {
-        window->update();
-    }
     REQUIRE(window != nullptr);
     window->close();
 }
