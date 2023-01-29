@@ -10,43 +10,48 @@ namespace exage
 {
     class EXAGE_EXPORT GLFWindow final : public Window
     {
-      public:
-        explicit GLFWindow(const WindowInfo& info);
-        ~GLFWindow() override;
+    public:
+        explicit GLFWindow(const WindowInfo& info) noexcept;
+        ~GLFWindow() noexcept override;
 
         EXAGE_DELETE_COPY(GLFWindow);
         EXAGE_DEFAULT_MOVE(GLFWindow);
 
-        void update() override;
-        void close() override;
+        void update() noexcept override;
+        void close() noexcept override;
 
-        void addResizeCallback(const ResizeCallback& callback) override;
-        void removeResizeCallback(const ResizeCallback& callback) override;
+        void addResizeCallback(const ResizeCallback& callback) noexcept override;
+        void removeResizeCallback(const ResizeCallback& callback) noexcept override;
 
-        void addKeyCallback(const KeyCallback& callback) override;
-        void removeKeyCallback(const KeyCallback& callback) override;
+        void addKeyCallback(const KeyCallback& callback) noexcept override;
+        void removeKeyCallback(const KeyCallback& callback) noexcept override;
 
-        auto getName() const -> std::string_view override { return _name; }
+        [[nodiscard]] auto getName() const noexcept -> std::string_view override { return _name; }
 
-        auto getWidth() const -> uint32_t override { return _extent.x; }
-        auto getHeight() const -> uint32_t override { return _extent.y; }
-        auto getExtent() const -> glm::uvec2 override { return _extent; }
+        [[nodiscard]] auto getWidth() const noexcept -> uint32_t override { return _extent.x; }
+        [[nodiscard]] auto getHeight() const noexcept -> uint32_t override { return _extent.y; }
+        [[nodiscard]] auto getExtent() const noexcept -> glm::uvec2 override { return _extent; }
 
-        auto getRefreshRate() const -> uint32_t override;
-        auto getFullScreenMode() const -> FullScreenMode override;
+        [[nodiscard]] auto getRefreshRate() const noexcept -> uint32_t override;
+        [[nodiscard]] auto getFullScreenMode() const noexcept -> FullScreenMode override;
 
-        void resize(glm::uvec2 extent) override;
-        void setFullScreenMode(FullScreenMode mode) override;
+        void resize(glm::uvec2 extent) noexcept override;
+        void setFullScreenMode(FullScreenMode mode) noexcept override;
 
-        auto shouldClose() const -> bool override;
+        [[nodiscard]] auto shouldClose() const noexcept -> bool override;
 
-        auto getGLFWWindow() const -> GLFWwindow* { return _window; }
-        auto getAPI() const -> WindowAPI override { return WindowAPI::eGLFW; }
+        [[nodiscard]] auto getGLFWWindow() const noexcept -> GLFWwindow* { return _window; }
 
-      private:
+        EXAGE_DERIVED_API(WindowAPI, eGLFW);
+
+    private:
         static void resizeCallback(GLFWwindow* window, int width, int height);
         static void keyCallback(
-            GLFWwindow* window, int key, int scancode, int action, int mods);
+            GLFWwindow* window,
+            int key,
+            int scancode,
+            int action,
+            int mods);
 
         GLFWwindow* _window = nullptr;
         std::string _name;
@@ -57,4 +62,4 @@ namespace exage
         std::vector<ResizeCallback> _resizeCallbacks;
         std::vector<KeyCallback> _keyCallbacks;
     };
-}  // namespace exage
+} // namespace exage

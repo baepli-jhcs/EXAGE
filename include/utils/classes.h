@@ -1,17 +1,17 @@
 #pragma once
 
 #define EXAGE_DELETE_COPY(Class) \
-    Class(const Class&) = delete; \
-    auto operator=(const Class&)->Class& = delete
+    Class(const Class&) noexcept = delete; \
+    auto operator=(const Class&) noexcept ->Class& = delete
 
 #define EXAGE_DELETE_MOVE(Class) \
-    Class(Class&&) = delete; \
-    auto operator=(Class&&)->Class& = delete
+    Class(Class&&) noexcept = delete; \
+    auto operator=(Class&&) noexcept -> Class& = delete
 
 #define EXAGE_DEFAULT_COPY(Class) \
-    Class(const Class&) = default; \
-    auto operator=(const Class&)->Class& = default
+    Class(const Class&) noexcept = default; \
+    auto operator=(const Class&) noexcept -> Class& = default
 
 #define EXAGE_DEFAULT_MOVE(Class) \
-    Class(Class&&) = default; \
-    auto operator=(Class&&)->Class& = default
+    Class(Class&&) noexcept = default; \
+    auto operator=(Class&&) noexcept -> Class& = default

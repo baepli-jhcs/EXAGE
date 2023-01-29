@@ -1,4 +1,3 @@
-
 #include "Graphics/Context.h"
 
 #include <catch2/catch_all.hpp>
@@ -9,8 +8,8 @@ TEST_CASE("Creating Graphics Context", "[Window]")
 {
     using namespace exage::Graphics;
 
-    // std::unique_ptr<Context> context(
-    //     Context::create(API::eVulkan, exage::WindowAPI::eGLFW));
+    tl::expected context(
+        Context::create(API::eVulkan, exage::WindowAPI::eGLFW));
 
-    // REQUIRE(context != nullptr);
+    REQUIRE(context.has_value());
 }

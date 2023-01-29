@@ -7,7 +7,6 @@
 #include "Core/Core.h"
 #include "Input/KeyCode.h"
 #include "glm/glm.hpp"
-#include "utils/classes.h"
 #include "tl/expected.hpp"
 
 namespace exage
@@ -15,7 +14,7 @@ namespace exage
     enum class WindowAPI
     {
         eGLFW,
-        eSDL  // TODO: Implement SDL
+        eSDL // TODO: Implement SDL
     };
 
     enum class WindowError;
@@ -32,7 +31,7 @@ namespace exage
         glm::uvec2 extent;
         std::string_view name;
         FullScreenMode fullScreenMode = FullScreenMode::eWindowed;
-        uint32_t refreshRate = 0;  // 0 = Use monitor refresh rate
+        uint32_t refreshRate = 0; // 0 = Use monitor refresh rate
     };
 
     struct ResizeCallback
@@ -49,14 +48,14 @@ namespace exage
 
     class EXAGE_EXPORT Window
     {
-      public:
+    public:
         Window() = default;
         virtual ~Window() = default;
         EXAGE_DELETE_COPY(Window);
         EXAGE_DEFAULT_MOVE(Window);
 
-        virtual void update() = 0;
-        virtual void close() = 0;
+        virtual void update() noexcept = 0;
+        virtual void close() noexcept = 0;
 
         virtual void addResizeCallback(const ResizeCallback& callback) noexcept = 0;
         virtual void removeResizeCallback(const ResizeCallback& callback) noexcept = 0;
@@ -70,16 +69,18 @@ namespace exage
         [[nodiscard]] virtual auto getHeight() const noexcept -> uint32_t = 0;
         [[nodiscard]] virtual auto getExtent() const noexcept -> glm::uvec2 = 0;
 
-        [[nodiscard]] virtual auto getRefreshRate() const -> uint32_t = 0;
-        [[nodiscard]] virtual auto getFullScreenMode() const -> FullScreenMode = 0;
+        [[nodiscard]] virtual auto getRefreshRate() const noexcept -> uint32_t = 0;
+        [[nodiscard]] virtual auto getFullScreenMode() const noexcept -> FullScreenMode = 0;
 
         virtual void resize(glm::uvec2 extent) noexcept = 0;
         virtual void setFullScreenMode(FullScreenMode mode) noexcept = 0;
 
-        [[nodiscard]] virtual auto shouldClose() const  noexcept-> bool = 0;
+        [[nodiscard]] virtual auto shouldClose() const noexcept -> bool = 0;
 
-        [[nodiscard]] virtual auto getAPI() const noexcept -> WindowAPI = 0;
-        static auto create(const WindowInfo& info, WindowAPI api) noexcept -> tl::expected<std::unique_ptr<Window>, WindowError>;
+        EXAGE_BASE_API(WindowAPI, Window);
+        [[nodiscard]] static auto create(const WindowInfo& info,
+                                         WindowAPI api) noexcept -> tl::expected<
+            std::unique_ptr<Window>, WindowError>;
     };
 
     enum class WindowError
@@ -87,4 +88,4 @@ namespace exage
         eInvalidAPI,
         eUnsupportedAPI,
     };
-}  // namespace exage
+} // namespace exage

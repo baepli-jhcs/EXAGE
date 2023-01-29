@@ -9,10 +9,10 @@
 
 namespace exage
 {
-    GLFWindow::GLFWindow(const WindowInfo& info)
+    GLFWindow::GLFWindow(const WindowInfo& info) noexcept
         : _name(info.name)
-        , _extent(info.extent)
-        , _fullScreenMode(info.fullScreenMode)
+          , _extent(info.extent)
+          , _fullScreenMode(info.fullScreenMode)
     {
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
@@ -32,7 +32,11 @@ namespace exage
                 glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
 
                 _window = glfwCreateWindow(
-                    mode->width, mode->height, _name.c_str(), monitor, nullptr);
+                    mode->width,
+                    mode->height,
+                    _name.c_str(),
+                    monitor,
+                    nullptr);
 
                 _extent = {mode->width, mode->height};
             }
@@ -50,7 +54,11 @@ namespace exage
                                static_cast<int>(info.refreshRate));
 
                 _window = glfwCreateWindow(
-                    mode->width, mode->height, _name.c_str(), monitor, nullptr);
+                    mode->width,
+                    mode->height,
+                    _name.c_str(),
+                    monitor,
+                    nullptr);
             }
             break;
 
@@ -71,44 +79,46 @@ namespace exage
         glfwSetKeyCallback(_window, keyCallback);
     }
 
-    GLFWindow::~GLFWindow()
+    GLFWindow::~GLFWindow() noexcept
     {
         glfwDestroyWindow(_window);
     }
 
-    void GLFWindow::update()
+    void GLFWindow::update() noexcept
     {
         glfwPollEvents();
     }
 
-    void GLFWindow::close()
+    void GLFWindow::close() noexcept
     {
         glfwSetWindowShouldClose(_window, GLFW_TRUE);
     }
 
-    void GLFWindow::addResizeCallback(const ResizeCallback& callback)
+    void GLFWindow::addResizeCallback(const ResizeCallback& callback) noexcept
     {
         _resizeCallbacks.push_back(callback);
     }
 
-    void GLFWindow::removeResizeCallback(const ResizeCallback& callback)
+    void GLFWindow::removeResizeCallback(const ResizeCallback& callback) noexcept
     {
         std::erase_if(_resizeCallbacks,
-                      [&](const ResizeCallback& cab) {
+                      [&](const ResizeCallback& cab)
+                      {
                           return cab.callback == callback.callback
                               && cab.data == callback.data;
                       });
     }
 
-    void GLFWindow::addKeyCallback(const KeyCallback& callback)
+    void GLFWindow::addKeyCallback(const KeyCallback& callback) noexcept
     {
         _keyCallbacks.push_back(callback);
     }
 
-    void GLFWindow::removeKeyCallback(const KeyCallback& callback)
+    void GLFWindow::removeKeyCallback(const KeyCallback& callback) noexcept
     {
         std::erase_if(_keyCallbacks,
-                      [&](const KeyCallback& cab) {
+                      [&](const KeyCallback& cab)
+                      {
                           return cab.callback == callback.callback
                               && cab.data == callback.data;
                       });
@@ -127,7 +137,11 @@ namespace exage
     }
 
     void GLFWindow::keyCallback(
-        GLFWwindow* window, int key, int /*scancode*/, int action, int /*mods*/)
+        GLFWwindow* window,
+        int key,
+        int /*scancode*/,
+        int action,
+        int /*mods*/)
     {
         auto* win = static_cast<GLFWindow*>(glfwGetWindowUserPointer(window));
 
@@ -157,26 +171,28 @@ namespace exage
         }
     }
 
-    auto GLFWindow::getRefreshRate() const -> uint32_t
+    auto GLFWindow::getRefreshRate() const noexcept -> uint32_t
     {
         GLFWmonitor* monitor = glfwGetPrimaryMonitor();
         const GLFWvidmode* mode = glfwGetVideoMode(monitor);
         return mode->refreshRate;
     }
 
-    auto GLFWindow::getFullScreenMode() const -> FullScreenMode
+    auto GLFWindow::getFullScreenMode() const noexcept -> FullScreenMode
     {
         return _fullScreenMode;
     }
 
-    void GLFWindow::resize(glm::uvec2 extent)
+    void GLFWindow::resize(glm::uvec2 extent) noexcept
     {
         _extent = extent;
         glfwSetWindowSize(
-            _window, static_cast<int>(extent.x), static_cast<int>(extent.y));
+            _window,
+            static_cast<int>(extent.x),
+            static_cast<int>(extent.y));
     }
 
-    void GLFWindow::setFullScreenMode(FullScreenMode mode)
+    void GLFWindow::setFullScreenMode(FullScreenMode mode) noexcept
     {
         _fullScreenMode = mode;
 
@@ -238,9 +254,8 @@ namespace exage
         }
     }
 
-    auto GLFWindow::shouldClose() const -> bool
+    auto GLFWindow::shouldClose() const noexcept -> bool
     {
         return glfwWindowShouldClose(_window) != 0;
     }
-
-}  // namespace exage
+} // namespace exage

@@ -1,40 +1,66 @@
 #pragma once
 
+#include "Graphics/Context.h"
+
 #define VK_NO_PROTOTYPES
+#define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
+
+#include <optional>
+
 #include <VkBootstrap.h>
 #include <vulkan/vulkan.hpp>
-
-#include "Graphics/Context.h"
+#include <vulkan-memory-allocator-hpp/vk_mem_alloc.hpp>
 
 namespace exage::Graphics
 {
+    enum class SurfaceError : uint32_t;
+
+
     class EXAGE_EXPORT VulkanContext final : public Context
     {
-      public:
-        explicit VulkanContext(WindowAPI windowAPI);
+    public:
+        [[nodiscard]] static tl::expected<std::unique_ptr<Context>, Error> create(
+            ContextCreateInfo& createInfo) noexcept;
         ~VulkanContext() override;
 
         EXAGE_DELETE_COPY(VulkanContext);
         EXAGE_DEFAULT_MOVE(VulkanContext);
 
-        auto createSwapchain(Window& window) -> Swapchain* override;
+        void waitIdle() const noexcept override;
 
-        auto getAPI() const -> API override { return API::eVulkan; }
+        [[nodiscard]] auto createSwapchain(const SwapchainCreateInfo& createInfo) noexcept
+        -> tl::expected<std::unique_ptr<Swapchain>, Error> override;
 
-        auto getInstance() const -> vk::Instance;
-        auto getPhysicalDevice() const -> vk::PhysicalDevice;
-        auto getDevice() const -> vk::Device;
+        [[nodiscard]] auto createSurface(
+            Window& window) const noexcept -> tl::expected<vk::SurfaceKHR, Error>;
 
-        auto getGraphicsQueue() const -> vk::Queue;
-        auto getPresentQueue() const -> vk::Queue;
-        auto getComputeQueue() const -> vk::Queue;
+        [[nodiscard]] auto getQueue() noexcept -> Queue& override;
+        [[nodiscard]] auto getQueue() const noexcept -> const Queue& override;
 
-      private:
+        [[nodiscard]] auto getInstance() const noexcept -> vk::Instance;
+        [[nodiscard]] auto getPhysicalDevice() const noexcept -> vk::PhysicalDevice;
+        [[nodiscard]] auto getDevice() const noexcept -> vk::Device;
+        [[nodiscard]] auto getAllocator() const noexcept -> vma::Allocator;
+
+        [[nodiscard]] auto getVulkanBootstrapDevice() const noexcept -> vkb::Device
+        {
+            return _device;
+        }
+
+        [[nodiscard]] auto getGraphicsQueue() const noexcept -> vk::Queue;
+
+        EXAGE_VULKAN_DERIVED
+
+    private:
+        VulkanContext() = default;
+        auto init(ContextCreateInfo& createInfo) noexcept -> std::optional<Error>;
+
         vkb::Instance _instance;
         vkb::PhysicalDevice _physicalDevice;
         vkb::Device _device;
-        vk::Queue _graphicsQueue;
-        vk::Queue _presentQueue;
-        vk::Queue _computeQueue;
+
+        vma::Allocator _allocator;
+
+        std::unique_ptr<Queue> _queue;
     };
-}  // namespace exage::Graphics
+} // namespace exage::Graphics

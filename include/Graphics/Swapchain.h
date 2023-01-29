@@ -1,8 +1,12 @@
 #pragma once
 
+#include <optional>
+
 #include "Core/Core.h"
+#include "Core/Window.h"
 #include "glm/glm.hpp"
 #include "utils/classes.h"
+#include "Context.h"
 
 namespace exage::Graphics
 {
@@ -15,20 +19,24 @@ namespace exage::Graphics
 
     struct SwapchainCreateInfo
     {
+        Window& window;
         PresentMode presentMode = PresentMode::eImmediate;
-        size_t maxFramesInFlight = 2;
     };
 
     class EXAGE_EXPORT Swapchain
     {
-      public:
+    public:
         Swapchain() = default;
         virtual ~Swapchain() = default;
         EXAGE_DELETE_COPY(Swapchain);
         EXAGE_DEFAULT_MOVE(Swapchain);
 
-        virtual auto getPresentMode() const -> PresentMode = 0;
+        [[nodiscard]] virtual auto getPresentMode() const noexcept -> PresentMode = 0;
 
-        virtual void resize(glm::uvec2 extent);
+        [[nodiscard]] virtual auto resize(glm::uvec2 extent) noexcept -> std::optional<Error> = 0;
+        [[nodiscard]] virtual auto acquireNextImage() noexcept -> std::optional<Error> = 0;
+
+
+        EXAGE_BASE_API(API, Swapchain);
     };
-}  // namespace exage::Graphics
+} // namespace exage::Graphics

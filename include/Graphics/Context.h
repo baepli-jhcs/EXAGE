@@ -2,36 +2,46 @@
 
 #include "Core/Core.h"
 #include "Core/Window.h"
-#include "Swapchain.h"
 #include "utils/classes.h"
+#include "Error.h"
 
 namespace exage::Graphics
 {
+    struct SwapchainCreateInfo;
+
     enum class API
     {
         eVulkan,
     };
 
-    enum class ContextError;
+    struct ContextCreateInfo
+    {
+        API api = API::eVulkan;
+        WindowAPI windowAPI;
+        size_t maxFramesInFlight = 2;
+    };
+
+    class Queue;
+    class Swapchain;
 
     class EXAGE_EXPORT Context
     {
-      public:
+    public:
         Context() = default;
         virtual ~Context() = default;
         EXAGE_DELETE_COPY(Context);
         EXAGE_DEFAULT_MOVE(Context);
 
-        virtual auto createSwapchain(Window& window) -> Swapchain* = 0;
+        virtual void waitIdle() const noexcept = 0;
 
-        [[nodiscard]] virtual auto getAPI() const -> API = 0;
-        [[nodiscard]] static auto create(API api, WindowAPI windowAPI) noexcept
-            -> tl::expected<std::unique_ptr<Context>, ContextError>;
-    };
+        [[nodiscard]] virtual auto createSwapchain(const SwapchainCreateInfo& createInfo) noexcept
+        -> tl::expected<std::unique_ptr<Swapchain>, Error> = 0;
 
-    enum class ContextError
-    {
-        eInvalidAPI,
-        eInvalidWindow,
+        [[nodiscard]] virtual auto getQueue() noexcept -> Queue& = 0;
+        [[nodiscard]] virtual auto getQueue() const noexcept -> const Queue& = 0;
+
+        EXAGE_BASE_API(API, Context);
+        [[nodiscard]] static auto create(ContextCreateInfo& createInfo) noexcept
+        -> tl::expected<std::unique_ptr<Context>, Error>;
     };
-}  // namespace exage::Graphics
+} // namespace exage::Graphics

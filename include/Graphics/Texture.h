@@ -7,7 +7,7 @@ namespace exage::Graphics
 {
     class EXAGE_EXPORT Texture
     {
-      public:
+    public:
         enum class Format;
         enum class Type;
         enum class Layout;
@@ -17,28 +17,37 @@ namespace exage::Graphics
         EXAGE_DELETE_COPY(Texture);
         EXAGE_DEFAULT_MOVE(Texture);
 
-        virtual auto getFormat() const -> Format = 0;
-        virtual auto getExtent() const -> glm::uvec3 = 0;
-        virtual auto getType() const -> Type = 0;
-        virtual auto getLayout() const -> Layout = 0;
+        [[nodiscard]] virtual auto getFormat() const -> Format = 0;
+        [[nodiscard]] virtual auto getExtent() const -> glm::uvec3 = 0;
+        [[nodiscard]] virtual auto getType() const -> Type = 0;
+        [[nodiscard]] virtual auto getLayout() const -> Layout = 0;
 
         enum class Format
         {
             eR8,
             eR16,
-            eR32,
             eRG8,
             eRG16,
-            eRG32,
             eRGB8,
             eRGB16,
-            eRGB32,
             eRGBA8,
             eRGBA16,
-            eRGBA32,
+
+            eR16f,
+            eRG16f,
+            eRGB16f,
+            eRGBA16f,
+
+            eR32f,
+            eRG32f,
+            eRGB32f,
+            eRGBA32f,
 
             eDepth24Stencil8,
             eDepth32Stencil8,
+
+            eBGRA8,
+            // ONLY USE FOR SWAPCHAIN
         };
 
         enum class Type
@@ -58,4 +67,4 @@ namespace exage::Graphics
             eTransferDestination,
         };
     };
-}  // namespace exage::Graphics
+} // namespace exage::Graphics
