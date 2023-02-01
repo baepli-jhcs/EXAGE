@@ -1,22 +1,20 @@
 #pragma once
 
 #include "Core/Core.h"
+#include "Graphics/Context.h"
 
 namespace exage::Graphics
 {
-
-    struct PrimaryCommandBufferCreateInfo
-
-    {
-        size_t maxFramesInFlight = 2;
-    };
+    struct PrimaryCommandBufferCreateInfo { };
 
     class EXAGE_EXPORT PrimaryCommandBuffer
     {
-      public:
-        PrimaryCommandBuffer() = default;
-        ~PrimaryCommandBuffer() = default;
+    public:
+        PrimaryCommandBuffer() noexcept = default;
+        virtual ~PrimaryCommandBuffer() = default;
         EXAGE_DELETE_COPY(PrimaryCommandBuffer);
         EXAGE_DEFAULT_MOVE(PrimaryCommandBuffer);
+
+        EXAGE_BASE_API(API, PrimaryCommandBuffer);
     };
-}  // namespace exage::Graphics
+} // namespace exage::Graphics

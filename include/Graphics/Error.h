@@ -22,6 +22,8 @@ namespace exage::Graphics
 
         eQueueCreationFailed,
         eQueueSubmitFailed,
+        eQueuePresentFailed,
+
         eFenceCreationFailed,
         eFenceWaitFailed,
         eFenceResetFailed,

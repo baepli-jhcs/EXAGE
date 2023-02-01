@@ -7,7 +7,7 @@ namespace exage::Graphics
 {
     struct VulkanQueueCreateInfo
     {
-        size_t maxFramesInFlight;
+        size_t maxFramesInFlight = 2;
         vk::Queue queue;
     };
 
@@ -23,10 +23,15 @@ namespace exage::Graphics
         EXAGE_DEFAULT_MOVE(VulkanQueue);
 
         [[nodiscard]] auto startNextFrame() noexcept -> std::optional<Error> override;
-        [[nodiscard]] auto submit(SwapchainSubmits& submits) noexcept ->
+        [[nodiscard]] auto submit(QueueSubmitInfo& submitInfo) noexcept ->
+        std::optional<Error> override;
+        [[nodiscard]] auto present(QueuePresentInfo& presentInfo) noexcept ->
         std::optional<Error> override;
 
         [[nodiscard]] auto currentFrame() const noexcept -> size_t override;
+        [[nodiscard]] auto getFramesInFlight() const noexcept -> size_t override;
+
+        [[nodiscard]] auto getCurrentPresentSemaphore() const noexcept -> vk::Semaphore;
 
         EXAGE_VULKAN_DERIVED;
 

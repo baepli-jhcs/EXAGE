@@ -1,5 +1,7 @@
 #include "VulkanSwapchain.h"
 
+#include "VulkanQueue.h"
+
 namespace exage::Graphics
 {
     VulkanSwapchain::VulkanSwapchain(VulkanContext& context,
@@ -130,13 +132,15 @@ namespace exage::Graphics
         return std::nullopt;
     }
 
-    auto VulkanSwapchain::acquireNextImage() noexcept -> std::optional<Error>
+    auto VulkanSwapchain::acquireNextImage(Queue& queue) noexcept -> std::optional<Error>
     {
+        const VulkanQueue* vulkanQueue = queue.as<VulkanQueue>();
         const vk::SwapchainKHR swapchain = _swapchain.swapchain;
         vk::ResultValue<uint32_t> const result = _context.get().getDevice()
                                                          .acquireNextImageKHR(swapchain,
                                                              std::numeric_limits<uint64_t>::max(),
-                                                             nullptr,
+                                                             vulkanQueue->
+                                                             getCurrentPresentSemaphore(),
                                                              nullptr);
         if (result.result == vk::Result::eErrorOutOfDateKHR
             || result.result == vk::Result::eSuboptimalKHR)

@@ -14,9 +14,63 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include "VulkanQueue.h"
 #include "VulkanSwapchain.h"
 
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
+
+namespace
+{
+    template<class InstanceDispatcher, class DeviceDispatcher>
+    vma::VulkanFunctions functionsFromDispatcher(InstanceDispatcher const* instance,
+                                                 DeviceDispatcher const* device) noexcept
+    {
+        return vma::VulkanFunctions{
+            instance->vkGetInstanceProcAddr,
+            instance->vkGetDeviceProcAddr,
+            instance->vkGetPhysicalDeviceProperties,
+            instance->vkGetPhysicalDeviceMemoryProperties,
+            device->vkAllocateMemory,
+            device->vkFreeMemory,
+            device->vkMapMemory,
+            device->vkUnmapMemory,
+            device->vkFlushMappedMemoryRanges,
+            device->vkInvalidateMappedMemoryRanges,
+            device->vkBindBufferMemory,
+            device->vkBindImageMemory,
+            device->vkGetBufferMemoryRequirements,
+            device->vkGetImageMemoryRequirements,
+            device->vkCreateBuffer,
+            device->vkDestroyBuffer,
+            device->vkCreateImage,
+            device->vkDestroyImage,
+            device->vkCmdCopyBuffer,
+            device->vkGetBufferMemoryRequirements2KHR
+            ? device->vkGetBufferMemoryRequirements2KHR
+            : device->vkGetBufferMemoryRequirements2,
+            device->vkGetImageMemoryRequirements2KHR
+            ? device->vkGetImageMemoryRequirements2KHR
+            : device->vkGetImageMemoryRequirements2,
+            device->vkBindBufferMemory2KHR
+            ? device->vkBindBufferMemory2KHR
+            : device->vkBindBufferMemory2,
+            device->vkBindImageMemory2KHR
+            ? device->vkBindImageMemory2KHR
+            : device->vkBindImageMemory2,
+            instance->vkGetPhysicalDeviceMemoryProperties2KHR
+            ? instance->vkGetPhysicalDeviceMemoryProperties2KHR
+            : instance->vkGetPhysicalDeviceMemoryProperties2,
+            device->vkGetDeviceBufferMemoryRequirements,
+            device->vkGetDeviceImageMemoryRequirements};
+    }
+
+    template<class Dispatch = VULKAN_HPP_DEFAULT_DISPATCHER_TYPE>
+    vma::VulkanFunctions functionsFromDispatcher(
+        Dispatch const& dispatch VULKAN_HPP_DEFAULT_DISPATCHER_ASSIGNMENT) noexcept
+    {
+        return functionsFromDispatcher(&dispatch, &dispatch);
+    }
+} // namespace
 
 namespace exage::Graphics
 {
@@ -38,7 +92,7 @@ namespace exage::Graphics
 
     auto VulkanContext::init(ContextCreateInfo& createInfo) noexcept -> std::optional<Error>
     {
-        PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr =
+        auto vkGetInstanceProcAddr =
             dl.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
         VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
 
@@ -47,7 +101,7 @@ namespace exage::Graphics
         builder.set_app_name("EXAGE");
 
 #ifdef EXAGE_DEBUG
-        builder.request_validation_layers(true).use_default_debug_messenger();
+        builder.request_validation_layers(/*enable_validation=*/true).use_default_debug_messenger();
 #endif
 
         auto inst = builder.build();
@@ -60,21 +114,31 @@ namespace exage::Graphics
 
         VULKAN_HPP_DEFAULT_DISPATCHER.init(_instance.instance);
 
-        constexpr WindowInfo info = {
-            .extent = {800, 600},
-            .name = "Setup Window",
-            .fullScreenMode = FullScreenMode::eWindowed,
-        };
+        bool createWindow = createInfo.optionalWindow == nullptr;
+        Window* window = createInfo.optionalWindow;
+        std::unique_ptr<Window> windowMemory{};
 
-        tl::expected<std::unique_ptr<Window>, WindowError> window = Window::create(
-            info,
-            createInfo.windowAPI);
-        if (!window)
+        if (createWindow)
         {
-            return ErrorCode::eInvalidWindow;
+            constexpr WindowInfo info = {
+                .extent = {800, 600},
+                .name = "Setup Window",
+                .fullScreenMode = FullScreenMode::eWindowed,
+            };
+
+            tl::expected<std::unique_ptr<Window>, WindowError> windowRes =
+                Window::create(info, createInfo.windowAPI);
+
+            if (!windowRes)
+            {
+                return ErrorCode::eInvalidWindow;
+            }
+
+            windowMemory = std::move(windowRes.value());
+            window = windowMemory.get();
         }
 
-        auto surfaceResult = createSurface(*window.value());
+        auto surfaceResult = createSurface(*window);
         if (!surfaceResult)
         {
             return surfaceResult.error();
@@ -82,7 +146,7 @@ namespace exage::Graphics
         auto surface = surfaceResult.value();
 
         vkb::PhysicalDeviceSelector selector(_instance);
-        selector.set_minimum_version(1, 3);
+        selector.set_minimum_version(1, 2);
         selector.set_surface(surface);
         selector.add_required_extensions({VK_KHR_SWAPCHAIN_EXTENSION_NAME,
                                           VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
@@ -101,7 +165,7 @@ namespace exage::Graphics
 
         vkb::DeviceBuilder deviceBuilder(_physicalDevice);
 
-        vk::PhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures{};
+        vk::PhysicalDeviceDescriptorIndexingFeaturesEXT descriptorIndexingFeatures{};
         descriptorIndexingFeatures.sType =
             vk::StructureType::ePhysicalDeviceDescriptorIndexingFeatures;
         descriptorIndexingFeatures.shaderInputAttachmentArrayDynamicIndexing = VK_TRUE;
@@ -125,7 +189,7 @@ namespace exage::Graphics
         descriptorIndexingFeatures.descriptorBindingVariableDescriptorCount = VK_TRUE;
         descriptorIndexingFeatures.runtimeDescriptorArray = VK_TRUE;
 
-        vk::PhysicalDeviceDynamicRenderingFeatures dynamicRenderingFeatures{};
+        vk::PhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeatures{};
         dynamicRenderingFeatures.sType = vk::StructureType::ePhysicalDeviceDynamicRenderingFeatures;
         dynamicRenderingFeatures.dynamicRendering = VK_TRUE;
         descriptorIndexingFeatures.setPNext(&dynamicRenderingFeatures);
@@ -144,7 +208,10 @@ namespace exage::Graphics
         allocatorInfo.physicalDevice = _physicalDevice.physical_device;
         allocatorInfo.device = _device.device;
         allocatorInfo.instance = _instance.instance;
-        allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_3;
+        allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_2;
+
+        vma::VulkanFunctions functions = functionsFromDispatcher();
+        allocatorInfo.pVulkanFunctions = &functions;
 
         vk::Result result = vma::createAllocator(&allocatorInfo, &_allocator);
         if (result != vk::Result::eSuccess)
@@ -153,6 +220,18 @@ namespace exage::Graphics
         }
 
         auto graphicsQueue = _device.get_queue(vkb::QueueType::graphics).value();
+        VulkanQueueCreateInfo graphicsQueueCreateInfo = {
+            .maxFramesInFlight = 2,
+            .queue = graphicsQueue,
+        };
+
+        tl::expected resultQueue = VulkanQueue::create(*this, graphicsQueueCreateInfo);
+        if (!resultQueue)
+        {
+            return resultQueue.error();
+        }
+
+        _queue = resultQueue.value().release();
 
         vkb::destroy_surface(_instance, surface);
 
@@ -162,6 +241,7 @@ namespace exage::Graphics
 
     VulkanContext::~VulkanContext()
     {
+        delete _queue;
         vkb::destroy_device(_device);
         vkb::destroy_instance(_instance);
     }
@@ -209,9 +289,29 @@ namespace exage::Graphics
         return vk::SurfaceKHR(surface);
     }
 
+    auto VulkanContext::getQueue() noexcept -> Queue&
+    {
+        return *_queue;
+    }
+
+    auto VulkanContext::getQueue() const noexcept -> const Queue&
+    {
+        return *_queue;
+    }
+
     auto VulkanContext::getDevice() const noexcept -> vk::Device
     {
         return _device.device;
+    }
+
+    auto VulkanContext::getAllocator() const noexcept -> vma::Allocator
+    {
+        return _allocator;
+    }
+
+    auto VulkanContext::getVulkanBootstrapDevice() const noexcept -> vkb::Device
+    {
+        return _device;
     }
 
     auto VulkanContext::getInstance() const noexcept -> vk::Instance

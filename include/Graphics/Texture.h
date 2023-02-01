@@ -12,7 +12,7 @@ namespace exage::Graphics
         enum class Type;
         enum class Layout;
 
-        Texture() = default;
+        Texture() noexcept = default;
         virtual ~Texture() = default;
         EXAGE_DELETE_COPY(Texture);
         EXAGE_DEFAULT_MOVE(Texture);

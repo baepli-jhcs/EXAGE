@@ -19,6 +19,8 @@ namespace exage::Graphics
         API api = API::eVulkan;
         WindowAPI windowAPI;
         size_t maxFramesInFlight = 2;
+
+        Window* optionalWindow = nullptr;
     };
 
     class Queue;

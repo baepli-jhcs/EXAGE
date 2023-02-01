@@ -45,7 +45,7 @@ namespace exage::Graphics
         }
 
         [[nodiscard]] auto resize(glm::uvec2 extent) noexcept -> std::optional<Error> override;
-        [[nodiscard]] auto acquireNextImage() noexcept -> std::optional<Error> override;
+        [[nodiscard]] auto acquireNextImage(Queue& queue) noexcept -> std::optional<Error> override;
 
         [[nodiscard]] auto getSwapchain() const noexcept -> vk::SwapchainKHR
         {

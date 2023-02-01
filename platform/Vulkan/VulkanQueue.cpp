@@ -1,8 +1,12 @@
 #include "VulkanQueue.h"
 
+#include "VulkanCommandBuffer.h"
+#include "VulkanSwapchain.h"
+
 namespace exage::Graphics
 {
-    tl::expected<std::unique_ptr<Queue>, Error> VulkanQueue::create(VulkanContext& context,
+    tl::expected<std::unique_ptr<Queue>, Error> VulkanQueue::create(
+        VulkanContext& context,
         const VulkanQueueCreateInfo& createInfo) noexcept
     {
         auto queue = std::unique_ptr<VulkanQueue>(new VulkanQueue(context, createInfo));
@@ -15,9 +19,9 @@ namespace exage::Graphics
 
     VulkanQueue::VulkanQueue(VulkanContext& context,
                              const VulkanQueueCreateInfo& createInfo) noexcept
-        : _context(context),
-          _framesInFlight(createInfo.maxFramesInFlight)
-          , _queue(createInfo.queue) {}
+        : _context(context)
+          , _framesInFlight(createInfo.maxFramesInFlight)
+          , _queue(createInfo.queue) { }
 
     std::optional<Error> VulkanQueue::init() noexcept
     {
@@ -28,11 +32,12 @@ namespace exage::Graphics
         vk::FenceCreateInfo fenceCreateInfo;
         fenceCreateInfo.flags = vk::FenceCreateFlagBits::eSignaled;
 
-        vk::SemaphoreCreateInfo semaphoreCreateInfo;
+        vk::SemaphoreCreateInfo const semaphoreCreateInfo;
 
         for (size_t i = 0; i < _framesInFlight; i++)
         {
-            vk::Result fenceResult = _context.get().getDevice().createFence(&fenceCreateInfo,
+            vk::Result fenceResult = _context.get().getDevice().createFence(
+                &fenceCreateInfo,
                 nullptr,
                 &_renderFences[i]);
 
@@ -61,6 +66,8 @@ namespace exage::Graphics
                 return ErrorCode::eSemaphoreCreationFailed;
             }
         }
+
+        return std::nullopt;
     }
 
     VulkanQueue::~VulkanQueue()
@@ -87,11 +94,12 @@ namespace exage::Graphics
     {
         _currentFrame = (_currentFrame + 1) % _framesInFlight;
 
-        vk::Result result = _context.get().getDevice().waitForFences(
-            1,
-            &_renderFences[_currentFrame],
-            true,
-            std::numeric_limits<uint64_t>::max());
+        vk::Result result =
+            _context.get().getDevice().waitForFences(1,
+                                                     &_renderFences[_currentFrame],
+                                                     /*waitAll=*/
+                                                     true,
+                                                     std::numeric_limits<uint64_t>::max());
 
         if (result != vk::Result::eSuccess)
         {
@@ -108,5 +116,71 @@ namespace exage::Graphics
         return std::nullopt;
     }
 
-    auto VulkanQueue::submit(SwapchainSubmits& submits) noexcept -> std::optional<Error> { }
+    auto VulkanQueue::submit(QueueSubmitInfo& submitInfo) noexcept -> std::optional<Error>
+    {
+        vk::SubmitInfo vkSubmitInfo;
+        vkSubmitInfo.commandBufferCount = 1;
+
+        auto* primaryCommandBuffer = submitInfo.commandBuffer.as<VulkanPrimaryCommandBuffer>();
+
+        auto commandBuffer = primaryCommandBuffer->getCurrentCommandBuffer();
+        vkSubmitInfo.pCommandBuffers = &commandBuffer;
+        vkSubmitInfo.waitSemaphoreCount = 1;
+        vkSubmitInfo.pWaitSemaphores = &_presentSemaphores[_currentFrame];
+        vkSubmitInfo.signalSemaphoreCount = 1;
+        vkSubmitInfo.pSignalSemaphores = &_renderSemaphores[_currentFrame];
+
+        vk::PipelineStageFlags waitStages[] = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
+        vkSubmitInfo.pWaitDstStageMask = waitStages;
+
+        vk::Result result = _queue.submit(1, &vkSubmitInfo, _renderFences[_currentFrame]);
+        if (result != vk::Result::eSuccess)
+        {
+            return ErrorCode::eQueueSubmitFailed;
+        }
+
+        return std::nullopt;
+    }
+
+    auto VulkanQueue::present(QueuePresentInfo& presentInfo) noexcept -> std::optional<Error>
+    {
+        auto* swapchain = presentInfo.swapchain.as<VulkanSwapchain>();
+
+        vk::PresentInfoKHR presentInfoKHR;
+        presentInfoKHR.swapchainCount = 1;
+
+        vk::SwapchainKHR swapchainKHR = swapchain->getSwapchain();
+        presentInfoKHR.pSwapchains = &swapchainKHR;
+        presentInfoKHR.pImageIndices = &presentInfo.imageIndex;
+        presentInfoKHR.waitSemaphoreCount = 1;
+        presentInfoKHR.pWaitSemaphores = &_renderSemaphores[_currentFrame];
+
+        vk::Result result = _queue.presentKHR(&presentInfoKHR);
+
+        if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eSuboptimalKHR)
+        {
+            return ErrorCode::eSwapchainNeedsResize;
+        }
+        if (result != vk::Result::eSuccess)
+        {
+            return ErrorCode::eQueuePresentFailed;
+        }
+
+        return std::nullopt;
+    }
+
+    auto VulkanQueue::currentFrame() const noexcept -> size_t
+    {
+        return _currentFrame;
+    }
+
+    auto VulkanQueue::getFramesInFlight() const noexcept -> size_t
+    {
+        return _framesInFlight;
+    }
+
+    auto VulkanQueue::getCurrentPresentSemaphore() const noexcept -> vk::Semaphore
+    {
+        return _presentSemaphores[_currentFrame];
+    }
 }

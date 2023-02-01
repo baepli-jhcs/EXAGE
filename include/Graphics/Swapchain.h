@@ -26,7 +26,7 @@ namespace exage::Graphics
     class EXAGE_EXPORT Swapchain
     {
     public:
-        Swapchain() = default;
+        Swapchain() noexcept = default;
         virtual ~Swapchain() = default;
         EXAGE_DELETE_COPY(Swapchain);
         EXAGE_DEFAULT_MOVE(Swapchain);
@@ -34,7 +34,8 @@ namespace exage::Graphics
         [[nodiscard]] virtual auto getPresentMode() const noexcept -> PresentMode = 0;
 
         [[nodiscard]] virtual auto resize(glm::uvec2 extent) noexcept -> std::optional<Error> = 0;
-        [[nodiscard]] virtual auto acquireNextImage() noexcept -> std::optional<Error> = 0;
+        [[nodiscard]] virtual auto acquireNextImage(Queue& queue) noexcept -> std::optional<Error> =
+        0;
 
 
         EXAGE_BASE_API(API, Swapchain);
