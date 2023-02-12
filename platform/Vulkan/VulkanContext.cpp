@@ -14,6 +14,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include "VulkanCommandBuffer.h"
 #include "VulkanQueue.h"
 #include "VulkanSwapchain.h"
 
@@ -220,9 +221,11 @@ namespace exage::Graphics
         }
 
         auto graphicsQueue = _device.get_queue(vkb::QueueType::graphics).value();
+        auto queueIndex = _device.get_queue_index(vkb::QueueType::graphics).value();
         VulkanQueueCreateInfo graphicsQueueCreateInfo = {
             .maxFramesInFlight = 2,
             .queue = graphicsQueue,
+            .familyIndex = queueIndex
         };
 
         tl::expected resultQueue = VulkanQueue::create(*this, graphicsQueueCreateInfo);
@@ -255,6 +258,12 @@ namespace exage::Graphics
     -> tl::expected<std::unique_ptr<Swapchain>, Error>
     {
         return VulkanSwapchain::create(*this, createInfo);
+    }
+
+    auto VulkanContext::createPrimaryCommandBuffer() noexcept
+    -> tl::expected<std::unique_ptr<QueueCommandBuffer>, Error>
+    {
+        return std::make_unique<VulkanPrimaryCommandBuffer>(*this);
     }
 
     auto VulkanContext::createSurface(Window& window) const noexcept
@@ -307,6 +316,11 @@ namespace exage::Graphics
     auto VulkanContext::getAllocator() const noexcept -> vma::Allocator
     {
         return _allocator;
+    }
+
+    auto VulkanContext::getVulkanQueue() const noexcept -> VulkanQueue&
+    {
+        return *_queue;
     }
 
     auto VulkanContext::getVulkanBootstrapDevice() const noexcept -> vkb::Device

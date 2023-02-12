@@ -10,6 +10,9 @@
 
 namespace exage::Graphics
 {
+    class Texture;
+    class CommandBuffer;
+
     enum class PresentMode
     {
         eImmediate,
@@ -36,7 +39,8 @@ namespace exage::Graphics
         [[nodiscard]] virtual auto resize(glm::uvec2 extent) noexcept -> std::optional<Error> = 0;
         [[nodiscard]] virtual auto acquireNextImage(Queue& queue) noexcept -> std::optional<Error> =
         0;
-
+        [[nodiscard]] virtual auto drawImage(CommandBuffer& commandBuffer,
+                                             Texture& texture) noexcept -> std::optional<Error>;
 
         EXAGE_BASE_API(API, Swapchain);
     };

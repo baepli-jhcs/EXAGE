@@ -23,6 +23,7 @@ namespace exage::Graphics
         Window* optionalWindow = nullptr;
     };
 
+    class QueueCommandBuffer;
     class Queue;
     class Swapchain;
 
@@ -38,6 +39,8 @@ namespace exage::Graphics
 
         [[nodiscard]] virtual auto createSwapchain(const SwapchainCreateInfo& createInfo) noexcept
         -> tl::expected<std::unique_ptr<Swapchain>, Error> = 0;
+        [[nodiscard]] virtual auto createPrimaryCommandBuffer() noexcept
+        -> tl::expected<std::unique_ptr<QueueCommandBuffer>, Error> = 0;
 
         [[nodiscard]] virtual auto getQueue() noexcept -> Queue& = 0;
         [[nodiscard]] virtual auto getQueue() const noexcept -> const Queue& = 0;

@@ -15,6 +15,7 @@ namespace exage::Graphics
     };
 } // namespace exage::Graphics
 
+
 #define EXAGE_BASE_API(apitype, base) \
         [[nodiscard]] virtual auto getAPI() const noexcept -> apitype = 0; \
 	template<typename T> \

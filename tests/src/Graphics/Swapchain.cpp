@@ -63,12 +63,34 @@ TEST_CASE("Creating Graphics Swapchain and Acquire Next Image", "[Swapchain]")
 
     REQUIRE(swapchain.has_value());
 
+    tl::expected primaryCommandBuffer = context.value()->createPrimaryCommandBuffer();
+
+    REQUIRE(primaryCommandBuffer.has_value());
+
     Context& ctx = *context.value();
     Queue& que = ctx.getQueue();
     Swapchain& swap = *swapchain.value();
+    QueueCommandBuffer& cmd = *primaryCommandBuffer.value();
+
     std::optional error = que.startNextFrame();
     REQUIRE(!error.has_value());
 
     std::optional swapError = swap.acquireNextImage(que);
     REQUIRE(!swapError.has_value());
+
+    std::optional commandError = cmd.beginFrame();
+    REQUIRE(!commandError.has_value());
+
+    commandError = cmd.endFrame();
+    REQUIRE(!commandError.has_value());
+
+    QueueSubmitInfo submitInfo{.commandBuffer = cmd};
+    error = que.submit(submitInfo);
+    REQUIRE(!error.has_value());
+
+    QueuePresentInfo presentInfo{.swapchain = swap};
+    error = que.present(presentInfo);
+    REQUIRE(!error.has_value());
+
+    ctx.waitIdle();
 }

@@ -5,7 +5,7 @@
 
 namespace exage::Graphics
 {
-    tl::expected<std::unique_ptr<Queue>, Error> VulkanQueue::create(
+    tl::expected<std::unique_ptr<VulkanQueue>, Error> VulkanQueue::create(
         VulkanContext& context,
         const VulkanQueueCreateInfo& createInfo) noexcept
     {
@@ -21,7 +21,8 @@ namespace exage::Graphics
                              const VulkanQueueCreateInfo& createInfo) noexcept
         : _context(context)
           , _framesInFlight(createInfo.maxFramesInFlight)
-          , _queue(createInfo.queue) { }
+          , _queue(createInfo.queue),
+          _familyIndex(createInfo.familyIndex) { }
 
     std::optional<Error> VulkanQueue::init() noexcept
     {
@@ -121,9 +122,9 @@ namespace exage::Graphics
         vk::SubmitInfo vkSubmitInfo;
         vkSubmitInfo.commandBufferCount = 1;
 
-        auto* primaryCommandBuffer = submitInfo.commandBuffer.as<VulkanPrimaryCommandBuffer>();
+        auto* queueCommandBuffer = submitInfo.commandBuffer.as<VulkanPrimaryCommandBuffer>();
 
-        auto commandBuffer = primaryCommandBuffer->getCurrentCommandBuffer();
+        auto commandBuffer = queueCommandBuffer->getCurrentCommandBuffer();
         vkSubmitInfo.pCommandBuffers = &commandBuffer;
         vkSubmitInfo.waitSemaphoreCount = 1;
         vkSubmitInfo.pWaitSemaphores = &_presentSemaphores[_currentFrame];
@@ -151,7 +152,9 @@ namespace exage::Graphics
 
         vk::SwapchainKHR swapchainKHR = swapchain->getSwapchain();
         presentInfoKHR.pSwapchains = &swapchainKHR;
-        presentInfoKHR.pImageIndices = &presentInfo.imageIndex;
+
+        auto imageIndex = static_cast<uint32_t>(swapchain->getCurrentImage());
+        presentInfoKHR.pImageIndices = &imageIndex;
         presentInfoKHR.waitSemaphoreCount = 1;
         presentInfoKHR.pWaitSemaphores = &_renderSemaphores[_currentFrame];
 
@@ -182,5 +185,15 @@ namespace exage::Graphics
     auto VulkanQueue::getCurrentPresentSemaphore() const noexcept -> vk::Semaphore
     {
         return _presentSemaphores[_currentFrame];
+    }
+
+    auto VulkanQueue::getQueue() const noexcept -> vk::Queue
+    {
+        return _queue;
+    }
+
+    auto VulkanQueue::getFamilyIndex() const noexcept -> uint32_t
+    {
+        return _familyIndex;
     }
 }

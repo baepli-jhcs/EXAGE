@@ -156,6 +156,22 @@ namespace exage::Graphics
         return std::nullopt;
     }
 
+    std::optional<Error> VulkanSwapchain::drawImage(CommandBuffer& commandBuffer,
+                                                    Texture& texture) noexcept 
+    {
+        const VulkanTexture* vulkanTexture = texture.as<VulkanTexture>();
+        const VulkanCommandBuffer* vulkanCommandBuffer = commandBuffer.as<VulkanCommandBuffer>();
+
+        const vk::ImageLayout oldLayout = vulkanTexture->getLayout();
+        const vk::ImageLayout newLayout = vk::ImageLayout::eTransferSrcOptimal;
+        const vk::ImageAspectFlags aspectFlags = vk::ImageAspectFlagBits::eColor;
+        const vk::PipelineStageFlags srcStage = vk::PipelineStageFlagBits::eTransfer;
+        const vk::PipelineStageFlags dstStage = vk::PipelineStageFlagBits::eTransfer;
+        const vk::AccessFlags srcAccess = vk::AccessFlagBits::eTransferWrite;
+        const vk::AccessFlags dstAccess = vk::AccessFlagBits::eTransferRead;
+        const vk::ImageSubresourceRange subresourceRange = {aspectFlags, 0, 1, 0, 1};
+    }
+
     auto VulkanSwapchain::getImage(uint32_t index) const noexcept -> vk::Image
     {
         return _swapchainImages[index];

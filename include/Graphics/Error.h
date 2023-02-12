@@ -29,6 +29,8 @@ namespace exage::Graphics
         eFenceResetFailed,
         eSemaphoreCreationFailed,
         eSemaphoreWaitFailed,
+
+        eCommandBufferBeginFailed,
     };
 
     using Error = std::variant<ErrorCode>;

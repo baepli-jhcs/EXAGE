@@ -9,12 +9,13 @@ namespace exage::Graphics
     {
         size_t maxFramesInFlight = 2;
         vk::Queue queue;
+        uint32_t familyIndex;
     };
 
-    class EXAGE_EXPORT VulkanQueue : public Queue
+    class EXAGE_EXPORT VulkanQueue final : public Queue
     {
     public:
-        [[nodiscard]] static tl::expected<std::unique_ptr<Queue>, Error> create(
+        [[nodiscard]] static tl::expected<std::unique_ptr<VulkanQueue>, Error> create(
             VulkanContext& context,
             const VulkanQueueCreateInfo& createInfo) noexcept;
         ~VulkanQueue() override;
@@ -32,6 +33,8 @@ namespace exage::Graphics
         [[nodiscard]] auto getFramesInFlight() const noexcept -> size_t override;
 
         [[nodiscard]] auto getCurrentPresentSemaphore() const noexcept -> vk::Semaphore;
+        [[nodiscard]] auto getQueue() const noexcept -> vk::Queue;
+        [[nodiscard]] auto getFamilyIndex() const noexcept -> uint32_t;
 
         EXAGE_VULKAN_DERIVED;
 
@@ -45,6 +48,7 @@ namespace exage::Graphics
 
         size_t _framesInFlight;
         vk::Queue _queue;
+        uint32_t _familyIndex;
 
         std::vector<vk::Semaphore> _presentSemaphores;
         std::vector<vk::Semaphore> _renderSemaphores;

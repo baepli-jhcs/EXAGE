@@ -12,10 +12,13 @@
 #include <VkBootstrap.h>
 #include <vulkan/vulkan.hpp>
 #include "Graphics/Queue.h"
+#include "VulkanUtils.h"
 #include <vulkan-memory-allocator-hpp/vk_mem_alloc.hpp>
+
 
 namespace exage::Graphics
 {
+    class VulkanQueue;
     enum class SurfaceError : uint32_t;
 
 
@@ -33,6 +36,8 @@ namespace exage::Graphics
 
         [[nodiscard]] auto createSwapchain(const SwapchainCreateInfo& createInfo) noexcept
         -> tl::expected<std::unique_ptr<Swapchain>, Error> override;
+        [[nodiscard]] auto createPrimaryCommandBuffer() noexcept
+        -> tl::expected<std::unique_ptr<QueueCommandBuffer>, Error> override;
 
         [[nodiscard]] auto createSurface(
             Window& window) const noexcept -> tl::expected<vk::SurfaceKHR, Error>;
@@ -45,6 +50,7 @@ namespace exage::Graphics
         [[nodiscard]] auto getDevice() const noexcept -> vk::Device;
         [[nodiscard]] auto getAllocator() const noexcept -> vma::Allocator;
 
+        [[nodiscard]] auto getVulkanQueue() const noexcept -> VulkanQueue&;
         [[nodiscard]] auto getVulkanBootstrapDevice() const noexcept -> vkb::Device;
 
         EXAGE_VULKAN_DERIVED
@@ -58,6 +64,6 @@ namespace exage::Graphics
         vkb::Instance _instance;
         vkb::PhysicalDevice _physicalDevice;
         vkb::Device _device;
-        Queue* _queue = nullptr; // Not a smart pointer since destruction order is important
+        VulkanQueue* _queue = nullptr; // Not a smart pointer since destruction order is important
     };
 } // namespace exage::Graphics

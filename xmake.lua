@@ -32,6 +32,10 @@ target("EXAGE")
 	  add_defines("EXAGE_RELEASE")
     end
 
-    add_defines("EXAGE_EXPORT=__declspec(dllexport)")
+    if is_kind("shared") then
+        add_defines("EXAGE_EXPORT=__declspec(dllexport)")
+    else
+        add_defines("EXAGE_EXPORT=")
+    end
 
 includes("tests/xmake.lua")

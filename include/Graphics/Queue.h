@@ -8,13 +8,12 @@ namespace exage::Graphics
 {
     struct QueueSubmitInfo
     {
-        PrimaryCommandBuffer& commandBuffer; // Only one command buffer per submit is supported
+        QueueCommandBuffer& commandBuffer; // Only one command buffer per submit is supported
     };
 
     struct QueuePresentInfo
     {
         Swapchain& swapchain;
-        uint32_t imageIndex;
     };
 
 
@@ -31,6 +30,9 @@ namespace exage::Graphics
             QueueSubmitInfo& submitInfo) noexcept -> std::optional<Error> = 0;
         [[nodiscard]] virtual auto present(QueuePresentInfo& presentInfo) noexcept
         -> std::optional<Error> = 0;
+
+        [[nodiscard]] virtual auto submitTemporary(
+            std::unique_ptr<TemporaryCommandBuffer> commandBuffer) -> std::optional<Error>;
 
         [[nodiscard]] virtual auto currentFrame() const noexcept -> size_t = 0;
         [[nodiscard]] virtual auto getFramesInFlight() const noexcept -> size_t = 0;
