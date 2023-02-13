@@ -5,6 +5,8 @@ namespace exage::Graphics
 {
     enum class ErrorCode: uint32_t
     {
+        eInvalidEnum,
+
         eInvalidAPI,
 
         eInvalidWindowAPI,
@@ -31,6 +33,9 @@ namespace exage::Graphics
         eSemaphoreWaitFailed,
 
         eCommandBufferBeginFailed,
+
+        eSamplerCreationFailed,
+        eTextureCreationFailed
     };
 
     using Error = std::variant<ErrorCode>;

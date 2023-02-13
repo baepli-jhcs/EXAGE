@@ -10,9 +10,12 @@
 #include "utils/classes.h"
 #include "utils/apiType.h"
 #include "utils/variant.h"
+#include "magic_enum.hpp"
 
 namespace exage
 {
     // Sets up required engine components
     EXAGE_EXPORT void init();
+
+    using namespace magic_enum::bitwise_operators;
 }
