@@ -3,7 +3,7 @@
 
 namespace exage::Graphics
 {
-    VulkanPrimaryCommandBuffer::VulkanPrimaryCommandBuffer(VulkanContext& context) noexcept
+    VulkanQueueCommandBuffer::VulkanQueueCommandBuffer(VulkanContext& context) noexcept
         : _context(context)
     {
         _commandPools.resize(context.getVulkanQueue().getFramesInFlight());
@@ -32,7 +32,7 @@ namespace exage::Graphics
         }
     }
 
-    VulkanPrimaryCommandBuffer::~VulkanPrimaryCommandBuffer()
+    VulkanQueueCommandBuffer::~VulkanQueueCommandBuffer()
     {
         for (size_t i = 0; i < _context.get().getVulkanQueue().getFramesInFlight(); i++)
         {
@@ -40,7 +40,7 @@ namespace exage::Graphics
         }
     }
 
-    std::optional<Error> VulkanPrimaryCommandBuffer::beginFrame() noexcept
+    std::optional<Error> VulkanQueueCommandBuffer::beginFrame() noexcept
     {
         VulkanContext& context = _context.get();
 
@@ -59,13 +59,13 @@ namespace exage::Graphics
         return std::nullopt;
     }
 
-    std::optional<Error> VulkanPrimaryCommandBuffer::endFrame() noexcept
+    std::optional<Error> VulkanQueueCommandBuffer::endFrame() noexcept
     {
         _commandBuffers[_context.get().getVulkanQueue().currentFrame()].end();
         return std::nullopt;
     }
 
-    auto VulkanPrimaryCommandBuffer::getCurrentCommandBuffer() const noexcept ->
+    auto VulkanQueueCommandBuffer::getCurrentCommandBuffer() const noexcept ->
     vk::CommandBuffer
     {
         return _commandBuffers[_context.get().getQueue().currentFrame()];

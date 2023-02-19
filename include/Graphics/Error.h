@@ -1,12 +1,13 @@
 ﻿#pragma once
+
+#include "Core/Core.h"
 #include <variant>
 
 namespace exage::Graphics
 {
-    enum class ErrorCode: uint32_t
+    enum class ErrorCode : uint32_t
     {
         eInvalidEnum,
-
         eInvalidAPI,
 
         eInvalidWindowAPI,
@@ -35,7 +36,8 @@ namespace exage::Graphics
         eCommandBufferBeginFailed,
 
         eSamplerCreationFailed,
-        eTextureCreationFailed
+        eTextureCreationFailed,
+        eTextureViewCreationFailed
     };
 
     using Error = std::variant<ErrorCode>;

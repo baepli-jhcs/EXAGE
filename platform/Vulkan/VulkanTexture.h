@@ -12,7 +12,7 @@ namespace exage::Graphics
     {
     public:
         static auto create(VulkanContext& context,
-                           SamplerCreateInfo createInfo,
+                           SamplerCreateInfo& createInfo,
                            uint32_t mipLevelCount) noexcept -> tl::expected<VulkanSampler, Error>;
         ~VulkanSampler() override;
 
@@ -35,7 +35,7 @@ namespace exage::Graphics
 
         EXAGE_VULKAN_DERIVED
     private:
-        VulkanSampler(VulkanContext& context, SamplerCreateInfo createInfo) noexcept;
+        VulkanSampler(VulkanContext& context, SamplerCreateInfo& createInfo) noexcept;
         [[nodiscard]] auto init(uint32_t mipLevelCount) noexcept -> std::optional<Error>;
 
         std::reference_wrapper<VulkanContext> _context;
@@ -52,29 +52,40 @@ namespace exage::Graphics
     {
     public:
         [[nodiscard]] static auto create(VulkanContext& context,
-                                         TextureCreateInfo createInfo) noexcept
+                                         TextureCreateInfo& createInfo) noexcept
         -> tl::expected<std::unique_ptr<Texture>, Error>;
         ~VulkanTexture() override;
 
         EXAGE_DEFAULT_MOVE(VulkanTexture);
         EXAGE_DELETE_COPY(VulkanTexture);
 
-        [[nodiscard]] auto getExtent() const noexcept -> TextureExtent override;
-        [[nodiscard]] auto getFormat() const noexcept -> Format override;
-        [[nodiscard]] auto getType() const noexcept -> Type override;
-        [[nodiscard]] auto getLayout() const noexcept -> Layout override;
-        [[nodiscard]] auto getUsage() const noexcept -> Usage override;
+        [[nodiscard]] auto getExtent() const noexcept -> TextureExtent override { return _extent; }
+        [[nodiscard]] auto getFormat() const noexcept -> Format override { return _format; }
+        [[nodiscard]] auto getType() const noexcept -> Type override { return _type; }
+        [[nodiscard]] auto getLayout() const noexcept -> Layout override { return _layout; }
+        [[nodiscard]] auto getUsage() const noexcept -> Usage override { return _usage; }
 
-        [[nodiscard]] auto getLayerCount() const noexcept -> uint32_t override;
-        [[nodiscard]] auto getMipLevelCount() const noexcept -> uint32_t override;
+        [[nodiscard]] auto getLayerCount() const noexcept -> uint32_t override
+        {
+            return _layerCount;
+        }
 
-        [[nodiscard]] auto getSampler() noexcept -> Sampler& override;
-        [[nodiscard]] auto getSampler() const noexcept -> const Sampler& override;
+        [[nodiscard]] auto getMipLevelCount() const noexcept -> uint32_t override
+        {
+            return _mipLevelCount;
+        }
+
+        [[nodiscard]] auto getSampler() noexcept -> Sampler& override { return *_sampler; }
+
+        [[nodiscard]] auto getSampler() const noexcept -> const Sampler& override
+        {
+            return *_sampler;
+        }
 
         EXAGE_VULKAN_DERIVED
     private:
-        VulkanTexture(VulkanContext& context, TextureCreateInfo createInfo) noexcept;
-        [[nodiscard]] auto init() noexcept -> std::optional<Error>;
+        VulkanTexture(VulkanContext& context, TextureCreateInfo& createInfo) noexcept;
+        [[nodiscard]] auto init(SamplerCreateInfo& samplerInfo) noexcept -> std::optional<Error>;
 
         std::reference_wrapper<VulkanContext> _context;
 
@@ -83,6 +94,9 @@ namespace exage::Graphics
         Type _type;
         Layout _layout = Layout::eUndefined;
         Usage _usage;
+
+        uint32_t _layerCount;
+        uint32_t _mipLevelCount;
 
         vma::Allocation _allocation;
         vk::Image _image;

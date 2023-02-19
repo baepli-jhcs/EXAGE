@@ -122,7 +122,7 @@ namespace exage::Graphics
         vk::SubmitInfo vkSubmitInfo;
         vkSubmitInfo.commandBufferCount = 1;
 
-        auto* queueCommandBuffer = submitInfo.commandBuffer.as<VulkanPrimaryCommandBuffer>();
+        auto* queueCommandBuffer = submitInfo.commandBuffer.as<VulkanQueueCommandBuffer>();
 
         auto commandBuffer = queueCommandBuffer->getCurrentCommandBuffer();
         vkSubmitInfo.pCommandBuffers = &commandBuffer;

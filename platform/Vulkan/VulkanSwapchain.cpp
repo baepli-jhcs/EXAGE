@@ -1,6 +1,8 @@
 #include "VulkanSwapchain.h"
 
+#include "VulkanCommandBuffer.h"
 #include "VulkanQueue.h"
+#include "VulkanTexture.h"
 
 namespace exage::Graphics
 {
@@ -10,8 +12,8 @@ namespace exage::Graphics
           , _presentMode(createInfo.presentMode), _extent(createInfo.window.getExtent()) { }
 
 
-    constexpr auto DESIRED_FORMAT = toVulkanTextureFormat(Texture::Format::eRGBA8);
-    constexpr auto FALLBACK_FORMAT = toVulkanTextureFormat(Texture::Format::eBGRA8);
+    constexpr auto DESIRED_FORMAT = toVulkanFormat(Texture::Format::eRGBA8);
+    constexpr auto FALLBACK_FORMAT = toVulkanFormat(Texture::Format::eBGRA8);
 
     auto VulkanSwapchain::init(Window& window) noexcept -> std::optional<Error>
     {
@@ -156,20 +158,14 @@ namespace exage::Graphics
         return std::nullopt;
     }
 
-    std::optional<Error> VulkanSwapchain::drawImage(CommandBuffer& commandBuffer,
-                                                    Texture& texture) noexcept 
+    std::optional<Error> VulkanSwapchain::drawImage(QueueCommandBuffer& commandBuffer,
+                                                    Texture& texture) noexcept
     {
-        const VulkanTexture* vulkanTexture = texture.as<VulkanTexture>();
-        const VulkanCommandBuffer* vulkanCommandBuffer = commandBuffer.as<VulkanCommandBuffer>();
+        const auto* vulkanTexture = texture.as<VulkanTexture>();
+        const auto* vulkanCommandBuffer = commandBuffer.as<VulkanQueueCommandBuffer>();
 
-        const vk::ImageLayout oldLayout = vulkanTexture->getLayout();
-        const vk::ImageLayout newLayout = vk::ImageLayout::eTransferSrcOptimal;
-        const vk::ImageAspectFlags aspectFlags = vk::ImageAspectFlagBits::eColor;
-        const vk::PipelineStageFlags srcStage = vk::PipelineStageFlagBits::eTransfer;
-        const vk::PipelineStageFlags dstStage = vk::PipelineStageFlagBits::eTransfer;
-        const vk::AccessFlags srcAccess = vk::AccessFlagBits::eTransferWrite;
-        const vk::AccessFlags dstAccess = vk::AccessFlagBits::eTransferRead;
-        const vk::ImageSubresourceRange subresourceRange = {aspectFlags, 0, 1, 0, 1};
+        // TODO: Implement this
+        return std::nullopt;
     }
 
     auto VulkanSwapchain::getImage(uint32_t index) const noexcept -> vk::Image

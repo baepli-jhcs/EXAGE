@@ -4,13 +4,13 @@
 
 namespace exage::Graphics
 {
-    class EXAGE_EXPORT VulkanPrimaryCommandBuffer final : public QueueCommandBuffer
+    class EXAGE_EXPORT VulkanQueueCommandBuffer final : public QueueCommandBuffer
     {
     public:
-        explicit VulkanPrimaryCommandBuffer(VulkanContext& context) noexcept;
-        ~VulkanPrimaryCommandBuffer() override;
-        EXAGE_DELETE_COPY(VulkanPrimaryCommandBuffer);
-        EXAGE_DEFAULT_MOVE(VulkanPrimaryCommandBuffer);
+        explicit VulkanQueueCommandBuffer(VulkanContext& context) noexcept;
+        ~VulkanQueueCommandBuffer() override;
+        EXAGE_DELETE_COPY(VulkanQueueCommandBuffer);
+        EXAGE_DEFAULT_MOVE(VulkanQueueCommandBuffer);
 
         std::optional<Error> beginFrame() noexcept override;
         std::optional<Error> endFrame() noexcept override;

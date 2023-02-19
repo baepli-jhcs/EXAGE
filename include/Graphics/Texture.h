@@ -12,26 +12,26 @@ namespace exage::Graphics
         EXAGE_DELETE_COPY(Sampler);
         EXAGE_DEFAULT_MOVE(Sampler);
 
-        enum class Anisotropy
+        enum class Anisotropy : uint32_t
         {
-            eDisabled,
+            eDisabled = 0,
             e1 = 1,
             e2 = 2,
             e4 = 4,
             e8 = 8,
-            e16 = 16,
+            e16 = 16
         };
 
-        enum class Filter
+        enum class Filter : uint32_t
         {
-            eNearest,
-            eLinear,
+            eNearest = 0,
+            eLinear = 1
         };
 
-        enum class MipmapMode
+        enum class MipmapMode : uint32_t
         {
-            eNearest,
-            eLinear,
+            eNearest = 0,
+            eLinear = 1
         };
 
         [[nodiscard]] virtual auto getAnisotropy() const noexcept -> Anisotropy = 0;
@@ -42,15 +42,20 @@ namespace exage::Graphics
         EXAGE_BASE_API(API, Sampler);
     };
 
-    using TextureExtent = std::variant<glm::uvec1, glm::uvec2, glm::uvec3>;
+    using TextureExtent = glm::uvec3;
 
     class EXAGE_EXPORT Texture
     {
     public:
-        enum class Format;
-        enum class Type;
-        enum class Layout;
-        enum class Usage : uint32_t;
+        enum class Format : uint32_t;
+        enum class Type : uint32_t;
+        enum class Layout :uint32_t;
+        BEGIN_RAW_BITFLAGS(Usage)
+            RAW_FLAG(eTransferSource)
+            RAW_FLAG(eTransferDestination)
+            RAW_FLAG(eColorAttachment)
+            RAW_FLAG(eDepthStencilAttachment)
+        END_RAW_BITFLAGS(Usage)
 
         Texture() noexcept = default;
         virtual ~Texture() = default;
@@ -69,7 +74,8 @@ namespace exage::Graphics
         [[nodiscard]] virtual auto getSampler() noexcept -> Sampler& = 0;
         [[nodiscard]] virtual auto getSampler() const noexcept -> const Sampler& = 0;
 
-        enum class Format
+
+        enum class Format : uint32_t
         {
             eR8,
             eR16,
@@ -79,32 +85,28 @@ namespace exage::Graphics
             eRGB16,
             eRGBA8,
             eRGBA16,
-
             eR16f,
             eRG16f,
             eRGB16f,
             eRGBA16f,
-
             eR32f,
             eRG32f,
             eRGB32f,
             eRGBA32f,
-
             eDepth24Stencil8,
             eDepth32Stencil8,
-
             eBGRA8,
-            // ONLY USE FOR SWAPCHAIN
         };
 
-        enum class Type
+        enum class Type : uint32_t
         {
             e1D,
             e2D,
             e3D,
+            eCube,
         };
 
-        enum class Layout
+        enum class Layout : uint32_t
         {
             eUndefined,
             eDepthStencilAttachment,
@@ -114,14 +116,6 @@ namespace exage::Graphics
             eTransferDestination,
         };
 
-        enum class Usage : uint32_t
-        {
-            eTransferSource = 0 << 0,
-            eTransferDestination = 1 << 0,
-            eStorage = 1 << 1,
-            eColorAttachment = 1 << 2,
-            eDepthStencilAttachment = 1 << 3,
-        };
 
         EXAGE_BASE_API(API, Texture);
     };
@@ -140,8 +134,8 @@ namespace exage::Graphics
         Texture::Format format = Texture::Format::eRGBA8;
         Texture::Type type = Texture::Type::e2D;
         Texture::Usage usage = Texture::Usage::eColorAttachment;
-        size_t mipLevels = 1;
-        size_t arrayLayers = 1;
+        uint32_t arrayLayers = 1;
+        uint32_t mipLevels = 1;
 
         SamplerCreateInfo samplerCreateInfo{};
     };

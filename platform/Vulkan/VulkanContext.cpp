@@ -263,7 +263,7 @@ namespace exage::Graphics
     auto VulkanContext::createPrimaryCommandBuffer() noexcept
     -> tl::expected<std::unique_ptr<QueueCommandBuffer>, Error>
     {
-        return std::make_unique<VulkanPrimaryCommandBuffer>(*this);
+        return std::make_unique<VulkanQueueCommandBuffer>(*this);
     }
 
     auto VulkanContext::createSurface(Window& window) const noexcept
