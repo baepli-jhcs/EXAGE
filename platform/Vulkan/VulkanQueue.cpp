@@ -5,24 +5,23 @@
 
 namespace exage::Graphics
 {
-    tl::expected<std::unique_ptr<VulkanQueue>, Error> VulkanQueue::create(
+    tl::expected<VulkanQueue, Error> VulkanQueue::create(
         VulkanContext& context,
-        const VulkanQueueCreateInfo& createInfo) noexcept
+        const QueueCreateInfo& createInfo) noexcept
     {
-        auto queue = std::unique_ptr<VulkanQueue>(new VulkanQueue(context, createInfo));
-        if (auto error = queue->init(); error.has_value())
+        VulkanQueue queue(context, createInfo);
+        std::optional<Error> result = queue.init();
+        if (result.has_value())
         {
-            return tl::make_unexpected(error.value());
+            return tl::make_unexpected(result.value());
         }
         return queue;
     }
 
     VulkanQueue::VulkanQueue(VulkanContext& context,
-                             const VulkanQueueCreateInfo& createInfo) noexcept
+                             const QueueCreateInfo& createInfo) noexcept
         : _context(context)
-          , _framesInFlight(createInfo.maxFramesInFlight)
-          , _queue(createInfo.queue),
-          _familyIndex(createInfo.familyIndex) { }
+          , _framesInFlight(createInfo.maxFramesInFlight) { }
 
     std::optional<Error> VulkanQueue::init() noexcept
     {
@@ -91,6 +90,22 @@ namespace exage::Graphics
         }
     }
 
+    VulkanQueue::VulkanQueue(VulkanQueue&& old) noexcept
+        : _context(old._context)
+    {
+        *this = std::move(old);
+    }
+
+    auto VulkanQueue::operator=(VulkanQueue&& old) noexcept -> VulkanQueue&
+    {
+        _framesInFlight = old._framesInFlight;
+        _renderFences = std::move(old._renderFences);
+        _presentSemaphores = std::move(old._presentSemaphores);
+        _renderSemaphores = std::move(old._renderSemaphores);
+
+        return *this;
+    }
+
     auto VulkanQueue::startNextFrame() noexcept -> std::optional<Error>
     {
         _currentFrame = (_currentFrame + 1) % _framesInFlight;
@@ -122,9 +137,9 @@ namespace exage::Graphics
         vk::SubmitInfo vkSubmitInfo;
         vkSubmitInfo.commandBufferCount = 1;
 
-        auto* queueCommandBuffer = submitInfo.commandBuffer.as<VulkanQueueCommandBuffer>();
+        auto* queueCommandBuffer = submitInfo.commandBuffer.as<VulkanCommandBuffer>();
 
-        auto commandBuffer = queueCommandBuffer->getCurrentCommandBuffer();
+        auto commandBuffer = queueCommandBuffer->getCommandBuffer();
         vkSubmitInfo.pCommandBuffers = &commandBuffer;
         vkSubmitInfo.waitSemaphoreCount = 1;
         vkSubmitInfo.pWaitSemaphores = &_presentSemaphores[_currentFrame];
@@ -134,7 +149,8 @@ namespace exage::Graphics
         vk::PipelineStageFlags waitStages[] = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
         vkSubmitInfo.pWaitDstStageMask = waitStages;
 
-        vk::Result result = _queue.submit(1, &vkSubmitInfo, _renderFences[_currentFrame]);
+        vk::Result result =
+            _context.get().getVulkanQueue().submit(1, &vkSubmitInfo, _renderFences[_currentFrame]);
         if (result != vk::Result::eSuccess)
         {
             return ErrorCode::eQueueSubmitFailed;
@@ -158,7 +174,7 @@ namespace exage::Graphics
         presentInfoKHR.waitSemaphoreCount = 1;
         presentInfoKHR.pWaitSemaphores = &_renderSemaphores[_currentFrame];
 
-        vk::Result result = _queue.presentKHR(&presentInfoKHR);
+        vk::Result result = _context.get().getVulkanQueue().presentKHR(&presentInfoKHR);
 
         if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eSuboptimalKHR)
         {
@@ -169,6 +185,27 @@ namespace exage::Graphics
             return ErrorCode::eQueuePresentFailed;
         }
 
+        return std::nullopt;
+    }
+
+    auto VulkanQueue::submitTemporary(
+        std::unique_ptr<CommandBuffer> commandBuffer) -> std::optional<Error>
+    {
+        vk::SubmitInfo vkSubmitInfo;
+        vkSubmitInfo.commandBufferCount = 1;
+
+        const auto* queueCommandBuffer = commandBuffer->as<VulkanCommandBuffer>();
+
+        const vk::CommandBuffer vkCommand = queueCommandBuffer->getCommandBuffer();
+        vkSubmitInfo.pCommandBuffers = &vkCommand;
+
+        vk::Result result = _context.get().getVulkanQueue().submit(1, &vkSubmitInfo, nullptr);
+        if (result != vk::Result::eSuccess)
+        {
+            return ErrorCode::eQueueSubmitFailed;
+        }
+
+        _context.get().waitIdle();
         return std::nullopt;
     }
 
@@ -187,13 +224,13 @@ namespace exage::Graphics
         return _presentSemaphores[_currentFrame];
     }
 
-    auto VulkanQueue::getQueue() const noexcept -> vk::Queue
+    auto VulkanQueue::getCurrentRenderSemaphore() const noexcept -> vk::Semaphore
     {
-        return _queue;
+        return _renderSemaphores[_currentFrame];
     }
 
-    auto VulkanQueue::getFamilyIndex() const noexcept -> uint32_t
+    auto VulkanQueue::getCurrentFence() const noexcept -> vk::Fence
     {
-        return _familyIndex;
+        return _renderFences[_currentFrame];
     }
 }

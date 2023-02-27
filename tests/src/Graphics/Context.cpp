@@ -5,7 +5,6 @@
 
 #include "Core/Window.h"
 
-
 TEST_CASE("Creating Graphics Context", "[Context]")
 {
     using namespace exage::Graphics;
@@ -13,7 +12,6 @@ TEST_CASE("Creating Graphics Context", "[Context]")
     ContextCreateInfo createInfo{
         .api = API::eVulkan,
         .windowAPI = exage::WindowAPI::eGLFW,
-        .maxFramesInFlight = 2
     };
 
     tl::expected context(Context::create(createInfo));
@@ -26,7 +24,7 @@ TEST_CASE("Creating Graphics Context and Casting to Vulkan Context", "[Context]"
     using namespace exage::Graphics;
 
     ContextCreateInfo createInfo{
-        .api = API::eVulkan, .windowAPI = exage::WindowAPI::eGLFW, .maxFramesInFlight = 2};
+        .api = API::eVulkan, .windowAPI = exage::WindowAPI::eGLFW};
 
     tl::expected context(Context::create(createInfo));
 

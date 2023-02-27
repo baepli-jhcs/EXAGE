@@ -9,7 +9,12 @@ namespace exage::Graphics
         switch (createInfo.api)
         {
             case API::eVulkan:
-                return VulkanContext::create(createInfo);
+            {
+                tl::expected value = VulkanContext::create(createInfo);
+                if (!value.has_value())
+                    return tl::make_unexpected(value.error());
+                return std::make_unique<VulkanContext>(std::move(value.value()));
+            }
 
             default:
                 return tl::make_unexpected(ErrorCode::eInvalidAPI);

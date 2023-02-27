@@ -1,6 +1,8 @@
 #pragma once
 
+#include <memory_resource>
 #include <optional>
+#include <thread>
 
 #include "Error.h"
 #include "Core/Core.h"
@@ -8,12 +10,6 @@
 
 namespace exage::Graphics
 {
-    enum class CommandBufferType
-    {
-        eQueue,
-        eTemporary,
-    };
-
     class EXAGE_EXPORT CommandBuffer
     {
     public:
@@ -22,37 +18,48 @@ namespace exage::Graphics
 
         EXAGE_DEFAULT_COPY(CommandBuffer);
         EXAGE_DEFAULT_MOVE(CommandBuffer);
+
+        [[nodiscard]] virtual auto begin() noexcept -> std::optional<Error> = 0;
+        [[nodiscard]] virtual auto end() noexcept -> std::optional<Error> = 0;
+
+        EXAGE_BASE_API(API, CommandBuffer);
     };
 
-
-    struct QueueCommandBufferCreateInfo { };
-
-    class EXAGE_EXPORT QueueCommandBuffer : public CommandBuffer
+    struct QueueCommandRepoCreateInfo
     {
-    public:
-        using CommandBuffer::CommandBuffer;
-        ~QueueCommandBuffer() override = default;
-
-        EXAGE_DEFAULT_COPY(QueueCommandBuffer);
-        EXAGE_DEFAULT_MOVE(QueueCommandBuffer);
-
-        virtual std::optional<Error> beginFrame() noexcept = 0;
-        virtual std::optional<Error> endFrame() noexcept = 0;
-
-        EXAGE_BASE_API(API, QueueCommandBuffer);
+        Context& context;
+        Queue& queue;
     };
 
-    struct TemporaryCommandBufferCreateInfo {};
+    //class EXAGE_EXPORT QueueCommandRepo
+    //{
+    //public:
+    //    QueueCommandRepo(QueueCommandRepoCreateInfo& createInfo) noexcept;
+    //    virtual ~QueueCommandRepo() = default;
 
-    class EXAGE_EXPORT TemporaryCommandBuffer : public CommandBuffer
+    //    EXAGE_DELETE_COPY(QueueCommandRepo);
+    //    EXAGE_DEFAULT_MOVE(QueueCommandRepo);
+
+    //    [[nodiscard]] virtual auto beginFrame() noexcept -> std::optional<Error>;
+    //    [[nodiscard]] virtual auto endFrame() noexcept -> std::optional<Error>;
+
+    //    [[nodiscard]] virtual auto current() noexcept -> CommandBuffer&;
+    //    [[nodiscard]] virtual auto current() const noexcept -> const CommandBuffer&;
+
+    //private:
+    //    std::vector<std::unique_ptr<CommandBuffer>> _commandBuffers;
+    //};
+
+    namespace detail
     {
-    public:
-        using CommandBuffer::CommandBuffer;
-        ~TemporaryCommandBuffer() override = default;
+        struct DrawCommand
+        {
+            uint32_t vertexCount;
+            uint32_t instanceCount;
+            uint32_t firstVertex;
+            uint32_t firstInstance;
+        };
 
-        EXAGE_DEFAULT_COPY(TemporaryCommandBuffer);
-        EXAGE_DEFAULT_MOVE(TemporaryCommandBuffer);
-
-        EXAGE_BASE_API(API, TemporaryCommandBuffer);
-    };
+        using Command = std::variant<DrawCommand>;
+    } // namespace detail
 } // namespace exage::Graphics

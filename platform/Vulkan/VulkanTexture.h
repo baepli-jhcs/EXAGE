@@ -53,11 +53,13 @@ namespace exage::Graphics
     public:
         [[nodiscard]] static auto create(VulkanContext& context,
                                          TextureCreateInfo& createInfo) noexcept
-        -> tl::expected<std::unique_ptr<Texture>, Error>;
+        -> tl::expected<VulkanTexture, Error>;
         ~VulkanTexture() override;
 
-        EXAGE_DEFAULT_MOVE(VulkanTexture);
         EXAGE_DELETE_COPY(VulkanTexture);
+
+        VulkanTexture(VulkanTexture&& old) noexcept;
+        auto operator=(VulkanTexture&& old) noexcept -> VulkanTexture&;
 
         [[nodiscard]] auto getExtent() const noexcept -> TextureExtent override { return _extent; }
         [[nodiscard]] auto getFormat() const noexcept -> Format override { return _format; }

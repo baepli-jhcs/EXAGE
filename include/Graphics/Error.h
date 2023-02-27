@@ -33,7 +33,10 @@ namespace exage::Graphics
         eSemaphoreCreationFailed,
         eSemaphoreWaitFailed,
 
+        eCommandPoolCreationFailed,
+        eCommandBufferCreationFailed,
         eCommandBufferBeginFailed,
+        eCommandBufferEndFailed,
 
         eSamplerCreationFailed,
         eTextureCreationFailed,

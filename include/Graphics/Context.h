@@ -7,6 +7,7 @@
 
 namespace exage::Graphics
 {
+    struct QueueCreateInfo;
     struct SwapchainCreateInfo;
 
     enum class API
@@ -18,12 +19,11 @@ namespace exage::Graphics
     {
         API api = API::eVulkan;
         WindowAPI windowAPI;
-        size_t maxFramesInFlight = 2;
 
         Window* optionalWindow = nullptr;
     };
 
-    class QueueCommandBuffer;
+    class CommandBuffer;
     class Queue;
     class Swapchain;
 
@@ -37,13 +37,12 @@ namespace exage::Graphics
 
         virtual void waitIdle() const noexcept = 0;
 
+        [[nodiscard]] virtual auto createQueue(const QueueCreateInfo& createInfo) noexcept
+        -> tl::expected<std::unique_ptr<Queue>, Error> = 0;
         [[nodiscard]] virtual auto createSwapchain(const SwapchainCreateInfo& createInfo) noexcept
         -> tl::expected<std::unique_ptr<Swapchain>, Error> = 0;
-        [[nodiscard]] virtual auto createPrimaryCommandBuffer() noexcept
-        -> tl::expected<std::unique_ptr<QueueCommandBuffer>, Error> = 0;
-
-        [[nodiscard]] virtual auto getQueue() noexcept -> Queue& = 0;
-        [[nodiscard]] virtual auto getQueue() const noexcept -> const Queue& = 0;
+        [[nodiscard]] virtual auto createCommandBuffer() noexcept
+        -> tl::expected<std::unique_ptr<CommandBuffer>, Error> = 0;
 
         EXAGE_BASE_API(API, Context);
         [[nodiscard]] static auto create(ContextCreateInfo& createInfo) noexcept

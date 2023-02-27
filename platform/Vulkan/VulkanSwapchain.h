@@ -13,11 +13,13 @@ namespace exage::Graphics
     public:
         [[nodiscard]] static auto create(VulkanContext& context,
                                          const SwapchainCreateInfo& createInfo) noexcept
-        -> tl::expected<std::unique_ptr<VulkanSwapchain>, Error>;
+        -> tl::expected<VulkanSwapchain, Error>;
         ~VulkanSwapchain() override;
 
-        EXAGE_DEFAULT_MOVE(VulkanSwapchain);
         EXAGE_DELETE_COPY(VulkanSwapchain);
+
+        VulkanSwapchain(VulkanSwapchain&& old) noexcept;
+        auto operator=(VulkanSwapchain&& old) noexcept -> VulkanSwapchain&;
 
         [[nodiscard]] auto getPresentMode() const noexcept -> PresentMode override
         {
@@ -26,7 +28,7 @@ namespace exage::Graphics
 
         [[nodiscard]] auto resize(glm::uvec2 extent) noexcept -> std::optional<Error> override;
         [[nodiscard]] auto acquireNextImage(Queue& queue) noexcept -> std::optional<Error> override;
-        [[nodiscard]] auto drawImage(QueueCommandBuffer& commandBuffer,
+        [[nodiscard]] auto drawImage(CommandBuffer& commandBuffer,
                                      Texture& texture) noexcept -> std::optional<Error> override;
 
         [[nodiscard]] auto getSwapchain() const noexcept -> vk::SwapchainKHR

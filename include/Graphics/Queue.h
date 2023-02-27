@@ -6,9 +6,14 @@
 
 namespace exage::Graphics
 {
+    struct QueueCreateInfo
+    {
+        size_t maxFramesInFlight = 2;
+    };
+
     struct QueueSubmitInfo
     {
-        QueueCommandBuffer& commandBuffer; // Only one command buffer per submit is supported
+        CommandBuffer& commandBuffer; // Only one command buffer per submit is supported
     };
 
     struct QueuePresentInfo
@@ -31,8 +36,8 @@ namespace exage::Graphics
         [[nodiscard]] virtual auto present(QueuePresentInfo& presentInfo) noexcept
         -> std::optional<Error> = 0;
 
-        [[nodiscard]] virtual auto submitTemporary(
-            std::unique_ptr<TemporaryCommandBuffer> commandBuffer) -> std::optional<Error>;
+        [[nodiscard]] virtual auto submitTemporary(std::unique_ptr<CommandBuffer> commandBuffer)
+        -> std::optional<Error> = 0;
 
         [[nodiscard]] virtual auto currentFrame() const noexcept -> size_t = 0;
         [[nodiscard]] virtual auto getFramesInFlight() const noexcept -> size_t = 0;

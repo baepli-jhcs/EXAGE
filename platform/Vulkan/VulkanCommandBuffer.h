@@ -1,43 +1,44 @@
 #pragma once
+#include <memory_resource>
+
 #include "Vulkan/VulkanContext.h"
 #include "Graphics/CommandBuffer.h"
 
 namespace exage::Graphics
 {
-    class EXAGE_EXPORT VulkanQueueCommandBuffer final : public QueueCommandBuffer
+    class EXAGE_EXPORT VulkanCommandBuffer final : public CommandBuffer
     {
     public:
-        explicit VulkanQueueCommandBuffer(VulkanContext& context) noexcept;
-        ~VulkanQueueCommandBuffer() override;
-        EXAGE_DELETE_COPY(VulkanQueueCommandBuffer);
-        EXAGE_DEFAULT_MOVE(VulkanQueueCommandBuffer);
+        [[nodiscard]] static auto create(VulkanContext& context) noexcept
+        -> tl::expected<VulkanCommandBuffer, Error>;
+        ~VulkanCommandBuffer() override;
 
-        std::optional<Error> beginFrame() noexcept override;
-        std::optional<Error> endFrame() noexcept override;
+        EXAGE_DELETE_COPY(VulkanCommandBuffer);
 
-        [[nodiscard]] auto getCurrentCommandBuffer() const noexcept -> vk::CommandBuffer;
+        VulkanCommandBuffer(VulkanCommandBuffer&& old) noexcept;
+        auto operator=(VulkanCommandBuffer&& old) noexcept -> VulkanCommandBuffer&;
 
-        EXAGE_VULKAN_DERIVED;
+        [[nodiscard]] auto begin() noexcept -> std::optional<Error> override;
+        [[nodiscard]] auto end() noexcept -> std::optional<Error> override;
 
-    private:
-        std::reference_wrapper<VulkanContext> _context;
-        std::vector<vk::CommandPool> _commandPools;
-        std::vector<vk::CommandBuffer> _commandBuffers;
-    };
+        [[nodiscard]] auto getCommandBuffer() const noexcept -> vk::CommandBuffer
+        {
+            return _commandBuffer;
+        }
 
-    class EXAGE_EXPORT VulkanTemporaryCommandBuffer final : public TemporaryCommandBuffer
-    {
-    public:
-        explicit VulkanTemporaryCommandBuffer(VulkanContext& context) noexcept;
-        ~VulkanTemporaryCommandBuffer() override;
-        EXAGE_DELETE_COPY(VulkanTemporaryCommandBuffer);
-        EXAGE_DEFAULT_MOVE(VulkanTemporaryCommandBuffer);
-
-        EXAGE_VULKAN_DERIVED;
+        EXAGE_VULKAN_DERIVED
 
     private:
+        explicit VulkanCommandBuffer(VulkanContext& context) noexcept;
+        [[nodiscard]] auto init() noexcept -> std::optional<Error>;
+
+        void processCommand(const detail::Command& command) noexcept;
+
         std::reference_wrapper<VulkanContext> _context;
         vk::CommandPool _commandPool;
         vk::CommandBuffer _commandBuffer;
+
+        std::vector<detail::Command> _commands{};
+        std::unique_ptr<std::mutex> _commandsMutex = std::make_unique<std::mutex>();
     };
 } // namespace exage::Graphics

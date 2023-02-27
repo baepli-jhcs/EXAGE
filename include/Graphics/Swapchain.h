@@ -39,8 +39,8 @@ namespace exage::Graphics
         [[nodiscard]] virtual auto resize(glm::uvec2 extent) noexcept -> std::optional<Error> = 0;
         [[nodiscard]] virtual auto acquireNextImage(Queue& queue) noexcept -> std::optional<Error> =
         0;
-        [[nodiscard]] virtual auto drawImage(QueueCommandBuffer& commandBuffer,
-                                             Texture& texture) noexcept -> std::optional<Error>;
+        [[nodiscard]] virtual auto drawImage(CommandBuffer& commandBuffer,
+                                             Texture& texture) noexcept -> std::optional<Error> = 0;
 
         EXAGE_BASE_API(API, Swapchain);
     };

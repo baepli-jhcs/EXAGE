@@ -7,10 +7,13 @@ TEST_CASE("Creating Graphics Queue", "[Queue]")
     using namespace exage::Graphics;
 
     ContextCreateInfo createInfo{
-        .api = API::eVulkan, .windowAPI = exage::WindowAPI::eGLFW, .maxFramesInFlight = 2};
+        .api = API::eVulkan, .windowAPI = exage::WindowAPI::eGLFW};
 
     tl::expected context(Context::create(createInfo));
-
     REQUIRE(context.has_value());
-    REQUIRE(context.value()->getQueue().getAPI() == API::eVulkan);
+
+    QueueCreateInfo queueCreateInfo{.maxFramesInFlight = 2};
+
+    tl::expected queue = context.value()->createQueue(queueCreateInfo);
+    REQUIRE(queue.has_value());
 }

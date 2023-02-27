@@ -95,15 +95,14 @@ namespace exage::Graphics
 
 
     auto VulkanSwapchain::create(VulkanContext& context,
-                                 const SwapchainCreateInfo& createInfo) noexcept -> tl::expected<
-        std::unique_ptr<VulkanSwapchain>,
-        Error>
+                                 const SwapchainCreateInfo& createInfo) noexcept
+    -> tl::expected<VulkanSwapchain, Error>
     {
-        std::unique_ptr<VulkanSwapchain> swapchain{new VulkanSwapchain(context, createInfo)};
-        std::optional<Error> result = swapchain->init(createInfo.window);
-        if (result)
+        VulkanSwapchain swapchain(context, createInfo);
+        std::optional<Error> result = swapchain.init(createInfo.window);
+        if (result.has_value())
         {
-            return tl::make_unexpected(*result);
+            return tl::make_unexpected(result.value());
         }
 
         return swapchain;
@@ -113,9 +112,39 @@ namespace exage::Graphics
     {
         _context.get().waitIdle();
 
-        vkb::destroy_swapchain(_swapchain);
-        vkb::destroy_surface(_context.get().getInstance(), _surface);
+        if (_swapchain)
+        {
+            vkb::destroy_swapchain(_swapchain);
+        }
+
+        if (_surface)
+        {
+            vkb::destroy_surface(_context.get().getInstance(), _surface);
+        }
     }
+
+    VulkanSwapchain::VulkanSwapchain(VulkanSwapchain&& old) noexcept
+        : _context(old._context)
+    {
+        *this = std::move(old);
+    }
+
+    auto VulkanSwapchain::operator=(VulkanSwapchain&& old) noexcept -> VulkanSwapchain&
+    {
+        _swapchain = old._swapchain;
+        _surface = old._surface;
+        _oldSwapchain = old._oldSwapchain;
+        _swapchainImages = old._swapchainImages;
+        _extent = old._extent;
+        _format = old._format;
+        _presentMode = old._presentMode;
+
+        old._surface = nullptr;
+        old._swapchain = {};
+        old._oldSwapchain = nullptr;
+        return *this;
+    }
+
 
     auto VulkanSwapchain::resize(glm::uvec2 extent) noexcept -> std::optional<Error>
     {
@@ -158,11 +187,11 @@ namespace exage::Graphics
         return std::nullopt;
     }
 
-    std::optional<Error> VulkanSwapchain::drawImage(QueueCommandBuffer& commandBuffer,
+    std::optional<Error> VulkanSwapchain::drawImage(CommandBuffer& commandBuffer,
                                                     Texture& texture) noexcept
     {
         const auto* vulkanTexture = texture.as<VulkanTexture>();
-        const auto* vulkanCommandBuffer = commandBuffer.as<VulkanQueueCommandBuffer>();
+        const auto* vulkanCommandBuffer = commandBuffer.as<VulkanCommandBuffer>();
 
         // TODO: Implement this
         return std::nullopt;

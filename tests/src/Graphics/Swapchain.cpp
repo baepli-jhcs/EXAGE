@@ -19,7 +19,7 @@ TEST_CASE("Creating Graphics Swapchain", "[Swapchain]")
     REQUIRE(windowReturn.has_value());
 
     ContextCreateInfo createInfo{
-        .api = API::eVulkan, .windowAPI = exage::WindowAPI::eGLFW, .maxFramesInFlight = 2,
+        .api = API::eVulkan, .windowAPI = exage::WindowAPI::eGLFW,
         .optionalWindow = windowReturn.value().get()
     };
 
@@ -50,7 +50,7 @@ TEST_CASE("Creating Graphics Swapchain and Acquire Next Image", "[Swapchain]")
     REQUIRE(windowReturn.has_value());
 
     ContextCreateInfo createInfo{
-        .api = API::eVulkan, .windowAPI = exage::WindowAPI::eGLFW, .maxFramesInFlight = 2,
+        .api = API::eVulkan, .windowAPI = exage::WindowAPI::eGLFW,
         .optionalWindow = windowReturn.value().get()
     };
 
@@ -58,19 +58,23 @@ TEST_CASE("Creating Graphics Swapchain and Acquire Next Image", "[Swapchain]")
 
     REQUIRE(context.has_value());
 
+    QueueCreateInfo queueCreateInfo{.maxFramesInFlight = 2};
+
+    tl::expected queue = context.value()->createQueue(queueCreateInfo);
+    REQUIRE(queue.has_value());
+
     SwapchainCreateInfo swapchainCreateInfo{.window = *windowReturn.value()};
     tl::expected swapchain(context.value()->createSwapchain(swapchainCreateInfo));
 
     REQUIRE(swapchain.has_value());
 
-    tl::expected primaryCommandBuffer = context.value()->createPrimaryCommandBuffer();
-
-    REQUIRE(primaryCommandBuffer.has_value());
+    tl::expected commandBuffer = context.value()->createCommandBuffer();
+    REQUIRE(commandBuffer.has_value());
 
     Context& ctx = *context.value();
-    Queue& que = ctx.getQueue();
+    Queue& que = *queue.value();
     Swapchain& swap = *swapchain.value();
-    QueueCommandBuffer& cmd = *primaryCommandBuffer.value();
+    CommandBuffer& cmd = *commandBuffer.value();
 
     std::optional error = que.startNextFrame();
     REQUIRE(!error.has_value());
@@ -78,10 +82,10 @@ TEST_CASE("Creating Graphics Swapchain and Acquire Next Image", "[Swapchain]")
     std::optional swapError = swap.acquireNextImage(que);
     REQUIRE(!swapError.has_value());
 
-    std::optional commandError = cmd.beginFrame();
+    std::optional commandError = cmd.begin();
     REQUIRE(!commandError.has_value());
 
-    commandError = cmd.endFrame();
+    commandError = cmd.end();
     REQUIRE(!commandError.has_value());
 
     QueueSubmitInfo submitInfo{.commandBuffer = cmd};

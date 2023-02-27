@@ -78,12 +78,12 @@ namespace exage::Graphics
     static vk::DynamicLoader dl{};
 
 
-    tl::expected<std::unique_ptr<Context>, Error> VulkanContext::create(
+    tl::expected<VulkanContext, Error> VulkanContext::create(
         ContextCreateInfo& createInfo) noexcept
     {
-        std::unique_ptr<VulkanContext> context(new VulkanContext());
-        std::optional<Error> result = context->init(createInfo);
-        if (result)
+        VulkanContext context{};
+        std::optional<Error> result = context.init(createInfo);
+        if (result.has_value())
         {
             return tl::make_unexpected(result.value());
         }
@@ -155,7 +155,7 @@ namespace exage::Graphics
                                           VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME,
                                           VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
                                           VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME});
-        selector.add_desired_extensions({VK_EXT_MESH_SHADER_EXTENSION_NAME});
+        //selector.add_desired_extensions({VK_EXT_MESH_SHADER_EXTENSION_NAME});
 
         auto phys = selector.select();
         if (!phys)
@@ -220,22 +220,6 @@ namespace exage::Graphics
             return ErrorCode::eAllocatorCreationFailed;
         }
 
-        auto graphicsQueue = _device.get_queue(vkb::QueueType::graphics).value();
-        auto queueIndex = _device.get_queue_index(vkb::QueueType::graphics).value();
-        VulkanQueueCreateInfo graphicsQueueCreateInfo = {
-            .maxFramesInFlight = 2,
-            .queue = graphicsQueue,
-            .familyIndex = queueIndex
-        };
-
-        tl::expected resultQueue = VulkanQueue::create(*this, graphicsQueueCreateInfo);
-        if (!resultQueue)
-        {
-            return resultQueue.error();
-        }
-
-        _queue = resultQueue.value().release();
-
         vkb::destroy_surface(_instance, surface);
 
         return std::nullopt;
@@ -244,9 +228,40 @@ namespace exage::Graphics
 
     VulkanContext::~VulkanContext()
     {
-        delete _queue;
-        vkb::destroy_device(_device);
-        vkb::destroy_instance(_instance);
+        if (_allocator)
+        {
+            _allocator.destroy();
+        }
+
+        if (_device)
+        {
+            vkb::destroy_device(_device);
+        }
+
+        if (_instance)
+        {
+            vkb::destroy_instance(_instance);
+        }
+    }
+
+    VulkanContext::VulkanContext(VulkanContext&& old) noexcept
+    {
+        *this = std::move(old);
+    }
+
+    auto VulkanContext::operator=(VulkanContext&& old) noexcept -> VulkanContext&
+    {
+        _instance = old._instance;
+        _physicalDevice = old._physicalDevice;
+        _device = old._device;
+        _allocator = old._allocator;
+
+        old._instance = {};
+        old._physicalDevice = {};
+        old._device = {};
+        old._allocator = nullptr;
+
+        return *this;
     }
 
     void VulkanContext::waitIdle() const noexcept
@@ -254,16 +269,38 @@ namespace exage::Graphics
         getDevice().waitIdle();
     }
 
+    auto VulkanContext::createQueue(
+        const QueueCreateInfo& createInfo) noexcept -> tl::expected<std::unique_ptr<Queue>, Error>
+    {
+        tl::expected value = VulkanQueue::create(*this, createInfo);
+        if (!value.has_value())
+        {
+            return tl::make_unexpected(value.error());
+        }
+
+        return std::make_unique<VulkanQueue>(std::move(value.value()));
+    }
+
     auto VulkanContext::createSwapchain(const SwapchainCreateInfo& createInfo) noexcept
     -> tl::expected<std::unique_ptr<Swapchain>, Error>
     {
-        return VulkanSwapchain::create(*this, createInfo);
+        tl::expected value = VulkanSwapchain::create(*this, createInfo);
+        if (!value.has_value())
+        {
+            return tl::make_unexpected(value.error());
+        }
+        return std::make_unique<VulkanSwapchain>(std::move(value.value()));
     }
 
-    auto VulkanContext::createPrimaryCommandBuffer() noexcept
-    -> tl::expected<std::unique_ptr<QueueCommandBuffer>, Error>
+    auto VulkanContext::createCommandBuffer() noexcept
+    -> tl::expected<std::unique_ptr<CommandBuffer>, Error>
     {
-        return std::make_unique<VulkanQueueCommandBuffer>(*this);
+        tl::expected value = VulkanCommandBuffer::create(*this);
+        if (!value.has_value())
+        {
+            return tl::make_unexpected(value.error());
+        }
+        return std::make_unique<VulkanCommandBuffer>(std::move(value.value()));
     }
 
     auto VulkanContext::createSurface(Window& window) const noexcept
@@ -298,16 +335,6 @@ namespace exage::Graphics
         return vk::SurfaceKHR(surface);
     }
 
-    auto VulkanContext::getQueue() noexcept -> Queue&
-    {
-        return *_queue;
-    }
-
-    auto VulkanContext::getQueue() const noexcept -> const Queue&
-    {
-        return *_queue;
-    }
-
     auto VulkanContext::getDevice() const noexcept -> vk::Device
     {
         return _device.device;
@@ -318,9 +345,14 @@ namespace exage::Graphics
         return _allocator;
     }
 
-    auto VulkanContext::getVulkanQueue() const noexcept -> VulkanQueue&
+    auto VulkanContext::getQueueIndex() const noexcept -> uint32_t
     {
-        return *_queue;
+        return _device.get_queue_index(vkb::QueueType::graphics).value();
+    }
+
+    auto VulkanContext::getVulkanQueue() const noexcept -> vk::Queue
+    {
+        return _device.get_queue(vkb::QueueType::graphics).value();
     }
 
     auto VulkanContext::getVulkanBootstrapDevice() const noexcept -> vkb::Device

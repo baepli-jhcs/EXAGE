@@ -1,7 +1,9 @@
 #pragma once
 
-#ifndef EXAGE_EXPORT
+#ifdef EXAGE_WINDOWS
 #    define EXAGE_EXPORT __declspec(dllexport)
+#else
+#    define EXAGE_EXPORT
 #endif
 
 #include <stdint.h>

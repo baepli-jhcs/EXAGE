@@ -67,13 +67,13 @@ namespace exage::Graphics
 
     auto VulkanTexture::create(VulkanContext& context,
                                TextureCreateInfo& createInfo) noexcept -> tl::expected<
-        std::unique_ptr<Texture>, Error>
+        VulkanTexture, Error>
     {
-        std::unique_ptr<VulkanTexture> texture{new VulkanTexture{context, createInfo}};
-        if (std::optional<Error> error = texture->init(createInfo.samplerCreateInfo); error.
-            has_value())
+        VulkanTexture texture{context, createInfo};
+        std::optional<Error> result = texture.init(createInfo.samplerCreateInfo);
+        if (result.has_value())
         {
-            return tl::make_unexpected(error.value());
+            return tl::make_unexpected(result.value());
         }
         return texture;
     }
@@ -83,6 +83,35 @@ namespace exage::Graphics
         _context.get().getDevice().destroyImageView(_imageView);
         _context.get().getDevice().destroyImage(_image);
         _context.get().getAllocator().freeMemory(_allocation);
+    }
+
+    VulkanTexture::VulkanTexture(VulkanTexture&& old) noexcept
+        : _context(old._context)
+    {
+        *this = std::move(old);
+    }
+
+    auto VulkanTexture::operator=(VulkanTexture&& old) noexcept -> VulkanTexture&
+    {
+        _extent = old._extent;
+        _format = old._format;
+        _type = old._type;
+        _layout = old._layout;
+        _usage = old._usage;
+
+        _layerCount = old._layerCount;
+        _mipLevelCount = old._mipLevelCount;
+
+        _allocation = old._allocation;
+        _image = old._image;
+        _imageView = old._imageView;
+        _sampler = std::move(old._sampler);
+
+        old._allocation = nullptr;
+        old._image = nullptr;
+        old._imageView = nullptr;
+
+        return *this;
     }
 
     VulkanTexture::VulkanTexture(VulkanContext& context, TextureCreateInfo& createInfo) noexcept
