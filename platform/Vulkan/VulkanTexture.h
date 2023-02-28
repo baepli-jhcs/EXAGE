@@ -84,6 +84,9 @@ namespace exage::Graphics
             return *_sampler;
         }
 
+        [[nodiscard]] auto getImage() const noexcept -> vk::Image { return _image; }
+        [[nodiscard]] auto getImageView() const noexcept -> vk::ImageView { return _imageView; }
+
         EXAGE_VULKAN_DERIVED
     private:
         VulkanTexture(VulkanContext& context, TextureCreateInfo& createInfo) noexcept;

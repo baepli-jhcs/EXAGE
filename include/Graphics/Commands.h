@@ -2,12 +2,11 @@
 
 #include <variant>
 
+#include "Texture.h"
 #include "Core/Core.h"
 
 namespace exage::Graphics
 {
-    class Texture;
-
     BEGIN_RAW_BITFLAGS(PipelineStage)
         RAW_FLAG(eTopOfPipe)
         RAW_FLAG(eDrawIndirect)
@@ -23,6 +22,8 @@ namespace exage::Graphics
         RAW_FLAG(eTransfer)
         RAW_FLAG(eBottomOfPipe)
         RAW_FLAG(eHost)
+        RAW_FLAG(eAllGraphics)
+        RAW_FLAG(eAllCommands)
     END_RAW_BITFLAGS(PipelineStage)
 
     BEGIN_RAW_BITFLAGS(Access)
@@ -66,11 +67,13 @@ namespace exage::Graphics
     struct TextureBarrier
     {
         Texture& texture;
+        Texture::Layout newLayout;
         PipelineStage srcStage;
         PipelineStage dstStage;
         Access srcAccess;
         Access dstAccess;
     };
+
 
     using GPUCommand = std::variant<DrawCommand, DrawIndexedCommand, TextureBarrier>;
 }

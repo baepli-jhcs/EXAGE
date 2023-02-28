@@ -49,17 +49,4 @@ namespace exage::Graphics
     //private:
     //    std::vector<std::unique_ptr<CommandBuffer>> _commandBuffers;
     //};
-
-    namespace detail
-    {
-        struct DrawCommand
-        {
-            uint32_t vertexCount;
-            uint32_t instanceCount;
-            uint32_t firstVertex;
-            uint32_t firstInstance;
-        };
-
-        using Command = std::variant<DrawCommand>;
-    } // namespace detail
 } // namespace exage::Graphics

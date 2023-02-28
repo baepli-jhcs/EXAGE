@@ -109,12 +109,12 @@ namespace exage::Graphics
         enum class Layout : uint32_t
         {
             eUndefined,
-            eInputAttachment,
             eColorAttachment,
             eDepthStencilAttachment,
-            eReadOnly,
+            eShaderReadOnly,
             eTransferSource,
             eTransferDestination,
+            ePresent,
         };
 
 

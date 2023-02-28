@@ -3,6 +3,7 @@
 
 #include "Vulkan/VulkanContext.h"
 #include "Graphics/CommandBuffer.h"
+#include "Graphics/Commands.h"
 
 namespace exage::Graphics
 {
@@ -32,13 +33,13 @@ namespace exage::Graphics
         explicit VulkanCommandBuffer(VulkanContext& context) noexcept;
         [[nodiscard]] auto init() noexcept -> std::optional<Error>;
 
-        void processCommand(const detail::Command& command) noexcept;
+        void processCommand(const GPUCommand& command) noexcept;
 
         std::reference_wrapper<VulkanContext> _context;
         vk::CommandPool _commandPool;
         vk::CommandBuffer _commandBuffer;
 
-        std::vector<detail::Command> _commands{};
+        std::vector<GPUCommand> _commands{};
         std::unique_ptr<std::mutex> _commandsMutex = std::make_unique<std::mutex>();
     };
 } // namespace exage::Graphics

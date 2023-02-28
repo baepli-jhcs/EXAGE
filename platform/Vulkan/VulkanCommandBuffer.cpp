@@ -1,4 +1,6 @@
 #include "Vulkan/VulkanCommandBuffer.h"
+
+#include "VulkanTexture.h"
 #include "Vulkan/VulkanQueue.h"
 
 namespace exage::Graphics
@@ -62,7 +64,7 @@ namespace exage::Graphics
             return ErrorCode::eCommandBufferBeginFailed;
         }
 
-        for (detail::Command& command : _commands)
+        for (GPUCommand& command : _commands)
         {
             processCommand(command);
         }
@@ -108,18 +110,48 @@ namespace exage::Graphics
         return std::nullopt;
     }
 
-    void VulkanCommandBuffer::processCommand(const detail::Command& command) noexcept
+    void VulkanCommandBuffer::processCommand(const GPUCommand& command) noexcept
     {
         std::visit(
             Overload{
-                [this](const detail::DrawCommand& draw)
+                [this](const DrawCommand& draw)
                 {
                     _commandBuffer.draw(draw.vertexCount,
                                         draw.instanceCount,
                                         draw.firstVertex,
                                         draw.firstInstance);
-                }
-            },
+                },
+                [this](const DrawIndexedCommand& draw)
+                {
+                    _commandBuffer.drawIndexed(draw.indexCount,
+                                               draw.instanceCount,
+                                               draw.firstIndex,
+                                               draw.vertexOffset,
+                                               draw.firstInstance);
+                },
+                [this](const TextureBarrier& barrier)
+                {
+                    auto& texture = *barrier.texture.as<VulkanTexture>();
+
+                    vk::ImageLayout oldLayout = toVulkanImageLayout(texture.getLayout());
+                    vk::ImageLayout newLayout = toVulkanImageLayout(barrier.newLayout);
+
+                    vk::ImageMemoryBarrier imageMemoryBarrier;
+                    imageMemoryBarrier.oldLayout =
+                        imageMemoryBarrier.newLayout = static_cast<vk::ImageLayout>(barrier.
+                            newLayout);
+                    imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+                    imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+                    imageMemoryBarrier.image = texture.getImage();
+                    imageMemoryBarrier.subresourceRange.aspectMask =
+                        vk::ImageAspectFlagBits::eColor;
+                    imageMemoryBarrier.subresourceRange.baseMipLevel = 0;
+                    imageMemoryBarrier.subresourceRange.levelCount = texture.getMipLevelCount();
+                    imageMemoryBarrier.subresourceRange.baseArrayLayer = 0;
+                    imageMemoryBarrier.subresourceRange.layerCount = texture.getLayerCount();
+                    imageMemoryBarrier.srcAccessMask = toVulkanAccessFlags(barrier.srcAccess);
+                    imageMemoryBarrier.dstAccessMask = toVulkanAccessFlags(barrier.dstAccess);
+                }},
             command);
     }
 } // namespace exage::Graphics

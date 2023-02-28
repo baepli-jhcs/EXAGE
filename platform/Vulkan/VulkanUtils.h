@@ -1,5 +1,7 @@
 ﻿#pragma once
 #include <vulkan/vulkan.hpp>
+
+#include "Graphics/Commands.h"
 #include "Graphics/Texture.h"
 
 namespace exage::Graphics
@@ -35,8 +37,7 @@ namespace exage::Graphics
         }
     }
 
-    [[nodiscard]] constexpr auto toVulkanFormat(Texture::Format format) noexcept
-    -> vk::Format
+    [[nodiscard]] constexpr auto toVulkanFormat(Texture::Format format) noexcept -> vk::Format
     {
         switch (format)
         {
@@ -105,8 +106,8 @@ namespace exage::Graphics
         }
     }
 
-    [[nodiscard]] constexpr auto toVulkanImageViewType(
-        Texture::Type type) noexcept -> vk::ImageViewType
+    [[nodiscard]] constexpr auto toVulkanImageViewType(Texture::Type type) noexcept
+    -> vk::ImageViewType
     {
         switch (type)
         {
@@ -123,8 +124,8 @@ namespace exage::Graphics
         }
     }
 
-    [[nodiscard]] constexpr auto toVulkanImageUsageFlags(
-        Texture::Usage usage) noexcept -> vk::ImageUsageFlags
+    [[nodiscard]] constexpr auto toVulkanImageUsageFlags(Texture::Usage usage) noexcept
+    -> vk::ImageUsageFlags
     {
         vk::ImageUsageFlags flags =
             vk::ImageUsageFlagBits::eSampled & vk::ImageUsageFlagBits::eStorage;
@@ -152,8 +153,8 @@ namespace exage::Graphics
         return flags;
     }
 
-    [[nodiscard]] constexpr auto toVulkanImageAspectFlags(
-        Texture::Usage usage) -> vk::ImageAspectFlags
+    [[nodiscard]] constexpr auto toVulkanImageAspectFlags(Texture::Usage usage)
+    -> vk::ImageAspectFlags
     {
         vk::ImageAspectFlags flags = vk::ImageAspectFlagBits::eColor;
 
@@ -178,8 +179,8 @@ namespace exage::Graphics
         }
     }
 
-    [[nodiscard]] constexpr auto toVulkanSamplerMipmapMode(
-        Sampler::MipmapMode mipmapMode) noexcept -> vk::SamplerMipmapMode
+    [[nodiscard]] constexpr auto toVulkanSamplerMipmapMode(Sampler::MipmapMode mipmapMode) noexcept
+    -> vk::SamplerMipmapMode
     {
         switch (mipmapMode)
         {
@@ -191,4 +192,207 @@ namespace exage::Graphics
                 return vk::SamplerMipmapMode::eNearest;
         }
     }
-}
+
+    [[nodiscard]] constexpr auto toVulkanImageLayout(Texture::Layout layout) noexcept
+    -> vk::ImageLayout
+    {
+        switch (layout)
+        {
+            case Texture::Layout::eUndefined:
+                return vk::ImageLayout::eUndefined;
+            case Texture::Layout::eColorAttachment:
+                return vk::ImageLayout::eColorAttachmentOptimal;
+            case Texture::Layout::eDepthStencilAttachment:
+                return vk::ImageLayout::eDepthStencilAttachmentOptimal;
+            case Texture::Layout::eShaderReadOnly:
+                return vk::ImageLayout::eShaderReadOnlyOptimal;
+            case Texture::Layout::eTransferSource:
+                return vk::ImageLayout::eTransferSrcOptimal;
+            case Texture::Layout::eTransferDestination:
+                return vk::ImageLayout::eTransferDstOptimal;
+            case Texture::Layout::ePresent:
+                return vk::ImageLayout::ePresentSrcKHR;
+            default:
+                return vk::ImageLayout::eUndefined;
+        }
+    }
+
+    [[nodiscard]] constexpr auto toVulkanAccessFlags(Access access) -> vk::AccessFlags
+    {
+        vk::AccessFlags flags{};
+
+        if (access & Access::eIndirectCommandRead)
+        {
+            flags |= vk::AccessFlagBits::eIndirectCommandRead;
+        }
+
+        if (access & Access::eIndexRead)
+        {
+            flags |= vk::AccessFlagBits::eIndexRead;
+        }
+
+        if (access & Access::eVertexAttributeRead)
+        {
+            flags |= vk::AccessFlagBits::eVertexAttributeRead;
+        }
+
+        if (access & Access::eUniformRead)
+        {
+            flags |= vk::AccessFlagBits::eUniformRead;
+        }
+
+        if (access & Access::eInputAttachmentRead)
+        {
+            flags |= vk::AccessFlagBits::eInputAttachmentRead;
+        }
+
+        if (access & Access::eShaderRead)
+        {
+            flags |= vk::AccessFlagBits::eShaderRead;
+        }
+
+        if (access & Access::eShaderWrite)
+        {
+            flags |= vk::AccessFlagBits::eShaderWrite;
+        }
+
+        if (access & Access::eColorAttachmentRead)
+        {
+            flags |= vk::AccessFlagBits::eColorAttachmentRead;
+        }
+
+        if (access & Access::eColorAttachmentWrite)
+        {
+            flags |= vk::AccessFlagBits::eColorAttachmentWrite;
+        }
+
+        if (access & Access::eDepthStencilAttachmentRead)
+        {
+            flags |= vk::AccessFlagBits::eDepthStencilAttachmentRead;
+        }
+
+        if (access & Access::eDepthStencilAttachmentWrite)
+        {
+            flags |= vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+        }
+
+        if (access & Access::eTransferRead)
+        {
+            flags |= vk::AccessFlagBits::eTransferRead;
+        }
+
+        if (access & Access::eTransferWrite)
+        {
+            flags |= vk::AccessFlagBits::eTransferWrite;
+        }
+
+        if (access & Access::eHostRead)
+        {
+            flags |= vk::AccessFlagBits::eHostRead;
+        }
+
+        if (access & Access::eHostWrite)
+        {
+            flags |= vk::AccessFlagBits::eHostWrite;
+        }
+
+        if (access & Access::eMemoryRead)
+        {
+            flags |= vk::AccessFlagBits::eMemoryRead;
+        }
+
+        if (access & Access::eMemoryWrite)
+        {
+            flags |= vk::AccessFlagBits::eMemoryWrite;
+        }
+
+        return flags;
+    }
+
+    constexpr auto toVulkanPipelineStageFlags(PipelineStage pipelineStage) -> vk::PipelineStageFlags
+    {
+        vk::PipelineStageFlags flags{};
+
+        if (pipelineStage & PipelineStage::eTopOfPipe)
+        {
+            flags |= vk::PipelineStageFlagBits::eTopOfPipe;
+        }
+
+        if (pipelineStage & PipelineStage::eDrawIndirect)
+        {
+            flags |= vk::PipelineStageFlagBits::eDrawIndirect;
+        }
+
+        if (pipelineStage & PipelineStage::eVertexInput)
+        {
+            flags |= vk::PipelineStageFlagBits::eVertexInput;
+        }
+
+        if (pipelineStage & PipelineStage::eVertexShader)
+        {
+            flags |= vk::PipelineStageFlagBits::eVertexShader;
+        }
+
+        if (pipelineStage & PipelineStage::eTessellationControlShader)
+        {
+            flags |= vk::PipelineStageFlagBits::eTessellationControlShader;
+        }
+
+        if (pipelineStage & PipelineStage::eTessellationEvaluationShader)
+        {
+            flags |= vk::PipelineStageFlagBits::eTessellationEvaluationShader;
+        }
+
+        if (pipelineStage & PipelineStage::eFragmentShader)
+        {
+            flags |= vk::PipelineStageFlagBits::eFragmentShader;
+        }
+
+        if (pipelineStage & PipelineStage::eEarlyFragmentTests)
+        {
+            flags |= vk::PipelineStageFlagBits::eEarlyFragmentTests;
+        }
+
+        if (pipelineStage & PipelineStage::eLateFragmentTests)
+        {
+            flags |= vk::PipelineStageFlagBits::eLateFragmentTests;
+        }
+
+        if (pipelineStage & PipelineStage::eColorAttachmentOutput)
+        {
+            flags |= vk::PipelineStageFlagBits::eColorAttachmentOutput;
+        }
+
+        if (pipelineStage & PipelineStage::eComputeShader)
+        {
+            flags |= vk::PipelineStageFlagBits::eComputeShader;
+        }
+
+        if (pipelineStage & PipelineStage::eTransfer)
+        {
+            flags |= vk::PipelineStageFlagBits::eTransfer;
+        }
+
+        if (pipelineStage & PipelineStage::eBottomOfPipe)
+        {
+            flags |= vk::PipelineStageFlagBits::eBottomOfPipe;
+        }
+
+        if (pipelineStage & PipelineStage::eHost)
+        {
+            flags |= vk::PipelineStageFlagBits::eHost;
+        }
+
+        if (pipelineStage & PipelineStage::eAllGraphics)
+        {
+            flags |= vk::PipelineStageFlagBits::eAllGraphics;
+        }
+
+        if (pipelineStage & PipelineStage::eAllCommands)
+        {
+            flags |= vk::PipelineStageFlagBits::eAllCommands;
+        }
+
+        return flags;
+    }
+} // namespace exage::Graphics

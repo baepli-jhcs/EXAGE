@@ -149,7 +149,7 @@ namespace exage::Graphics
     auto VulkanSwapchain::resize(glm::uvec2 extent) noexcept -> std::optional<Error>
     {
         _extent = extent;
-        const vkb::Swapchain swapchain = std::move(_swapchain);
+        const vkb::Swapchain swapchain = _swapchain;
         _oldSwapchain = swapchain.swapchain;
         std::optional<Error> result = createSwapchain();
         if (result)
