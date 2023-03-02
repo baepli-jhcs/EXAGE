@@ -74,6 +74,5 @@ namespace exage::Graphics
         Access dstAccess;
     };
 
-
     using GPUCommand = std::variant<DrawCommand, DrawIndexedCommand, TextureBarrier>;
 }

@@ -395,4 +395,5 @@ namespace exage::Graphics
 
         return flags;
     }
+
 } // namespace exage::Graphics

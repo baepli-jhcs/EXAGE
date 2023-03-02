@@ -3,7 +3,7 @@
 #include <type_traits>
 #include <concepts>
 
-namespace exage::Graphics
+namespace exage
 {
     template<typename T, typename A, typename B>
     constexpr bool isApiDerivedType = requires()
@@ -13,13 +13,13 @@ namespace exage::Graphics
             T::getStaticAPI()
         } -> std::same_as<A>;
     };
-} // namespace exage::Graphics
+} // namespace exage
 
 
 #define EXAGE_BASE_API(apitype, base) \
         [[nodiscard]] virtual auto getAPI() const noexcept -> apitype = 0; \
 	template<typename T> \
-        requires exage::Graphics::isApiDerivedType<T, apitype, base> \
+        requires exage::isApiDerivedType<T, apitype, base> \
 	[[nodiscard]] auto as() noexcept -> T* \
 	{ \
             if (T::getStaticAPI() == getAPI()) \

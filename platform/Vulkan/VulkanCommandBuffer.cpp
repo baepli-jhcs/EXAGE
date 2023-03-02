@@ -151,6 +151,16 @@ namespace exage::Graphics
                     imageMemoryBarrier.subresourceRange.layerCount = texture.getLayerCount();
                     imageMemoryBarrier.srcAccessMask = toVulkanAccessFlags(barrier.srcAccess);
                     imageMemoryBarrier.dstAccessMask = toVulkanAccessFlags(barrier.dstAccess);
+
+                    _commandBuffer.pipelineBarrier(toVulkanPipelineStageFlags(barrier.srcStage),
+                                                   toVulkanPipelineStageFlags(barrier.dstStage),
+                                                   {},
+                                                   0,
+                                                   nullptr,
+                                                   0,
+                                                   nullptr,
+                                                   1,
+                                                   &imageMemoryBarrier);
                 }},
             command);
     }
