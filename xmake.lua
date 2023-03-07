@@ -14,6 +14,7 @@ target("EXAGE")
     set_kind("static")
 
     add_files("src/**.cpp")
+    add_headerfiles("src/**.h", {public = false})
     add_headerfiles("include/**.h")
     add_includedirs("include", {public = true})
 
@@ -33,6 +34,18 @@ target("EXAGE")
 
     if is_plat("windows") then
         add_defines("EXAGE_WINDOWS")
+    end
+
+    if is_plat("macosx") then
+        add_defines("EXAGE_MACOS")
+    end
+
+    if is_plat("linux") then
+        add_defines("EXAGE_LINUX")
+    end
+
+    if is_plat("android") then
+        add_defines("EXAGE_ANDROID")
     end
 
 includes("exitor/xmake.lua")

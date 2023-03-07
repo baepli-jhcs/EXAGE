@@ -20,8 +20,15 @@ namespace exage::Graphics
 
     VulkanCommandBuffer::~VulkanCommandBuffer()
     {
-        _context.get().getDevice().freeCommandBuffers(_commandPool, _commandBuffer);
-        _context.get().getDevice().destroyCommandPool(_commandPool);
+        if (_commandBuffer)
+        {
+            _context.get().getDevice().freeCommandBuffers(_commandPool, _commandBuffer);
+        }
+
+        if (_commandPool)
+        {
+            _context.get().getDevice().destroyCommandPool(_commandPool);
+        }
     }
 
     VulkanCommandBuffer::VulkanCommandBuffer(VulkanCommandBuffer&& old) noexcept

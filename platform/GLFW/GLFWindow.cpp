@@ -3,7 +3,18 @@
 #    include "Core/Window.h"
 #endif
 
+#ifdef EXAGE_WINDOWS
+#    define GLFW_EXPOSE_NATIVE_WIN32
+#endif
+#ifdef EXAGE_LINUX
+#    define GLFW_EXPOSE_NATIVE_X11
+#endif
+#ifdef EXAGE_MACOS
+#    define GLFW_EXPOSE_NATIVE_COCOA
+#endif
+
 #include <GLFW/glfw3.h>
+#include <GLFW/glfw3native.h>
 
 #include "GLFWindow.h"
 
@@ -407,6 +418,20 @@ namespace exage
     auto GLFWindow::getFullScreenMode() const noexcept -> FullScreenMode
     {
         return _fullScreenMode;
+    }
+
+    auto GLFWindow::getNativeHandle() const noexcept -> void*
+    {
+#ifdef EXAGE_WINDOWS
+        return glfwGetWin32Window(_window);
+        #endif
+ #ifdef EXAGE_MACOS
+        return glfwGetCocoaWindow(_window);
+#endif
+#ifdef EXAGE_LINUX
+
+        return glfwGetX11Window(_window);
+#endif
     }
 
     void GLFWindow::resize(glm::uvec2 extent) noexcept

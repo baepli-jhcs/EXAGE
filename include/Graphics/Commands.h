@@ -74,5 +74,11 @@ namespace exage::Graphics
         Access dstAccess;
     };
 
-    using GPUCommand = std::variant<DrawCommand, DrawIndexedCommand, TextureBarrier>;
+    struct CopyCommand
+    {
+        Texture& srcTexture;
+        Texture& dstTexture;
+    };
+
+    using GPUCommand = std::variant<DrawCommand, DrawIndexedCommand, TextureBarrier, CopyCommand>;
 }

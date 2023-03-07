@@ -35,6 +35,8 @@ namespace exage
         [[nodiscard]] auto getRefreshRate() const noexcept -> uint32_t override;
         [[nodiscard]] auto getFullScreenMode() const noexcept -> FullScreenMode override;
 
+        [[nodiscard]] auto getNativeHandle() const noexcept -> void* override;
+
         void resize(glm::uvec2 extent) noexcept override;
         void setFullScreenMode(FullScreenMode mode) noexcept override;
 

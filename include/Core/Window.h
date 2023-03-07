@@ -72,6 +72,8 @@ namespace exage
         [[nodiscard]] virtual auto getRefreshRate() const noexcept -> uint32_t = 0;
         [[nodiscard]] virtual auto getFullScreenMode() const noexcept -> FullScreenMode = 0;
 
+        [[nodiscard]] virtual auto getNativeHandle() const noexcept -> void* = 0;
+
         virtual void resize(glm::uvec2 extent) noexcept = 0;
         virtual void setFullScreenMode(FullScreenMode mode) noexcept = 0;
 
