@@ -22,8 +22,6 @@ target("EXAGE")
     add_headerfiles("platform/**.h")
     add_includedirs("platform", {public = true})
 
-    add_includedirs("external/bitflags/include", {public = true})
-
     add_packages("fmt", "glfw", "glm", "imgui", "tl_expected", "unordered_dense", "vk-bootstrap", "vulkan-headers", "vma-hpp", {public = true})
 
     if is_mode("debug") or is_mode("releasedbg") then

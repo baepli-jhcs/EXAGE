@@ -9,8 +9,10 @@ namespace exage::Graphics
     VulkanSwapchain::VulkanSwapchain(VulkanContext& context,
                                      const SwapchainCreateInfo& createInfo) noexcept
         : _context(context)
-          , _presentMode(createInfo.presentMode), _extent(createInfo.window.getExtent()) { }
-
+        , _presentMode(createInfo.presentMode)
+        , _extent(createInfo.window.getExtent())
+    {
+    }
 
     constexpr auto DESIRED_FORMAT = toVulkanFormat(Texture::Format::eRGBA8);
     constexpr auto FALLBACK_FORMAT = toVulkanFormat(Texture::Format::eBGRA8);
@@ -46,7 +48,7 @@ namespace exage::Graphics
     std::optional<Error> VulkanSwapchain::createSwapchain() noexcept
     {
         auto& context = _context.get();
-        vkb::SwapchainBuilder builder{context.getPhysicalDevice(), context.getDevice(), _surface};
+        vkb::SwapchainBuilder builder {context.getPhysicalDevice(), context.getDevice(), _surface};
         builder.set_desired_present_mode(
             static_cast<VkPresentModeKHR>(toVulkanPresentMode(_presentMode)));
 
@@ -62,7 +64,7 @@ namespace exage::Graphics
         builder.set_old_swapchain(_oldSwapchain);
 
         builder.set_image_usage_flags(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
-            | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+                                      | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 
         auto swapchainResult = builder.build();
         if (!swapchainResult)
@@ -88,15 +90,16 @@ namespace exage::Graphics
             {
                 _swapchainImages[i] = images.value()[i];
             }
+
+            _swapchainTransitioned = std::vector<bool>(_swapchainImages.size(), false);
         }
 
         return std::nullopt;
     }
 
-
     auto VulkanSwapchain::create(VulkanContext& context,
                                  const SwapchainCreateInfo& createInfo) noexcept
-    -> tl::expected<VulkanSwapchain, Error>
+        -> tl::expected<VulkanSwapchain, Error>
     {
         VulkanSwapchain swapchain(context, createInfo);
         std::optional<Error> result = swapchain.init(createInfo.window);
@@ -135,6 +138,7 @@ namespace exage::Graphics
         _surface = old._surface;
         _oldSwapchain = old._oldSwapchain;
         _swapchainImages = old._swapchainImages;
+        _swapchainTransitioned = std::move(old._swapchainTransitioned);
         _extent = old._extent;
         _format = old._format;
         _presentMode = old._presentMode;
@@ -144,7 +148,6 @@ namespace exage::Graphics
         old._oldSwapchain = nullptr;
         return *this;
     }
-
 
     auto VulkanSwapchain::resize(glm::uvec2 extent) noexcept -> std::optional<Error>
     {
@@ -167,12 +170,11 @@ namespace exage::Graphics
     {
         const VulkanQueue* vulkanQueue = queue.as<VulkanQueue>();
         const vk::SwapchainKHR swapchain = _swapchain.swapchain;
-        vk::ResultValue<uint32_t> const result = _context.get().getDevice()
-                                                         .acquireNextImageKHR(swapchain,
-                                                             std::numeric_limits<uint64_t>::max(),
-                                                             vulkanQueue->
-                                                             getCurrentPresentSemaphore(),
-                                                             nullptr);
+        vk::ResultValue<uint32_t> const result = _context.get().getDevice().acquireNextImageKHR(
+            swapchain,
+            std::numeric_limits<uint64_t>::max(),
+            vulkanQueue->getCurrentPresentSemaphore(),
+            nullptr);
         if (result.result == vk::Result::eErrorOutOfDateKHR
             || result.result == vk::Result::eSuboptimalKHR)
         {
@@ -191,9 +193,82 @@ namespace exage::Graphics
                                                     Texture& texture) noexcept
     {
         const auto* vulkanTexture = texture.as<VulkanTexture>();
-        const auto* vulkanCommandBuffer = commandBuffer.as<VulkanCommandBuffer>();
+        if (vulkanTexture->getLayout() != Texture::Layout::eTransferSrc) [[unlikely]]
+        {
+            return ErrorCode::eWrongTextureLayout;
+        }
+        if (vulkanTexture->getType() != Texture::Type::e2D) [[unlikely]]
+        {
+            return ErrorCode::eWrongTextureType;
+        }
 
-        // TODO: Implement this
+        bool transitioned = _swapchainTransitioned[_currentImage];
+
+        UserDefinedCommand command = {
+            .commandFunction = [this, vulkanTexture, transitioned](CommandBuffer& cmd)
+            {
+                const auto* vulkanCommandBuffer = cmd.as<VulkanCommandBuffer>();
+                const vk::CommandBuffer vkCommand = vulkanCommandBuffer->getCommandBuffer();
+
+                glm::uvec3 extent = vulkanTexture->getExtent();
+
+                vk::ImageSubresourceRange subresourceRange;
+                subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+                subresourceRange.baseMipLevel = 0;
+                subresourceRange.levelCount = 1;
+                subresourceRange.baseArrayLayer = 0;
+                subresourceRange.layerCount = 1;
+
+                vk::ImageMemoryBarrier barrier;
+                barrier.oldLayout =
+                    transitioned ? vk::ImageLayout::ePresentSrcKHR : vk::ImageLayout::eUndefined;
+                barrier.newLayout = vk::ImageLayout::eTransferDstOptimal;
+                barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+                barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+                barrier.image = _swapchainImages[_currentImage];
+                barrier.subresourceRange = subresourceRange;
+
+                vkCommand.pipelineBarrier(vk::PipelineStageFlagBits::eTopOfPipe,
+                                          vk::PipelineStageFlagBits::eTransfer,
+                                          vk::DependencyFlags(),
+                                          nullptr,
+                                          nullptr,
+                                          barrier);
+
+                vk::ImageBlit imageBlit = {};
+                imageBlit.srcSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+                imageBlit.srcSubresource.layerCount = 1;
+                imageBlit.srcOffsets[1].x = static_cast<int32_t>(extent.x);
+                imageBlit.srcOffsets[1].y = static_cast<int32_t>(extent.y);
+                imageBlit.srcOffsets[1].z = 1;
+                imageBlit.dstSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+                imageBlit.dstSubresource.layerCount = 1;
+                imageBlit.dstOffsets[1].x = static_cast<int32_t>(_extent.x);
+                imageBlit.dstOffsets[1].y = static_cast<int32_t>(_extent.y);
+                imageBlit.dstOffsets[1].z = 1;
+
+                vkCommand.blitImage(vulkanTexture->getImage(),
+                                    vk::ImageLayout::eTransferSrcOptimal,
+                                    _swapchainImages[_currentImage],
+                                    vk::ImageLayout::eTransferDstOptimal,
+                                    imageBlit,
+                                    vk::Filter::eLinear);
+
+                barrier.oldLayout = vk::ImageLayout::eTransferDstOptimal;
+                barrier.newLayout = vk::ImageLayout::ePresentSrcKHR;
+                barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+                barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+                barrier.image = _swapchainImages[_currentImage];
+                barrier.subresourceRange = subresourceRange;
+
+                vkCommand.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
+                                          vk::PipelineStageFlagBits::eBottomOfPipe,
+                                          vk::DependencyFlags(),
+                                          nullptr,
+                                          nullptr,
+                                          barrier);
+            }};
+        commandBuffer.submitCommand(command);
         return std::nullopt;
     }
 
@@ -201,4 +276,4 @@ namespace exage::Graphics
     {
         return _swapchainImages[index];
     }
-} // namespace exage::Graphics
+}  // namespace exage::Graphics

@@ -19,7 +19,7 @@ namespace exage
 #define EXAGE_BASE_API(apitype, base) \
         [[nodiscard]] virtual auto getAPI() const noexcept -> apitype = 0; \
 	template<typename T> \
-        requires exage::isApiDerivedType<T, apitype, base> \
+        requires ::exage::isApiDerivedType<T, apitype, base> \
 	[[nodiscard]] auto as() noexcept -> T* \
 	{ \
             if (T::getStaticAPI() == getAPI()) \

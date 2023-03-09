@@ -2,50 +2,59 @@
 
 #include <variant>
 
-#include "Texture.h"
 #include "Core/Core.h"
+#include "Graphics/Context.h"
+#include "Texture.h"
 
 namespace exage::Graphics
 {
-    BEGIN_RAW_BITFLAGS(PipelineStage)
-        RAW_FLAG(eTopOfPipe)
-        RAW_FLAG(eDrawIndirect)
-        RAW_FLAG(eVertexInput)
-        RAW_FLAG(eVertexShader)
-        RAW_FLAG(eTessellationControlShader)
-        RAW_FLAG(eTessellationEvaluationShader)
-        RAW_FLAG(eFragmentShader)
-        RAW_FLAG(eEarlyFragmentTests)
-        RAW_FLAG(eLateFragmentTests)
-        RAW_FLAG(eColorAttachmentOutput)
-        RAW_FLAG(eComputeShader)
-        RAW_FLAG(eTransfer)
-        RAW_FLAG(eBottomOfPipe)
-        RAW_FLAG(eHost)
-        RAW_FLAG(eAllGraphics)
-        RAW_FLAG(eAllCommands)
-    END_RAW_BITFLAGS(PipelineStage)
+    class CommandBuffer;
 
-    BEGIN_RAW_BITFLAGS(Access)
-        RAW_FLAG(eIndirectCommandRead)
-        RAW_FLAG(eIndexRead)
-        RAW_FLAG(eVertexAttributeRead)
-        RAW_FLAG(eUniformRead)
-        RAW_FLAG(eInputAttachmentRead)
-        RAW_FLAG(eShaderRead)
-        RAW_FLAG(eShaderWrite)
-        RAW_FLAG(eColorAttachmentRead)
-        RAW_FLAG(eColorAttachmentWrite)
-        RAW_FLAG(eDepthStencilAttachmentRead)
-        RAW_FLAG(eDepthStencilAttachmentWrite)
-        RAW_FLAG(eTransferRead)
-        RAW_FLAG(eTransferWrite)
-        RAW_FLAG(eHostRead)
-        RAW_FLAG(eHostWrite)
-        RAW_FLAG(eMemoryRead)
-        RAW_FLAG(eMemoryWrite)
-    END_RAW_BITFLAGS(Access)
+    // use enum class instead
+    enum class PipelineStageFlags : uint32_t
+    {
+        eTopOfPipe = 1 << 0,
+        eDrawIndirect = 1 << 1,
+        eVertexInput = 1 << 2,
+        eVertexShader = 1 << 3,
+        eTessellationControlShader = 1 << 4,
+        eTessellationEvaluationShader = 1 << 5,
+        eFragmentShader = 1 << 6,
+        eEarlyFragmentTests = 1 << 7,
+        eLateFragmentTests = 1 << 8,
+        eColorAttachmentOutput = 1 << 9,
+        eComputeShader = 1 << 10,
+        eTransfer = 1 << 11,
+        eBottomOfPipe = 1 << 12,
+        eHost = 1 << 13,
+        eAllGraphics = 1 << 14,
+        eAllCommands = 1 << 15
+    };
+    using PipelineStage = Flags<PipelineStageFlags>;
+    EXAGE_ENABLE_FLAGS(PipelineStage);
 
+    enum class AccessFlags : uint32_t
+    {
+        eIndirectCommandRead = 1 << 0,
+        eIndexRead = 1 << 1,
+        eVertexAttributeRead = 1 << 2,
+        eUniformRead = 1 << 3,
+        eInputAttachmentRead = 1 << 4,
+        eShaderRead = 1 << 5,
+        eShaderWrite = 1 << 6,
+        eColorAttachmentRead = 1 << 7,
+        eColorAttachmentWrite = 1 << 8,
+        eDepthStencilAttachmentRead = 1 << 9,
+        eDepthStencilAttachmentWrite = 1 << 10,
+        eTransferRead = 1 << 11,
+        eTransferWrite = 1 << 12,
+        eHostRead = 1 << 13,
+        eHostWrite = 1 << 14,
+        eMemoryRead = 1 << 15,
+        eMemoryWrite = 1 << 16
+    };
+    using Access = Flags<AccessFlags>;
+    EXAGE_ENABLE_FLAGS(Access);
 
     struct DrawCommand
     {
@@ -72,13 +81,28 @@ namespace exage::Graphics
         PipelineStage dstStage;
         Access srcAccess;
         Access dstAccess;
+
+        Texture::Layout _oldLayout = Texture::Layout::eUndefined;  // Handled by the command buffer
     };
 
-    struct CopyCommand
+    struct BlitCommand
     {
         Texture& srcTexture;
         Texture& dstTexture;
+        glm::uvec3 srcOffset;
+        glm::uvec3 dstOffset;
+        uint32_t srcMipLevel;
+        uint32_t dstMipLevel;
+        uint32_t srcLayer;
+        uint32_t dstLayer;
+        glm::uvec3 extent;
     };
 
-    using GPUCommand = std::variant<DrawCommand, DrawIndexedCommand, TextureBarrier, CopyCommand>;
-}
+    struct UserDefinedCommand
+    {
+        std::function<void(CommandBuffer&)> commandFunction;
+    };
+
+    using GPUCommand = std::
+        variant<DrawCommand, DrawIndexedCommand, TextureBarrier, BlitCommand, UserDefinedCommand>;
+}  // namespace exage::Graphics

@@ -10,11 +10,11 @@
 #include <optional>
 
 #include <VkBootstrap.h>
+#include <vulkan-memory-allocator-hpp/vk_mem_alloc.hpp>
 #include <vulkan/vulkan.hpp>
+
 #include "Graphics/Queue.h"
 #include "VulkanUtils.h"
-#include <vulkan-memory-allocator-hpp/vk_mem_alloc.hpp>
-
 
 namespace exage::Graphics
 {
@@ -23,7 +23,7 @@ namespace exage::Graphics
 
     class EXAGE_EXPORT VulkanContext final : public Context
     {
-    public:
+      public:
         [[nodiscard]] static tl::expected<VulkanContext, Error> create(
             ContextCreateInfo& createInfo) noexcept;
         ~VulkanContext() override;
@@ -36,14 +36,16 @@ namespace exage::Graphics
         void waitIdle() const noexcept override;
 
         [[nodiscard]] auto createQueue(const QueueCreateInfo& createInfo) noexcept
-        -> tl::expected<std::unique_ptr<Queue>, Error> override;
+            -> tl::expected<std::unique_ptr<Queue>, Error> override;
         [[nodiscard]] auto createSwapchain(const SwapchainCreateInfo& createInfo) noexcept
-        -> tl::expected<std::unique_ptr<Swapchain>, Error> override;
+            -> tl::expected<std::unique_ptr<Swapchain>, Error> override;
         [[nodiscard]] auto createCommandBuffer() noexcept
-        -> tl::expected<std::unique_ptr<CommandBuffer>, Error> override;
+            -> tl::expected<std::unique_ptr<CommandBuffer>, Error> override;
+        [[nodiscard]] auto createTexture(const TextureCreateInfo& createInfo) noexcept
+            -> tl::expected<std::unique_ptr<Texture>, Error> override;
 
-        [[nodiscard]] auto createSurface(
-            Window& window) const noexcept -> tl::expected<vk::SurfaceKHR, Error>;
+        [[nodiscard]] auto createSurface(Window& window) const noexcept
+            -> tl::expected<vk::SurfaceKHR, Error>;
 
         [[nodiscard]] auto getInstance() const noexcept -> vk::Instance;
         [[nodiscard]] auto getPhysicalDevice() const noexcept -> vk::PhysicalDevice;
@@ -57,7 +59,7 @@ namespace exage::Graphics
 
         EXAGE_VULKAN_DERIVED
 
-    private:
+      private:
         VulkanContext() = default;
         auto init(ContextCreateInfo& createInfo) noexcept -> std::optional<Error>;
 
@@ -66,4 +68,4 @@ namespace exage::Graphics
         vkb::PhysicalDevice _physicalDevice;
         vkb::Device _device;
     };
-} // namespace exage::Graphics
+}  // namespace exage::Graphics

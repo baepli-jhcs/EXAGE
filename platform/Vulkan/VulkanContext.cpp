@@ -14,6 +14,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include "VulkanTexture.h"
 #include "VulkanCommandBuffer.h"
 #include "VulkanQueue.h"
 #include "VulkanSwapchain.h"
@@ -301,6 +302,17 @@ namespace exage::Graphics
             return tl::make_unexpected(value.error());
         }
         return std::make_unique<VulkanCommandBuffer>(std::move(value.value()));
+    }
+
+    auto VulkanContext::createTexture(const TextureCreateInfo& createInfo) noexcept
+        -> tl::expected<std::unique_ptr<Texture>, Error>
+    {
+        tl::expected value = VulkanTexture::create(*this, createInfo);
+        if (!value.has_value())
+        {
+			return tl::make_unexpected(value.error());
+		}
+		return std::make_unique<VulkanTexture>(std::move(value.value()));
     }
 
     auto VulkanContext::createSurface(Window& window) const noexcept

@@ -1,12 +1,12 @@
 #include "Vulkan/VulkanCommandBuffer.h"
 
-#include "VulkanTexture.h"
 #include "Vulkan/VulkanQueue.h"
+#include "VulkanTexture.h"
 
 namespace exage::Graphics
 {
-    auto VulkanCommandBuffer::create(
-        VulkanContext& context) noexcept -> tl::expected<VulkanCommandBuffer, Error>
+    auto VulkanCommandBuffer::create(VulkanContext& context) noexcept
+        -> tl::expected<VulkanCommandBuffer, Error>
     {
         VulkanCommandBuffer commandBuffer(context);
         std::optional<Error> result = commandBuffer.init();
@@ -80,8 +80,22 @@ namespace exage::Graphics
         return std::nullopt;
     }
 
+    void VulkanCommandBuffer::submitCommand(GPUCommand command) noexcept
+    {
+        if (std::holds_alternative<TextureBarrier>(command))
+        {
+            TextureBarrier& barrier = std::get<TextureBarrier>(command);
+            barrier._oldLayout = barrier.texture._layout;
+            barrier.texture._layout = barrier.newLayout;
+        }
+
+        _commands.push_back(command);
+    }
+
     VulkanCommandBuffer::VulkanCommandBuffer(VulkanContext& context) noexcept
-        : _context(context) { }
+        : _context(context)
+    {
+    }
 
     auto VulkanCommandBuffer::init() noexcept -> std::optional<Error>
     {
@@ -89,10 +103,8 @@ namespace exage::Graphics
         commandPoolCreateInfo.queueFamilyIndex = _context.get().getQueueIndex();
         commandPoolCreateInfo.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
 
-        vk::Result result =
-            _context.get().getDevice().createCommandPool(&commandPoolCreateInfo,
-                                                         nullptr,
-                                                         &_commandPool);
+        vk::Result result = _context.get().getDevice().createCommandPool(
+            &commandPoolCreateInfo, nullptr, &_commandPool);
 
         if (result != vk::Result::eSuccess)
         {
@@ -104,10 +116,8 @@ namespace exage::Graphics
         commandBufferAllocateInfo.commandPool = _commandPool;
         commandBufferAllocateInfo.commandBufferCount = 1;
 
-        result =
-            _context.get().getDevice().allocateCommandBuffers(
-                &commandBufferAllocateInfo,
-                &_commandBuffer);
+        result = _context.get().getDevice().allocateCommandBuffers(&commandBufferAllocateInfo,
+                                                                   &_commandBuffer);
 
         if (result != vk::Result::eSuccess)
         {
@@ -120,13 +130,11 @@ namespace exage::Graphics
     void VulkanCommandBuffer::processCommand(const GPUCommand& command) noexcept
     {
         std::visit(
-            Overload{
+            Overload {
                 [this](const DrawCommand& draw)
                 {
-                    _commandBuffer.draw(draw.vertexCount,
-                                        draw.instanceCount,
-                                        draw.firstVertex,
-                                        draw.firstInstance);
+                    _commandBuffer.draw(
+                        draw.vertexCount, draw.instanceCount, draw.firstVertex, draw.firstInstance);
                 },
                 [this](const DrawIndexedCommand& draw)
                 {
@@ -140,13 +148,9 @@ namespace exage::Graphics
                 {
                     auto& texture = *barrier.texture.as<VulkanTexture>();
 
-                    vk::ImageLayout oldLayout = toVulkanImageLayout(texture.getLayout());
-                    vk::ImageLayout newLayout = toVulkanImageLayout(barrier.newLayout);
-
                     vk::ImageMemoryBarrier imageMemoryBarrier;
-                    imageMemoryBarrier.oldLayout =
-                        imageMemoryBarrier.newLayout = static_cast<vk::ImageLayout>(barrier.
-                            newLayout);
+                    imageMemoryBarrier.oldLayout = toVulkanImageLayout(barrier._oldLayout);
+                    imageMemoryBarrier.newLayout = toVulkanImageLayout(barrier.newLayout);
                     imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
                     imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
                     imageMemoryBarrier.image = texture.getImage();
@@ -168,7 +172,48 @@ namespace exage::Graphics
                                                    nullptr,
                                                    1,
                                                    &imageMemoryBarrier);
-                }},
+                },
+                [this](const BlitCommand& copy)
+                {
+                    auto& srcTexture = *copy.srcTexture.as<VulkanTexture>();
+                    auto& dstTexture = *copy.dstTexture.as<VulkanTexture>();
+
+                    assert(srcTexture.getLayout() == Texture::Layout::eTransferSrc);
+                    assert(dstTexture.getLayout() == Texture::Layout::eTransferDst);
+
+                    vk::ImageBlit imageBlit;
+                    imageBlit.srcSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+                    imageBlit.srcSubresource.mipLevel = copy.srcMipLevel;
+                    imageBlit.srcSubresource.baseArrayLayer = copy.srcLayer;
+                    imageBlit.srcSubresource.layerCount = 1;
+                    imageBlit.srcOffsets[0] = vk::Offset3D {static_cast<int32_t>(copy.srcOffset.x),
+                                                            static_cast<int32_t>(copy.srcOffset.y),
+                                                            static_cast<int32_t>(copy.srcOffset.z)};
+                    imageBlit.srcOffsets[1] =
+                        vk::Offset3D {static_cast<int32_t>(copy.srcOffset.x + copy.extent.x),
+                                      static_cast<int32_t>(copy.srcOffset.y + copy.extent.y),
+                                      static_cast<int32_t>(copy.srcOffset.z + copy.extent.z)};
+                    imageBlit.dstSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+                    imageBlit.dstSubresource.mipLevel = copy.dstMipLevel;
+                    imageBlit.dstSubresource.baseArrayLayer = copy.dstLayer;
+                    imageBlit.dstSubresource.layerCount = 1;
+                    imageBlit.dstOffsets[0] = vk::Offset3D {static_cast<int32_t>(copy.dstOffset.x),
+                                                            static_cast<int32_t>(copy.dstOffset.y),
+                                                            static_cast<int32_t>(copy.dstOffset.z)};
+                    imageBlit.dstOffsets[1] =
+                        vk::Offset3D {static_cast<int32_t>(copy.dstOffset.x + copy.extent.x),
+                                      static_cast<int32_t>(copy.dstOffset.y + copy.extent.y),
+                                      static_cast<int32_t>(copy.dstOffset.z + copy.extent.z)};
+
+                    _commandBuffer.blitImage(srcTexture.getImage(),
+                                             vk::ImageLayout::eTransferSrcOptimal,
+                                             dstTexture.getImage(),
+                                             vk::ImageLayout::eTransferDstOptimal,
+                                             1,
+                                             &imageBlit,
+                                             vk::Filter::eLinear);
+                },
+                [this](const UserDefinedCommand& cmd) { cmd.commandFunction(*this); }},
             command);
     }
-} // namespace exage::Graphics
+}  // namespace exage::Graphics

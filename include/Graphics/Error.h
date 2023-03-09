@@ -40,7 +40,10 @@ namespace exage::Graphics
 
         eSamplerCreationFailed,
         eTextureCreationFailed,
-        eTextureViewCreationFailed
+        eTextureViewCreationFailed,
+
+        eWrongTextureLayout,
+        eWrongTextureType
     };
 
     using Error = std::variant<ErrorCode>;

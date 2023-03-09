@@ -3,11 +3,11 @@
 namespace exage::Graphics
 {
     auto VulkanSampler::create(VulkanContext& context,
-                               SamplerCreateInfo& createInfo,
-                               uint32_t mipLevelCount) noexcept -> tl::expected<
-        VulkanSampler, Error>
+                               const SamplerCreateInfo& createInfo,
+                               uint32_t mipLevelCount) noexcept
+        -> tl::expected<VulkanSampler, Error>
     {
-        VulkanSampler sampler{context, createInfo};
+        VulkanSampler sampler {context, createInfo};
         if (std::optional<Error> error = sampler.init(mipLevelCount); error.has_value())
         {
             return tl::make_unexpected(error.value());
@@ -23,13 +23,29 @@ namespace exage::Graphics
         }
     }
 
+    VulkanSampler::VulkanSampler(VulkanSampler&& old) noexcept
+        : Sampler(std::move(old))
+        , _context(old._context)
+    {
+        *this = std::move(old);
+    }
+
+    auto VulkanSampler::operator=(VulkanSampler&& old) noexcept -> VulkanSampler&
+    {
+        Sampler::operator=(std::move(old));
+
+        _sampler = old._sampler;
+        old._sampler = nullptr;
+        return *this;
+    }
+
     VulkanSampler::VulkanSampler(VulkanContext& context,
-                                 SamplerCreateInfo& createInfo) noexcept
-        : _context(context)
-          , _anisotropy(createInfo.anisotropy)
-          , _filter(createInfo.filter)
-          , _mipmapMode(createInfo.mipmapMode)
-          , _lodBias(createInfo.lodBias) { }
+                                 const SamplerCreateInfo& createInfo) noexcept
+        : Sampler(
+            createInfo.anisotropy, createInfo.filter, createInfo.mipmapMode, createInfo.lodBias)
+        , _context(context)
+    {
+    }
 
     auto VulkanSampler::init(uint32_t mipLevelCount) noexcept -> std::optional<Error>
     {
@@ -65,11 +81,10 @@ namespace exage::Graphics
         return std::nullopt;
     }
 
-    auto VulkanTexture::create(VulkanContext& context,
-                               TextureCreateInfo& createInfo) noexcept -> tl::expected<
-        VulkanTexture, Error>
+    auto VulkanTexture::create(VulkanContext& context, const TextureCreateInfo& createInfo) noexcept
+        -> tl::expected<VulkanTexture, Error>
     {
-        VulkanTexture texture{context, createInfo};
+        VulkanTexture texture {context, createInfo};
         std::optional<Error> result = texture.init(createInfo.samplerCreateInfo);
         if (result.has_value())
         {
@@ -80,27 +95,32 @@ namespace exage::Graphics
 
     VulkanTexture::~VulkanTexture()
     {
-        _context.get().getDevice().destroyImageView(_imageView);
-        _context.get().getDevice().destroyImage(_image);
-        _context.get().getAllocator().freeMemory(_allocation);
+        if (_imageView)
+        {
+            _context.get().getDevice().destroyImageView(_imageView);
+        }
+
+        if (_image)
+        {
+            _context.get().getDevice().destroyImage(_image);
+        }
+
+        if (_allocation)
+        {
+            _context.get().getAllocator().freeMemory(_allocation);
+        }
     }
 
     VulkanTexture::VulkanTexture(VulkanTexture&& old) noexcept
-        : _context(old._context)
+        : Texture(std::move(old))
+        , _context(old._context)
     {
         *this = std::move(old);
     }
 
     auto VulkanTexture::operator=(VulkanTexture&& old) noexcept -> VulkanTexture&
     {
-        _extent = old._extent;
-        _format = old._format;
-        _type = old._type;
-        _layout = old._layout;
-        _usage = old._usage;
-
-        _layerCount = old._layerCount;
-        _mipLevelCount = old._mipLevelCount;
+        Texture::operator=(std::move(old));
 
         _allocation = old._allocation;
         _image = old._image;
@@ -114,15 +134,19 @@ namespace exage::Graphics
         return *this;
     }
 
-    VulkanTexture::VulkanTexture(VulkanContext& context, TextureCreateInfo& createInfo) noexcept
-        : _context(context)
-          , _extent(createInfo.extent)
-          , _format(createInfo.format)
-          , _type(createInfo.type), _usage(createInfo.usage)
-          , _layerCount(createInfo.arrayLayers), _mipLevelCount(createInfo.mipLevels) { }
+    VulkanTexture::VulkanTexture(VulkanContext& context,
+                                 const TextureCreateInfo& createInfo) noexcept
+        : Texture(createInfo.extent,
+                  createInfo.format,
+                  createInfo.type,
+                  createInfo.usage,
+                  createInfo.arrayLayers,
+                  createInfo.mipLevels)
+        , _context(context)
+    {
+    }
 
-
-    auto VulkanTexture::init(SamplerCreateInfo& samplerInfo) noexcept -> std::optional<Error>
+    auto VulkanTexture::init(const SamplerCreateInfo& samplerInfo) noexcept -> std::optional<Error>
     {
         vk::ImageUsageFlags usage = toVulkanImageUsageFlags(_usage);
         vk::ImageAspectFlags aspectFlags = toVulkanImageAspectFlags(_usage);
@@ -130,7 +154,7 @@ namespace exage::Graphics
 
         vk::ImageCreateInfo imageInfo;
         imageInfo.imageType = toVulkanImageType(_type);
-        imageInfo.extent = vk::Extent3D{_extent.x, _extent.y, _extent.z};
+        imageInfo.extent = vk::Extent3D {_extent.x, _extent.y, _extent.z};
         imageInfo.mipLevels = _mipLevelCount;
         imageInfo.arrayLayers = _layerCount;
         imageInfo.format = format;
@@ -140,20 +164,15 @@ namespace exage::Graphics
         imageInfo.samples = vk::SampleCountFlagBits::e1;
         imageInfo.sharingMode = vk::SharingMode::eExclusive;
 
-        vk::ImageCreateFlags flags = _type == Type::eCube
-            ? vk::ImageCreateFlagBits::eCubeCompatible
-            : vk::ImageCreateFlags();
+        vk::ImageCreateFlags flags = _type == Type::eCube ? vk::ImageCreateFlagBits::eCubeCompatible
+                                                          : vk::ImageCreateFlags();
         imageInfo.flags = flags;
 
         vma::AllocationCreateInfo allocInfo;
         allocInfo.usage = vma::MemoryUsage::eGpuOnly;
 
         vk::Result result = _context.get().getAllocator().createImage(
-            &imageInfo,
-            &allocInfo,
-            &_image,
-            &_allocation,
-            nullptr);
+            &imageInfo, &allocInfo, &_image, &_allocation, nullptr);
 
         if (result != vk::Result::eSuccess)
             return ErrorCode::eTextureCreationFailed;
@@ -163,6 +182,8 @@ namespace exage::Graphics
         viewInfo.image = _image;
         viewInfo.components = vk::ComponentMapping();
         viewInfo.format = format;
+        viewInfo.subresourceRange = vk::ImageSubresourceRange(aspectFlags, 0, _mipLevelCount, 0,
+            															  _layerCount);
 
         result = _context.get().getDevice().createImageView(&viewInfo, nullptr, &_imageView);
         if (result != vk::Result::eSuccess)
@@ -176,4 +197,4 @@ namespace exage::Graphics
 
         return std::nullopt;
     }
-} // namespace exage::Graphics
+}  // namespace exage::Graphics

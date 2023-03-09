@@ -12,7 +12,7 @@
 #include "utils/classes.h"
 #include "utils/apiType.h"
 #include "utils/variant.h"
-#include "bitflags/bitflags.hpp"
+#include "utils/flags.h"
 
 namespace exage
 {

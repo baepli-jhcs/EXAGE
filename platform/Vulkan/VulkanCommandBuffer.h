@@ -22,6 +22,8 @@ namespace exage::Graphics
         [[nodiscard]] auto begin() noexcept -> std::optional<Error> override;
         [[nodiscard]] auto end() noexcept -> std::optional<Error> override;
 
+        [[nodiscard]] void submitCommand(GPUCommand command) noexcept override;
+
         [[nodiscard]] auto getCommandBuffer() const noexcept -> vk::CommandBuffer
         {
             return _commandBuffer;

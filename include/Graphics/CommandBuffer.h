@@ -4,6 +4,7 @@
 #include <optional>
 #include <thread>
 
+#include "Commands.h"
 #include "Error.h"
 #include "Core/Core.h"
 #include "Graphics/Context.h"
@@ -21,6 +22,8 @@ namespace exage::Graphics
 
         [[nodiscard]] virtual auto begin() noexcept -> std::optional<Error> = 0;
         [[nodiscard]] virtual auto end() noexcept -> std::optional<Error> = 0;
+
+        [[nodiscard]] virtual void submitCommand(GPUCommand command) noexcept = 0;
 
         EXAGE_BASE_API(API, CommandBuffer);
     };

@@ -62,6 +62,7 @@ namespace exage::Graphics
 
         glm::uvec2 _extent;
         std::vector<vk::Image> _swapchainImages;
+        std::vector<bool> _swapchainTransitioned;
 
         size_t _currentImage = 0;
     };

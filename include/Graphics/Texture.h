@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Core/Core.h"
+#include "Graphics/Context.h"
 #include "glm/glm.hpp"
 #include "utils/classes.h"
 
@@ -7,7 +9,6 @@ namespace exage::Graphics
 {
     struct EXAGE_EXPORT Sampler
     {
-        Sampler() noexcept = default;
         virtual ~Sampler() = default;
         EXAGE_DELETE_COPY(Sampler);
         EXAGE_DEFAULT_MOVE(Sampler);
@@ -34,46 +35,63 @@ namespace exage::Graphics
             eLinear = 1
         };
 
-        [[nodiscard]] virtual auto getAnisotropy() const noexcept -> Anisotropy = 0;
-        [[nodiscard]] virtual auto getFilter() const noexcept -> Filter = 0;
-        [[nodiscard]] virtual auto getMipmapMode() const noexcept -> MipmapMode = 0;
-        [[nodiscard]] virtual auto getLodBias() const noexcept -> float = 0;
+        [[nodiscard]] auto getAnisotropy() const noexcept -> Anisotropy { return _anisotropy; }
+        [[nodiscard]] auto getFilter() const noexcept -> Filter { return _filter; }
+        [[nodiscard]] auto getMipmapMode() const noexcept -> MipmapMode { return _mipmapMode; }
+        [[nodiscard]] auto getLodBias() const noexcept -> float { return _lodBias; }
 
         EXAGE_BASE_API(API, Sampler);
+
+      protected:
+        Anisotropy _anisotropy;
+        Filter _filter;
+        MipmapMode _mipmapMode;
+        float _lodBias;
+
+        Sampler(Anisotropy anisotropy, Filter filter, MipmapMode mipmapMode, float lodBias) noexcept
+            : _anisotropy(anisotropy)
+            , _filter(filter)
+            , _mipmapMode(mipmapMode)
+            , _lodBias(lodBias)
+        {
+        }
     };
 
     using TextureExtent = glm::uvec3;
 
     class EXAGE_EXPORT Texture
     {
-    public:
+      public:
         enum class Format : uint32_t;
         enum class Type : uint32_t;
-        enum class Layout :uint32_t;
-        BEGIN_RAW_BITFLAGS(Usage)
-            RAW_FLAG(eTransferSource)
-            RAW_FLAG(eTransferDestination)
-            RAW_FLAG(eColorAttachment)
-            RAW_FLAG(eDepthStencilAttachment)
-        END_RAW_BITFLAGS(Usage)
+        enum class Layout : uint32_t;
+
+        enum class UsageFlags : uint32_t
+        {
+            eTransferSource = 1 << 0,
+            eTransferDestination = 1 << 1,
+            eColorAttachment = 1 << 2,
+            eDepthStencilAttachment = 1 << 3,
+        };
+
+        using Usage = Flags<UsageFlags>;
 
         Texture() noexcept = default;
         virtual ~Texture() = default;
         EXAGE_DELETE_COPY(Texture);
         EXAGE_DEFAULT_MOVE(Texture);
 
-        [[nodiscard]] virtual auto getExtent() const noexcept -> TextureExtent = 0;
-        [[nodiscard]] virtual auto getFormat() const noexcept -> Format = 0;
-        [[nodiscard]] virtual auto getType() const noexcept -> Type = 0;
-        [[nodiscard]] virtual auto getLayout() const noexcept -> Layout = 0;
-        [[nodiscard]] virtual auto getUsage() const noexcept -> Usage = 0;
+        [[nodiscard]] auto getExtent() const noexcept -> TextureExtent { return _extent; }
+        [[nodiscard]] auto getFormat() const noexcept -> Format { return _format; }
+        [[nodiscard]] auto getType() const noexcept -> Type { return _type; }
+        [[nodiscard]] auto getLayout() const noexcept -> Layout { return _layout; }
+        [[nodiscard]] auto getUsage() const noexcept -> Usage { return _usage; }
 
-        [[nodiscard]] virtual auto getLayerCount() const noexcept -> uint32_t = 0;
-        [[nodiscard]] virtual auto getMipLevelCount() const noexcept -> uint32_t = 0;
+        [[nodiscard]] auto getLayerCount() const noexcept -> uint32_t { return _layerCount; }
+        [[nodiscard]] auto getMipLevelCount() const noexcept -> uint32_t { return _mipLevelCount; }
 
         [[nodiscard]] virtual auto getSampler() noexcept -> Sampler& = 0;
         [[nodiscard]] virtual auto getSampler() const noexcept -> const Sampler& = 0;
-
 
         enum class Format : uint32_t
         {
@@ -112,14 +130,40 @@ namespace exage::Graphics
             eColorAttachment,
             eDepthStencilAttachment,
             eShaderReadOnly,
-            eTransferSource,
-            eTransferDestination,
+            eTransferSrc,
+            eTransferDst,
             ePresent,
         };
 
-
         EXAGE_BASE_API(API, Texture);
+
+      protected:
+        TextureExtent _extent;
+        Format _format;
+        Type _type;
+        Layout _layout = Layout::eUndefined;
+        Usage _usage;
+        uint32_t _layerCount;
+        uint32_t _mipLevelCount;
+
+        Texture(TextureExtent extent,
+                Format format,
+                Type type,
+                Usage usage,
+                uint32_t layerCount,
+                uint32_t mipLevelCount) noexcept
+            : _extent(extent)
+            , _format(format)
+            , _type(type)
+            , _usage(usage)
+            , _layerCount(layerCount)
+            , _mipLevelCount(mipLevelCount)
+        {
+        }
+
+        friend class VulkanCommandBuffer;
     };
+    EXAGE_ENABLE_FLAGS(Texture::Usage)
 
     struct SamplerCreateInfo
     {
@@ -134,10 +178,10 @@ namespace exage::Graphics
         TextureExtent extent = glm::uvec3(1);
         Texture::Format format = Texture::Format::eRGBA8;
         Texture::Type type = Texture::Type::e2D;
-        Texture::Usage usage = Texture::Usage::eColorAttachment;
+        Texture::Usage usage = Texture::UsageFlags::eColorAttachment;
         uint32_t arrayLayers = 1;
         uint32_t mipLevels = 1;
 
-        SamplerCreateInfo samplerCreateInfo{};
+        SamplerCreateInfo samplerCreateInfo {};
     };
-} // namespace exage::Graphics
+}  // namespace exage::Graphics

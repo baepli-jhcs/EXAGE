@@ -55,7 +55,6 @@ TEST_CASE("Creating Graphics Swapchain and Acquire Next Image", "[Swapchain]")
     };
 
     tl::expected context(Context::create(createInfo));
-
     REQUIRE(context.has_value());
 
     QueueCreateInfo queueCreateInfo{.maxFramesInFlight = 2};
@@ -71,6 +70,15 @@ TEST_CASE("Creating Graphics Swapchain and Acquire Next Image", "[Swapchain]")
     tl::expected commandBuffer = context.value()->createCommandBuffer();
     REQUIRE(commandBuffer.has_value());
 
+    TextureCreateInfo textureCreateInfo{
+		.extent = {1280, 720, 1},
+        .usage = Texture::UsageFlags::eTransferSource
+	};
+
+    tl::expected texture = context.value()->createTexture(textureCreateInfo);
+    REQUIRE(texture.has_value());
+
+
     Context& ctx = *context.value();
     Queue& que = *queue.value();
     Swapchain& swap = *swapchain.value();
@@ -84,6 +92,19 @@ TEST_CASE("Creating Graphics Swapchain and Acquire Next Image", "[Swapchain]")
 
     std::optional commandError = cmd.begin();
     REQUIRE(!commandError.has_value());
+
+    TextureBarrier barrier{
+		.texture = *texture.value(),
+		.newLayout = Texture::Layout::eTransferSrc,
+        .srcStage = PipelineStageFlags::eTopOfPipe,
+        .dstStage = PipelineStageFlags::eTransfer,
+        .srcAccess = {},
+        .dstAccess = AccessFlags::eTransferWrite,
+	};
+    cmd.submitCommand(barrier);
+
+    swapError = swap.drawImage(cmd, *texture.value());
+    REQUIRE(!swapError.has_value());
 
     commandError = cmd.end();
     REQUIRE(!commandError.has_value());

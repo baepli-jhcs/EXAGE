@@ -19,7 +19,7 @@ namespace exage::Graphics
     }
 
     [[nodiscard]] constexpr auto toVulkanPresentMode(PresentMode presentMode) noexcept
-    -> vk::PresentModeKHR
+        -> vk::PresentModeKHR
     {
         switch (presentMode)
         {
@@ -107,7 +107,7 @@ namespace exage::Graphics
     }
 
     [[nodiscard]] constexpr auto toVulkanImageViewType(Texture::Type type) noexcept
-    -> vk::ImageViewType
+        -> vk::ImageViewType
     {
         switch (type)
         {
@@ -125,27 +125,27 @@ namespace exage::Graphics
     }
 
     [[nodiscard]] constexpr auto toVulkanImageUsageFlags(Texture::Usage usage) noexcept
-    -> vk::ImageUsageFlags
+        -> vk::ImageUsageFlags
     {
         vk::ImageUsageFlags flags =
-            vk::ImageUsageFlagBits::eSampled & vk::ImageUsageFlagBits::eStorage;
+            vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eStorage;
 
-        if (usage & Texture::Usage::eTransferSource)
+        if (usage.any(Texture::UsageFlags::eTransferSource))
         {
             flags |= vk::ImageUsageFlagBits::eTransferSrc;
         }
 
-        if (usage & Texture::Usage::eTransferDestination)
+        if (usage.any(Texture::UsageFlags::eTransferDestination))
         {
             flags |= vk::ImageUsageFlagBits::eTransferDst;
         }
 
-        if (usage & Texture::Usage::eColorAttachment)
+        if (usage.any(Texture::UsageFlags::eColorAttachment))
         {
             flags |= vk::ImageUsageFlagBits::eColorAttachment;
         }
 
-        if (usage & Texture::Usage::eDepthStencilAttachment)
+        if (usage.any(Texture::UsageFlags::eDepthStencilAttachment))
         {
             flags |= vk::ImageUsageFlagBits::eDepthStencilAttachment;
         }
@@ -154,11 +154,11 @@ namespace exage::Graphics
     }
 
     [[nodiscard]] constexpr auto toVulkanImageAspectFlags(Texture::Usage usage)
-    -> vk::ImageAspectFlags
+        -> vk::ImageAspectFlags
     {
         vk::ImageAspectFlags flags = vk::ImageAspectFlagBits::eColor;
 
-        if (usage & Texture::Usage::eDepthStencilAttachment)
+        if (usage.any(Texture::UsageFlags::eDepthStencilAttachment))
         {
             flags = vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil;
         }
@@ -180,7 +180,7 @@ namespace exage::Graphics
     }
 
     [[nodiscard]] constexpr auto toVulkanSamplerMipmapMode(Sampler::MipmapMode mipmapMode) noexcept
-    -> vk::SamplerMipmapMode
+        -> vk::SamplerMipmapMode
     {
         switch (mipmapMode)
         {
@@ -194,7 +194,7 @@ namespace exage::Graphics
     }
 
     [[nodiscard]] constexpr auto toVulkanImageLayout(Texture::Layout layout) noexcept
-    -> vk::ImageLayout
+        -> vk::ImageLayout
     {
         switch (layout)
         {
@@ -206,9 +206,9 @@ namespace exage::Graphics
                 return vk::ImageLayout::eDepthStencilAttachmentOptimal;
             case Texture::Layout::eShaderReadOnly:
                 return vk::ImageLayout::eShaderReadOnlyOptimal;
-            case Texture::Layout::eTransferSource:
+            case Texture::Layout::eTransferSrc:
                 return vk::ImageLayout::eTransferSrcOptimal;
-            case Texture::Layout::eTransferDestination:
+            case Texture::Layout::eTransferDst:
                 return vk::ImageLayout::eTransferDstOptimal;
             case Texture::Layout::ePresent:
                 return vk::ImageLayout::ePresentSrcKHR;
@@ -219,89 +219,89 @@ namespace exage::Graphics
 
     [[nodiscard]] constexpr auto toVulkanAccessFlags(Access access) -> vk::AccessFlags
     {
-        vk::AccessFlags flags{};
+        vk::AccessFlags flags {};
 
-        if (access & Access::eIndirectCommandRead)
+        if (access.any(AccessFlags::eIndirectCommandRead))
         {
             flags |= vk::AccessFlagBits::eIndirectCommandRead;
         }
 
-        if (access & Access::eIndexRead)
+        if (access.any(AccessFlags::eIndexRead))
         {
             flags |= vk::AccessFlagBits::eIndexRead;
         }
 
-        if (access & Access::eVertexAttributeRead)
+        if (access.any(AccessFlags::eVertexAttributeRead))
         {
             flags |= vk::AccessFlagBits::eVertexAttributeRead;
         }
 
-        if (access & Access::eUniformRead)
+        if (access.any(AccessFlags::eUniformRead))
         {
             flags |= vk::AccessFlagBits::eUniformRead;
         }
 
-        if (access & Access::eInputAttachmentRead)
+        if (access.any(AccessFlags::eInputAttachmentRead))
         {
             flags |= vk::AccessFlagBits::eInputAttachmentRead;
         }
 
-        if (access & Access::eShaderRead)
+        if (access.any(AccessFlags::eShaderRead))
         {
             flags |= vk::AccessFlagBits::eShaderRead;
         }
 
-        if (access & Access::eShaderWrite)
+        if (access.any(AccessFlags::eShaderWrite))
         {
             flags |= vk::AccessFlagBits::eShaderWrite;
         }
 
-        if (access & Access::eColorAttachmentRead)
+        if (access.any(AccessFlags::eColorAttachmentRead))
         {
             flags |= vk::AccessFlagBits::eColorAttachmentRead;
         }
 
-        if (access & Access::eColorAttachmentWrite)
+        if (access.any(AccessFlags::eColorAttachmentWrite))
         {
             flags |= vk::AccessFlagBits::eColorAttachmentWrite;
         }
 
-        if (access & Access::eDepthStencilAttachmentRead)
+        if (access.any(AccessFlags::eDepthStencilAttachmentRead))
         {
             flags |= vk::AccessFlagBits::eDepthStencilAttachmentRead;
         }
 
-        if (access & Access::eDepthStencilAttachmentWrite)
+        if (access.any(AccessFlags::eDepthStencilAttachmentWrite))
         {
             flags |= vk::AccessFlagBits::eDepthStencilAttachmentWrite;
         }
 
-        if (access & Access::eTransferRead)
+        if (access.any(AccessFlags::eTransferRead))
         {
             flags |= vk::AccessFlagBits::eTransferRead;
         }
 
-        if (access & Access::eTransferWrite)
+        if (access.any(AccessFlags::eTransferWrite))
         {
             flags |= vk::AccessFlagBits::eTransferWrite;
         }
 
-        if (access & Access::eHostRead)
+        if (access.any(AccessFlags::eHostRead))
         {
             flags |= vk::AccessFlagBits::eHostRead;
         }
 
-        if (access & Access::eHostWrite)
+        if (access.any(AccessFlags::eHostWrite))
         {
             flags |= vk::AccessFlagBits::eHostWrite;
         }
 
-        if (access & Access::eMemoryRead)
+        if (access.any(AccessFlags::eMemoryRead))
         {
             flags |= vk::AccessFlagBits::eMemoryRead;
         }
 
-        if (access & Access::eMemoryWrite)
+        if (access.any(AccessFlags::eMemoryWrite))
         {
             flags |= vk::AccessFlagBits::eMemoryWrite;
         }
@@ -309,91 +309,91 @@ namespace exage::Graphics
         return flags;
     }
 
-    constexpr auto toVulkanPipelineStageFlags(PipelineStage pipelineStage) -> vk::PipelineStageFlags
+    [[nodiscard]] constexpr auto toVulkanPipelineStageFlags(PipelineStage pipelineStages)
+        -> vk::PipelineStageFlags
     {
-        vk::PipelineStageFlags flags{};
+        vk::PipelineStageFlags flags {};
 
-        if (pipelineStage & PipelineStage::eTopOfPipe)
+        if (pipelineStages.any(PipelineStageFlags::eTopOfPipe))
         {
             flags |= vk::PipelineStageFlagBits::eTopOfPipe;
         }
 
-        if (pipelineStage & PipelineStage::eDrawIndirect)
+        if (pipelineStages.any(PipelineStageFlags::eDrawIndirect))
         {
             flags |= vk::PipelineStageFlagBits::eDrawIndirect;
         }
 
-        if (pipelineStage & PipelineStage::eVertexInput)
+        if (pipelineStages.any(PipelineStageFlags::eVertexInput))
         {
             flags |= vk::PipelineStageFlagBits::eVertexInput;
         }
 
-        if (pipelineStage & PipelineStage::eVertexShader)
+        if (pipelineStages.any(PipelineStageFlags::eVertexShader))
         {
             flags |= vk::PipelineStageFlagBits::eVertexShader;
         }
 
-        if (pipelineStage & PipelineStage::eTessellationControlShader)
+        if (pipelineStages.any(PipelineStageFlags::eTessellationControlShader))
         {
             flags |= vk::PipelineStageFlagBits::eTessellationControlShader;
         }
 
-        if (pipelineStage & PipelineStage::eTessellationEvaluationShader)
+        if (pipelineStages.any(PipelineStageFlags::eTessellationEvaluationShader))
         {
             flags |= vk::PipelineStageFlagBits::eTessellationEvaluationShader;
         }
 
-        if (pipelineStage & PipelineStage::eFragmentShader)
+        if (pipelineStages.any(PipelineStageFlags::eFragmentShader))
         {
             flags |= vk::PipelineStageFlagBits::eFragmentShader;
         }
 
-        if (pipelineStage & PipelineStage::eEarlyFragmentTests)
+        if (pipelineStages.any(PipelineStageFlags::eEarlyFragmentTests))
         {
             flags |= vk::PipelineStageFlagBits::eEarlyFragmentTests;
         }
 
-        if (pipelineStage & PipelineStage::eLateFragmentTests)
+        if (pipelineStages.any(PipelineStageFlags::eLateFragmentTests))
         {
             flags |= vk::PipelineStageFlagBits::eLateFragmentTests;
         }
 
-        if (pipelineStage & PipelineStage::eColorAttachmentOutput)
+        if (pipelineStages.any(PipelineStageFlags::eColorAttachmentOutput))
         {
             flags |= vk::PipelineStageFlagBits::eColorAttachmentOutput;
         }
 
-        if (pipelineStage & PipelineStage::eComputeShader)
+        if (pipelineStages.any(PipelineStageFlags::eComputeShader))
         {
             flags |= vk::PipelineStageFlagBits::eComputeShader;
         }
 
-        if (pipelineStage & PipelineStage::eTransfer)
+        if (pipelineStages.any(PipelineStageFlags::eTransfer))
         {
             flags |= vk::PipelineStageFlagBits::eTransfer;
         }
 
-        if (pipelineStage & PipelineStage::eBottomOfPipe)
+        if (pipelineStages.any(PipelineStageFlags::eBottomOfPipe))
         {
             flags |= vk::PipelineStageFlagBits::eBottomOfPipe;
         }
 
-        if (pipelineStage & PipelineStage::eHost)
+        if (pipelineStages.any(PipelineStageFlags::eHost))
         {
             flags |= vk::PipelineStageFlagBits::eHost;
         }
 
-        if (pipelineStage & PipelineStage::eAllGraphics)
+        if (pipelineStages.any(PipelineStageFlags::eAllGraphics))
         {
             flags |= vk::PipelineStageFlagBits::eAllGraphics;
         }
 
-        if (pipelineStage & PipelineStage::eAllCommands)
+        if (pipelineStages.any(PipelineStageFlags::eAllCommands))
         {
             flags |= vk::PipelineStageFlagBits::eAllCommands;
         }
 
         return flags;
     }
-
-} // namespace exage::Graphics
+}  // namespace exage::Graphics
