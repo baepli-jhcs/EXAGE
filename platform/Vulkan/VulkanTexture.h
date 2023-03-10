@@ -19,6 +19,8 @@ namespace exage::Graphics
         VulkanSampler(VulkanSampler&&) noexcept;
         auto operator=(VulkanSampler&&) noexcept -> VulkanSampler&;
 
+        [[nodiscard]] auto getSampler() const noexcept -> vk::Sampler { return _sampler; }
+
         EXAGE_DELETE_COPY(VulkanSampler);
 
         EXAGE_VULKAN_DERIVED
@@ -53,6 +55,12 @@ namespace exage::Graphics
 
         [[nodiscard]] auto getImage() const noexcept -> vk::Image { return _image; }
         [[nodiscard]] auto getImageView() const noexcept -> vk::ImageView { return _imageView; }
+        
+        [[nodiscard]] auto getDescriptorImageInfo() const noexcept -> vk::DescriptorImageInfo
+        {
+            return vk::DescriptorImageInfo(
+                _sampler ->getSampler(), _imageView, toVulkanImageLayout(_layout));
+        }
 
         EXAGE_VULKAN_DERIVED
     private:

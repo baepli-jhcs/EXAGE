@@ -42,7 +42,7 @@ namespace exage::Graphics
         [[nodiscard]] auto createCommandBuffer() noexcept
             -> tl::expected<std::unique_ptr<CommandBuffer>, Error> override;
         [[nodiscard]] auto createTexture(const TextureCreateInfo& createInfo) noexcept
-            -> tl::expected<std::unique_ptr<Texture>, Error> override;
+            -> tl::expected<std::shared_ptr<Texture>, Error> override;
 
         [[nodiscard]] auto createSurface(Window& window) const noexcept
             -> tl::expected<vk::SurfaceKHR, Error>;

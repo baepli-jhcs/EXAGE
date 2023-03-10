@@ -189,10 +189,9 @@ namespace exage::Graphics
         return std::nullopt;
     }
 
-    std::optional<Error> VulkanSwapchain::drawImage(CommandBuffer& commandBuffer,
-                                                    Texture& texture) noexcept
+    std::optional<Error> VulkanSwapchain::drawImage(CommandBuffer& commandBuffer, const std::shared_ptr<Texture>& texture) noexcept
     {
-        const auto* vulkanTexture = texture.as<VulkanTexture>();
+        const auto* vulkanTexture = texture->as<VulkanTexture>();
         if (vulkanTexture->getLayout() != Texture::Layout::eTransferSrc) [[unlikely]]
         {
             return ErrorCode::eWrongTextureLayout;
@@ -269,6 +268,7 @@ namespace exage::Graphics
                                           barrier);
             }};
         commandBuffer.submitCommand(command);
+        commandBuffer.insertDataDependency(texture);
         return std::nullopt;
     }
 

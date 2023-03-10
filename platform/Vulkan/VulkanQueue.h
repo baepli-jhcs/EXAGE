@@ -22,7 +22,7 @@ namespace exage::Graphics
         std::optional<Error> override;
         [[nodiscard]] auto present(QueuePresentInfo& presentInfo) noexcept ->
         std::optional<Error> override;
-
+        
         [[nodiscard]] auto submitTemporary(
             std::unique_ptr<CommandBuffer> commandBuffer) -> std::optional<Error> override;
 

@@ -94,7 +94,7 @@ TEST_CASE("Creating Graphics Swapchain and Acquire Next Image", "[Swapchain]")
     REQUIRE(!commandError.has_value());
 
     TextureBarrier barrier{
-		.texture = *texture.value(),
+		.texture = texture.value(),
 		.newLayout = Texture::Layout::eTransferSrc,
         .srcStage = PipelineStageFlags::eTopOfPipe,
         .dstStage = PipelineStageFlags::eTransfer,
@@ -103,7 +103,7 @@ TEST_CASE("Creating Graphics Swapchain and Acquire Next Image", "[Swapchain]")
 	};
     cmd.submitCommand(barrier);
 
-    swapError = swap.drawImage(cmd, *texture.value());
+    swapError = swap.drawImage(cmd, texture.value());
     REQUIRE(!swapError.has_value());
 
     commandError = cmd.end();

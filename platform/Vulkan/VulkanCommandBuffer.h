@@ -23,6 +23,7 @@ namespace exage::Graphics
         [[nodiscard]] auto end() noexcept -> std::optional<Error> override;
 
         [[nodiscard]] void submitCommand(GPUCommand command) noexcept override;
+        [[nodiscard]] void insertDataDependency(DataDependency dependency) noexcept override;
 
         [[nodiscard]] auto getCommandBuffer() const noexcept -> vk::CommandBuffer
         {
@@ -42,6 +43,8 @@ namespace exage::Graphics
         vk::CommandBuffer _commandBuffer;
 
         std::vector<GPUCommand> _commands{};
+        std::vector<DataDependency> _dataDependencies {};
         std::unique_ptr<std::mutex> _commandsMutex = std::make_unique<std::mutex>();
+        std::unique_ptr<std::mutex> _dataDependenciesMutex = std::make_unique<std::mutex>();
     };
 } // namespace exage::Graphics

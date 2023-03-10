@@ -53,6 +53,7 @@ namespace exage::Graphics
     auto VulkanCommandBuffer::begin() noexcept -> std::optional<Error>
     {
         _commands.clear();
+        _dataDependencies.clear();
         _commandBuffer.reset();
 
         _context.get().getDevice().resetCommandPool(_commandPool, {});
@@ -85,11 +86,18 @@ namespace exage::Graphics
         if (std::holds_alternative<TextureBarrier>(command))
         {
             TextureBarrier& barrier = std::get<TextureBarrier>(command);
-            barrier._oldLayout = barrier.texture._layout;
-            barrier.texture._layout = barrier.newLayout;
+            barrier._oldLayout = barrier.texture -> _layout;
+            barrier.texture -> _layout = barrier.newLayout;
         }
 
+        std::lock_guard<std::mutex> lock(*_commandsMutex);
         _commands.push_back(command);
+    }
+
+    void VulkanCommandBuffer::insertDataDependency(DataDependency dependency) noexcept 
+    {
+        std::lock_guard<std::mutex> lock(*_dataDependenciesMutex);
+        _dataDependencies.push_back(dependency);
     }
 
     VulkanCommandBuffer::VulkanCommandBuffer(VulkanContext& context) noexcept
@@ -146,7 +154,7 @@ namespace exage::Graphics
                 },
                 [this](const TextureBarrier& barrier)
                 {
-                    auto& texture = *barrier.texture.as<VulkanTexture>();
+                    auto& texture = *barrier.texture->as<VulkanTexture>();
 
                     vk::ImageMemoryBarrier imageMemoryBarrier;
                     imageMemoryBarrier.oldLayout = toVulkanImageLayout(barrier._oldLayout);
@@ -175,8 +183,8 @@ namespace exage::Graphics
                 },
                 [this](const BlitCommand& copy)
                 {
-                    auto& srcTexture = *copy.srcTexture.as<VulkanTexture>();
-                    auto& dstTexture = *copy.dstTexture.as<VulkanTexture>();
+                    auto& srcTexture = *copy.srcTexture->as<VulkanTexture>();
+                    auto& dstTexture = *copy.dstTexture->as<VulkanTexture>();
 
                     assert(srcTexture.getLayout() == Texture::Layout::eTransferSrc);
                     assert(dstTexture.getLayout() == Texture::Layout::eTransferDst);

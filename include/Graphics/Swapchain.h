@@ -40,7 +40,7 @@ namespace exage::Graphics
         [[nodiscard]] virtual auto acquireNextImage(Queue& queue) noexcept -> std::optional<Error> =
         0;
         [[nodiscard]] virtual auto drawImage(CommandBuffer& commandBuffer,
-                                             Texture& texture) noexcept -> std::optional<Error> = 0;
+                                             const std::shared_ptr<Texture>& texture) noexcept -> std::optional<Error> = 0;
 
         EXAGE_BASE_API(API, Swapchain);
     };

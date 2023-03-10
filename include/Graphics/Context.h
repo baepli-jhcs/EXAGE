@@ -46,7 +46,7 @@ namespace exage::Graphics
         [[nodiscard]] virtual auto createCommandBuffer() noexcept
             -> tl::expected<std::unique_ptr<CommandBuffer>, Error> = 0;
         [[nodiscard]] virtual auto createTexture(const TextureCreateInfo& createInfo) noexcept
-            -> tl::expected<std::unique_ptr<Texture>, Error> = 0;
+            -> tl::expected<std::shared_ptr<Texture>, Error> = 0;
 
         EXAGE_BASE_API(API, Context);
         [[nodiscard]] static auto create(ContextCreateInfo& createInfo) noexcept

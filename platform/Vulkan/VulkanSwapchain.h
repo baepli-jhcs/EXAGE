@@ -29,7 +29,7 @@ namespace exage::Graphics
         [[nodiscard]] auto resize(glm::uvec2 extent) noexcept -> std::optional<Error> override;
         [[nodiscard]] auto acquireNextImage(Queue& queue) noexcept -> std::optional<Error> override;
         [[nodiscard]] auto drawImage(CommandBuffer& commandBuffer,
-                                     Texture& texture) noexcept -> std::optional<Error> override;
+                                     const std::shared_ptr<Texture>& texture) noexcept -> std::optional<Error> override;
 
         [[nodiscard]] auto getSwapchain() const noexcept -> vk::SwapchainKHR
         {

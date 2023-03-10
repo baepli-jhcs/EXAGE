@@ -75,7 +75,7 @@ namespace exage::Graphics
 
     struct TextureBarrier
     {
-        Texture& texture;
+        std::shared_ptr<Texture> texture;
         Texture::Layout newLayout;
         PipelineStage srcStage;
         PipelineStage dstStage;
@@ -87,8 +87,8 @@ namespace exage::Graphics
 
     struct BlitCommand
     {
-        Texture& srcTexture;
-        Texture& dstTexture;
+        std::shared_ptr<Texture> srcTexture;
+        std::shared_ptr<Texture> dstTexture;
         glm::uvec3 srcOffset;
         glm::uvec3 dstOffset;
         uint32_t srcMipLevel;
@@ -98,6 +98,14 @@ namespace exage::Graphics
         glm::uvec3 extent;
     };
 
+    struct ClearColorCommand
+    {
+        std::shared_ptr<Texture> texture;
+        glm::vec4 color;
+        uint32_t mipLevel;
+        uint32_t layer;
+    };
+
     struct UserDefinedCommand
     {
         std::function<void(CommandBuffer&)> commandFunction;
@@ -105,4 +113,7 @@ namespace exage::Graphics
 
     using GPUCommand = std::
         variant<DrawCommand, DrawIndexedCommand, TextureBarrier, BlitCommand, UserDefinedCommand>;
+
+    using DataDependency =
+        std::variant<std::shared_ptr<Texture>>;  // Only required for user defined commands
 }  // namespace exage::Graphics

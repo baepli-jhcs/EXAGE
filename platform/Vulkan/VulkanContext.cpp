@@ -155,7 +155,8 @@ namespace exage::Graphics
                                           VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME,
                                           VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME,
                                           VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
-                                          VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME});
+                                          VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
+                                          VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME});
         //selector.add_desired_extensions({VK_EXT_MESH_SHADER_EXTENSION_NAME});
 
         auto phys = selector.select();
@@ -305,14 +306,14 @@ namespace exage::Graphics
     }
 
     auto VulkanContext::createTexture(const TextureCreateInfo& createInfo) noexcept
-        -> tl::expected<std::unique_ptr<Texture>, Error>
+        -> tl::expected<std::shared_ptr<Texture>, Error>
     {
         tl::expected value = VulkanTexture::create(*this, createInfo);
         if (!value.has_value())
         {
 			return tl::make_unexpected(value.error());
 		}
-		return std::make_unique<VulkanTexture>(std::move(value.value()));
+		return std::make_shared<VulkanTexture>(std::move(value.value()));
     }
 
     auto VulkanContext::createSurface(Window& window) const noexcept
