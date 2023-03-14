@@ -41,6 +41,8 @@ namespace exage::Graphics
             const QueueCreateInfo& createInfo) noexcept;
         std::optional<Error> init() noexcept;
 
+        void cleanup() noexcept;
+
         std::reference_wrapper<VulkanContext> _context;
 
         size_t _framesInFlight;

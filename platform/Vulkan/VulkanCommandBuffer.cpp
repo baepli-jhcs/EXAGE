@@ -1,5 +1,6 @@
 #include "Vulkan/VulkanCommandBuffer.h"
 
+#include "Vulkan/VulkanFrameBuffer.h"
 #include "Vulkan/VulkanQueue.h"
 #include "VulkanTexture.h"
 
@@ -34,15 +35,42 @@ namespace exage::Graphics
     VulkanCommandBuffer::VulkanCommandBuffer(VulkanCommandBuffer&& old) noexcept
         : _context(old._context)
     {
-        *this = std::move(old);
-    }
-
-    auto VulkanCommandBuffer::operator=(VulkanCommandBuffer&& old) noexcept -> VulkanCommandBuffer&
-    {
         _commandBuffer = old._commandBuffer;
         _commandPool = old._commandPool;
         _commands = std::move(old._commands);
         _commandsMutex = std::move(old._commandsMutex);
+        _dataDependencies = std::move(old._dataDependencies);
+        _dataDependenciesMutex = std::move(old._dataDependenciesMutex);
+
+        old._commandBuffer = nullptr;
+        old._commandPool = nullptr;
+    }
+
+    auto VulkanCommandBuffer::operator=(VulkanCommandBuffer&& old) noexcept -> VulkanCommandBuffer&
+    {
+        if (this == &old)
+        {
+            return *this;
+        }
+
+        _context = old._context;
+
+        if (_commandBuffer)
+        {
+            _context.get().getDevice().freeCommandBuffers(_commandPool, _commandBuffer);
+        }
+
+        if (_commandPool)
+        {
+            _context.get().getDevice().destroyCommandPool(_commandPool);
+        }
+
+        _commandBuffer = old._commandBuffer;
+        _commandPool = old._commandPool;
+        _commands = std::move(old._commands);
+        _commandsMutex = std::move(old._commandsMutex);
+        _dataDependencies = std::move(old._dataDependencies);
+        _dataDependenciesMutex = std::move(old._dataDependenciesMutex);
 
         old._commandBuffer = nullptr;
         old._commandPool = nullptr;
@@ -86,15 +114,15 @@ namespace exage::Graphics
         if (std::holds_alternative<TextureBarrier>(command))
         {
             TextureBarrier& barrier = std::get<TextureBarrier>(command);
-            barrier._oldLayout = barrier.texture -> _layout;
-            barrier.texture -> _layout = barrier.newLayout;
+            barrier._oldLayout = barrier.texture->_layout;
+            barrier.texture->_layout = barrier.newLayout;
         }
 
         std::lock_guard<std::mutex> lock(*_commandsMutex);
         _commands.push_back(command);
     }
 
-    void VulkanCommandBuffer::insertDataDependency(DataDependency dependency) noexcept 
+    void VulkanCommandBuffer::insertDataDependency(DataDependency dependency) noexcept
     {
         std::lock_guard<std::mutex> lock(*_dataDependenciesMutex);
         _dataDependencies.push_back(dependency);
@@ -163,7 +191,7 @@ namespace exage::Graphics
                     imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
                     imageMemoryBarrier.image = texture.getImage();
                     imageMemoryBarrier.subresourceRange.aspectMask =
-                        vk::ImageAspectFlagBits::eColor;
+                        toVulkanImageAspectFlags(texture.getUsage());
                     imageMemoryBarrier.subresourceRange.baseMipLevel = 0;
                     imageMemoryBarrier.subresourceRange.levelCount = texture.getMipLevelCount();
                     imageMemoryBarrier.subresourceRange.baseArrayLayer = 0;
@@ -190,10 +218,11 @@ namespace exage::Graphics
                     assert(dstTexture.getLayout() == Texture::Layout::eTransferDst);
 
                     vk::ImageBlit imageBlit;
-                    imageBlit.srcSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+                    imageBlit.srcSubresource.aspectMask =
+                        toVulkanImageAspectFlags(srcTexture.getUsage());
                     imageBlit.srcSubresource.mipLevel = copy.srcMipLevel;
-                    imageBlit.srcSubresource.baseArrayLayer = copy.srcLayer;
-                    imageBlit.srcSubresource.layerCount = 1;
+                    imageBlit.srcSubresource.baseArrayLayer = copy.srcFirstLayer;
+                    imageBlit.srcSubresource.layerCount = copy.layerCount;
                     imageBlit.srcOffsets[0] = vk::Offset3D {static_cast<int32_t>(copy.srcOffset.x),
                                                             static_cast<int32_t>(copy.srcOffset.y),
                                                             static_cast<int32_t>(copy.srcOffset.z)};
@@ -201,10 +230,11 @@ namespace exage::Graphics
                         vk::Offset3D {static_cast<int32_t>(copy.srcOffset.x + copy.extent.x),
                                       static_cast<int32_t>(copy.srcOffset.y + copy.extent.y),
                                       static_cast<int32_t>(copy.srcOffset.z + copy.extent.z)};
-                    imageBlit.dstSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+                    imageBlit.dstSubresource.aspectMask =
+                        toVulkanImageAspectFlags(dstTexture.getUsage());
                     imageBlit.dstSubresource.mipLevel = copy.dstMipLevel;
-                    imageBlit.dstSubresource.baseArrayLayer = copy.dstLayer;
-                    imageBlit.dstSubresource.layerCount = 1;
+                    imageBlit.dstSubresource.baseArrayLayer = copy.dstFirstLayer;
+                    imageBlit.dstSubresource.layerCount = copy.layerCount;
                     imageBlit.dstOffsets[0] = vk::Offset3D {static_cast<int32_t>(copy.dstOffset.x),
                                                             static_cast<int32_t>(copy.dstOffset.y),
                                                             static_cast<int32_t>(copy.dstOffset.z)};
@@ -221,7 +251,114 @@ namespace exage::Graphics
                                              &imageBlit,
                                              vk::Filter::eLinear);
                 },
-                [this](const UserDefinedCommand& cmd) { cmd.commandFunction(*this); }},
+                [this](const UserDefinedCommand& cmd) { cmd.commandFunction(*this); },
+                [this](const ViewportCommand& cmd)
+                {
+                    vk::Viewport viewport {};
+                    viewport.x = cmd.offset.x;
+                    viewport.y = cmd.offset.y;
+                    viewport.width = cmd.extent.x;
+                    viewport.height = cmd.extent.y;
+                    viewport.maxDepth = 1.0;
+                    viewport.minDepth = 0.0;
+
+                    _commandBuffer.setViewport(0, viewport);
+                },
+                [this](const ScissorCommand& cmd)
+                {
+                    vk::Rect2D rect {};
+                    rect.offset.x = cmd.offset.x;
+                    rect.offset.y = cmd.offset.y;
+                    rect.extent.width = cmd.extent.x;
+                    rect.extent.height = cmd.extent.y;
+                    _commandBuffer.setScissor(0, rect);
+                },
+                [this](const ClearTextureCommand& cmd)
+                {
+                    auto& texture = *cmd.texture->as<VulkanTexture>();
+
+                    assert(texture.getLayout() == Texture::Layout::eTransferDst);
+                    assert(texture.getUsage().none(Texture::UsageFlags::eDepthStencilAttachment));
+
+                    std::array<float, 4> color = {
+                        cmd.color.x, cmd.color.y, cmd.color.z, cmd.color.w};
+
+                    vk::ClearColorValue value {};
+                    value.float32 = color;
+
+                    vk::ImageSubresourceRange subresource {};
+                    subresource.baseMipLevel = cmd.mipLevel;
+                    subresource.levelCount = 1;
+                    subresource.baseArrayLayer = cmd.firstLayer;
+                    subresource.layerCount = cmd.layerCount;
+
+                    _commandBuffer.clearColorImage(texture.getImage(),
+                                                   vk::ImageLayout::eTransferDstOptimal,
+                                                   value,
+                                                   subresource);
+                },
+                [this](const BeginRenderingCommand& cmd)
+                {
+                    auto& frameBuffer = *cmd.frameBuffer->as<VulkanFrameBuffer>();
+
+                    const std::vector<std::shared_ptr<Texture>>& textures =
+                        frameBuffer.getTextures();
+                    assert(textures.size() == cmd.clearColors.size());
+
+                    vk::RenderingInfo renderingInfo {};
+                    glm::uvec2 extent = frameBuffer.getExtent();
+                    renderingInfo.renderArea =
+                        vk::Rect2D {vk::Offset2D {0, 0}, vk::Extent2D {extent.x, extent.y}};
+
+                    std::vector<vk::RenderingAttachmentInfo> info;
+                    info.reserve(textures.size());
+
+                    for (size_t i = 0; i < textures.size(); i++)
+                    {
+                        auto& vulkanTexture = *textures[i]->as<VulkanTexture>();
+                        auto& clearColor = cmd.clearColors[i];
+
+                        vk::RenderingAttachmentInfo attachmentInfo {};
+                        attachmentInfo.imageView = vulkanTexture.getImageView();
+                        attachmentInfo.imageLayout = toVulkanImageLayout(vulkanTexture.getLayout());
+                        attachmentInfo.resolveMode = vk::ResolveModeFlagBits::eNone;
+                        attachmentInfo.loadOp = clearColor.clear ? vk::AttachmentLoadOp::eClear
+                                                                 : vk::AttachmentLoadOp::eLoad;
+                        attachmentInfo.clearValue.color = std::array<float, 4> {clearColor.color.x,
+                                                                                clearColor.color.y,
+                                                                                clearColor.color.z,
+                                                                                clearColor.color.w};
+                        info.push_back(attachmentInfo);
+                    }
+
+                    renderingInfo.colorAttachmentCount = static_cast<uint32_t>(info.size());
+                    renderingInfo.pColorAttachments = info.data();
+
+                    std::shared_ptr<Texture> depthTexture = frameBuffer.getDepthStencilTexture();
+                    if (depthTexture)
+                    {
+                        auto& vulkanTexture = *depthTexture->as<VulkanTexture>();
+                        auto& clearDepth = cmd.clearDepth;
+
+                        vk::RenderingAttachmentInfo depthAttachmentInfo {};
+                        depthAttachmentInfo.imageView = vulkanTexture.getImageView();
+                        depthAttachmentInfo.imageLayout =
+                            toVulkanImageLayout(vulkanTexture.getLayout());
+                        depthAttachmentInfo.resolveMode = vk::ResolveModeFlagBits::eNone;
+                        depthAttachmentInfo.loadOp = clearDepth.clear ? vk::AttachmentLoadOp::eClear
+                                                                      : vk::AttachmentLoadOp::eLoad;
+                        depthAttachmentInfo.clearValue.depthStencil.depth = clearDepth.depth;
+                        depthAttachmentInfo.clearValue.depthStencil.stencil = clearDepth.stencil;
+
+                        renderingInfo.pDepthAttachment = &depthAttachmentInfo;
+                        renderingInfo.pStencilAttachment = &depthAttachmentInfo;
+                    }
+
+                    _commandBuffer.beginRendering(renderingInfo);
+                },
+                [this](const EndRenderingCommand& cmd) { _commandBuffer.endRendering(); }
+
+            },
             command);
     }
 }  // namespace exage::Graphics

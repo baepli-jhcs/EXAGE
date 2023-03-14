@@ -7,6 +7,8 @@
 
 namespace exage::Graphics
 {
+    struct SamplerCreateInfo;
+    
     struct EXAGE_EXPORT Sampler
     {
         virtual ~Sampler() = default;
@@ -39,6 +41,8 @@ namespace exage::Graphics
         [[nodiscard]] auto getFilter() const noexcept -> Filter { return _filter; }
         [[nodiscard]] auto getMipmapMode() const noexcept -> MipmapMode { return _mipmapMode; }
         [[nodiscard]] auto getLodBias() const noexcept -> float { return _lodBias; }
+
+        [[nodiscard]] auto getSamplerCreateInfo() const noexcept -> SamplerCreateInfo;
 
         EXAGE_BASE_API(API, Sampler);
 
@@ -76,7 +80,6 @@ namespace exage::Graphics
 
         using Usage = Flags<UsageFlags>;
 
-        Texture() noexcept = default;
         virtual ~Texture() = default;
         EXAGE_DELETE_COPY(Texture);
         EXAGE_DEFAULT_MOVE(Texture);
@@ -89,6 +92,8 @@ namespace exage::Graphics
 
         [[nodiscard]] auto getLayerCount() const noexcept -> uint32_t { return _layerCount; }
         [[nodiscard]] auto getMipLevelCount() const noexcept -> uint32_t { return _mipLevelCount; }
+
+        [[nodiscard]] auto getTextureCreateInfo() const noexcept -> TextureCreateInfo;
 
         [[nodiscard]] virtual auto getSampler() noexcept -> Sampler& = 0;
         [[nodiscard]] virtual auto getSampler() const noexcept -> const Sampler& = 0;

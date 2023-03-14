@@ -5,9 +5,8 @@
 
 namespace exage::Graphics
 {
-    tl::expected<VulkanQueue, Error> VulkanQueue::create(
-        VulkanContext& context,
-        const QueueCreateInfo& createInfo) noexcept
+    tl::expected<VulkanQueue, Error> VulkanQueue::create(VulkanContext& context,
+                                                         const QueueCreateInfo& createInfo) noexcept
     {
         VulkanQueue queue(context, createInfo);
         std::optional<Error> result = queue.init();
@@ -18,10 +17,11 @@ namespace exage::Graphics
         return queue;
     }
 
-    VulkanQueue::VulkanQueue(VulkanContext& context,
-                             const QueueCreateInfo& createInfo) noexcept
+    VulkanQueue::VulkanQueue(VulkanContext& context, const QueueCreateInfo& createInfo) noexcept
         : _context(context)
-          , _framesInFlight(createInfo.maxFramesInFlight) { }
+        , _framesInFlight(createInfo.maxFramesInFlight)
+    {
+    }
 
     std::optional<Error> VulkanQueue::init() noexcept
     {
@@ -37,9 +37,7 @@ namespace exage::Graphics
         for (size_t i = 0; i < _framesInFlight; i++)
         {
             vk::Result fenceResult = _context.get().getDevice().createFence(
-                &fenceCreateInfo,
-                nullptr,
-                &_renderFences[i]);
+                &fenceCreateInfo, nullptr, &_renderFences[i]);
 
             if (fenceResult != vk::Result::eSuccess)
             {
@@ -47,9 +45,7 @@ namespace exage::Graphics
             }
 
             vk::Result semaphoreResult = _context.get().getDevice().createSemaphore(
-                &semaphoreCreateInfo,
-                nullptr,
-                &_presentSemaphores[i]);
+                &semaphoreCreateInfo, nullptr, &_presentSemaphores[i]);
 
             if (semaphoreResult != vk::Result::eSuccess)
             {
@@ -57,9 +53,7 @@ namespace exage::Graphics
             }
 
             semaphoreResult = _context.get().getDevice().createSemaphore(
-                &semaphoreCreateInfo,
-                nullptr,
-                &_renderSemaphores[i]);
+                &semaphoreCreateInfo, nullptr, &_renderSemaphores[i]);
 
             if (semaphoreResult != vk::Result::eSuccess)
             {
@@ -72,8 +66,25 @@ namespace exage::Graphics
 
     VulkanQueue::~VulkanQueue()
     {
-        _context.get().waitIdle();
+        cleanup();
+    }
 
+    VulkanQueue::VulkanQueue(VulkanQueue&& old) noexcept
+        : _context(old._context)
+    {
+        _framesInFlight = old._framesInFlight;
+        _renderFences = std::move(old._renderFences);
+        _presentSemaphores = std::move(old._presentSemaphores);
+        _renderSemaphores = std::move(old._renderSemaphores);
+    }
+
+    void VulkanQueue::cleanup() noexcept
+    {
+        if (_presentSemaphores.size() != 0)
+        {
+            _context.get().waitIdle();
+        }
+        
         for (const auto& semaphore : _presentSemaphores)
         {
             _context.get().getDevice().destroySemaphore(semaphore);
@@ -90,14 +101,17 @@ namespace exage::Graphics
         }
     }
 
-    VulkanQueue::VulkanQueue(VulkanQueue&& old) noexcept
-        : _context(old._context)
-    {
-        *this = std::move(old);
-    }
-
     auto VulkanQueue::operator=(VulkanQueue&& old) noexcept -> VulkanQueue&
     {
+        if (this == &old)
+        {
+            return *this;
+        }
+
+        cleanup();
+
+        _context = old._context;
+
         _framesInFlight = old._framesInFlight;
         _renderFences = std::move(old._renderFences);
         _presentSemaphores = std::move(old._presentSemaphores);
@@ -188,8 +202,8 @@ namespace exage::Graphics
         return std::nullopt;
     }
 
-    auto VulkanQueue::submitTemporary(
-        std::unique_ptr<CommandBuffer> commandBuffer) -> std::optional<Error>
+    auto VulkanQueue::submitTemporary(std::unique_ptr<CommandBuffer> commandBuffer)
+        -> std::optional<Error>
     {
         vk::SubmitInfo vkSubmitInfo;
         vkSubmitInfo.commandBufferCount = 1;
@@ -233,4 +247,4 @@ namespace exage::Graphics
     {
         return _renderFences[_currentFrame];
     }
-}
+}  // namespace exage::Graphics

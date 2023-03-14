@@ -14,10 +14,11 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#include "VulkanTexture.h"
 #include "VulkanCommandBuffer.h"
+#include "VulkanFrameBuffer.h"
 #include "VulkanQueue.h"
 #include "VulkanSwapchain.h"
+#include "VulkanTexture.h"
 
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 
@@ -27,7 +28,7 @@ namespace
     vma::VulkanFunctions functionsFromDispatcher(InstanceDispatcher const* instance,
                                                  DeviceDispatcher const* device) noexcept
     {
-        return vma::VulkanFunctions{
+        return vma::VulkanFunctions {
             instance->vkGetInstanceProcAddr,
             instance->vkGetDeviceProcAddr,
             instance->vkGetPhysicalDeviceProperties,
@@ -47,21 +48,17 @@ namespace
             device->vkCreateImage,
             device->vkDestroyImage,
             device->vkCmdCopyBuffer,
-            device->vkGetBufferMemoryRequirements2KHR
-            ? device->vkGetBufferMemoryRequirements2KHR
-            : device->vkGetBufferMemoryRequirements2,
-            device->vkGetImageMemoryRequirements2KHR
-            ? device->vkGetImageMemoryRequirements2KHR
-            : device->vkGetImageMemoryRequirements2,
-            device->vkBindBufferMemory2KHR
-            ? device->vkBindBufferMemory2KHR
-            : device->vkBindBufferMemory2,
-            device->vkBindImageMemory2KHR
-            ? device->vkBindImageMemory2KHR
-            : device->vkBindImageMemory2,
+            device->vkGetBufferMemoryRequirements2KHR ? device->vkGetBufferMemoryRequirements2KHR
+                                                      : device->vkGetBufferMemoryRequirements2,
+            device->vkGetImageMemoryRequirements2KHR ? device->vkGetImageMemoryRequirements2KHR
+                                                     : device->vkGetImageMemoryRequirements2,
+            device->vkBindBufferMemory2KHR ? device->vkBindBufferMemory2KHR
+                                           : device->vkBindBufferMemory2,
+            device->vkBindImageMemory2KHR ? device->vkBindImageMemory2KHR
+                                          : device->vkBindImageMemory2,
             instance->vkGetPhysicalDeviceMemoryProperties2KHR
-            ? instance->vkGetPhysicalDeviceMemoryProperties2KHR
-            : instance->vkGetPhysicalDeviceMemoryProperties2,
+                ? instance->vkGetPhysicalDeviceMemoryProperties2KHR
+                : instance->vkGetPhysicalDeviceMemoryProperties2,
             device->vkGetDeviceBufferMemoryRequirements,
             device->vkGetDeviceImageMemoryRequirements};
     }
@@ -72,17 +69,15 @@ namespace
     {
         return functionsFromDispatcher(&dispatch, &dispatch);
     }
-} // namespace
+}  // namespace
 
 namespace exage::Graphics
 {
-    static vk::DynamicLoader dl{};
+    static vk::DynamicLoader dl {};
 
-
-    tl::expected<VulkanContext, Error> VulkanContext::create(
-        ContextCreateInfo& createInfo) noexcept
+    tl::expected<VulkanContext, Error> VulkanContext::create(ContextCreateInfo& createInfo) noexcept
     {
-        VulkanContext context{};
+        VulkanContext context {};
         std::optional<Error> result = context.init(createInfo);
         if (result.has_value())
         {
@@ -118,7 +113,7 @@ namespace exage::Graphics
 
         bool createWindow = createInfo.optionalWindow == nullptr;
         Window* window = createInfo.optionalWindow;
-        std::unique_ptr<Window> windowMemory{};
+        std::unique_ptr<Window> windowMemory {};
 
         if (createWindow)
         {
@@ -157,7 +152,7 @@ namespace exage::Graphics
                                           VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
                                           VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
                                           VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME});
-        //selector.add_desired_extensions({VK_EXT_MESH_SHADER_EXTENSION_NAME});
+        // selector.add_desired_extensions({VK_EXT_MESH_SHADER_EXTENSION_NAME});
 
         auto phys = selector.select();
         if (!phys)
@@ -168,7 +163,7 @@ namespace exage::Graphics
 
         vkb::DeviceBuilder deviceBuilder(_physicalDevice);
 
-        vk::PhysicalDeviceDescriptorIndexingFeaturesEXT descriptorIndexingFeatures{};
+        vk::PhysicalDeviceDescriptorIndexingFeaturesEXT descriptorIndexingFeatures {};
         descriptorIndexingFeatures.sType =
             vk::StructureType::ePhysicalDeviceDescriptorIndexingFeatures;
         descriptorIndexingFeatures.shaderInputAttachmentArrayDynamicIndexing = VK_TRUE;
@@ -192,7 +187,7 @@ namespace exage::Graphics
         descriptorIndexingFeatures.descriptorBindingVariableDescriptorCount = VK_TRUE;
         descriptorIndexingFeatures.runtimeDescriptorArray = VK_TRUE;
 
-        vk::PhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeatures{};
+        vk::PhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeatures {};
         dynamicRenderingFeatures.sType = vk::StructureType::ePhysicalDeviceDynamicRenderingFeatures;
         dynamicRenderingFeatures.dynamicRendering = VK_TRUE;
         descriptorIndexingFeatures.setPNext(&dynamicRenderingFeatures);
@@ -207,7 +202,7 @@ namespace exage::Graphics
 
         VULKAN_HPP_DEFAULT_DISPATCHER.init(_device.device);
 
-        vma::AllocatorCreateInfo allocatorInfo{};
+        vma::AllocatorCreateInfo allocatorInfo {};
         allocatorInfo.physicalDevice = _physicalDevice.physical_device;
         allocatorInfo.device = _device.device;
         allocatorInfo.instance = _instance.instance;
@@ -226,7 +221,6 @@ namespace exage::Graphics
 
         return std::nullopt;
     }
-
 
     VulkanContext::~VulkanContext()
     {
@@ -248,11 +242,39 @@ namespace exage::Graphics
 
     VulkanContext::VulkanContext(VulkanContext&& old) noexcept
     {
-        *this = std::move(old);
+        _instance = old._instance;
+        _physicalDevice = old._physicalDevice;
+        _device = old._device;
+        _allocator = old._allocator;
+
+        old._instance = {};
+        old._physicalDevice = {};
+        old._device = {};
+        old._allocator = nullptr;
     }
 
     auto VulkanContext::operator=(VulkanContext&& old) noexcept -> VulkanContext&
     {
+        if (this == &old)
+        {
+            return *this;
+        }
+
+        if (_allocator)
+        {
+            _allocator.destroy();
+        }
+
+        if (_device)
+        {
+            vkb::destroy_device(_device);
+        }
+
+        if (_instance)
+        {
+            vkb::destroy_instance(_instance);
+        }
+        
         _instance = old._instance;
         _physicalDevice = old._physicalDevice;
         _device = old._device;
@@ -271,8 +293,8 @@ namespace exage::Graphics
         getDevice().waitIdle();
     }
 
-    auto VulkanContext::createQueue(
-        const QueueCreateInfo& createInfo) noexcept -> tl::expected<std::unique_ptr<Queue>, Error>
+    auto VulkanContext::createQueue(const QueueCreateInfo& createInfo) noexcept
+        -> tl::expected<std::unique_ptr<Queue>, Error>
     {
         tl::expected value = VulkanQueue::create(*this, createInfo);
         if (!value.has_value())
@@ -284,7 +306,7 @@ namespace exage::Graphics
     }
 
     auto VulkanContext::createSwapchain(const SwapchainCreateInfo& createInfo) noexcept
-    -> tl::expected<std::unique_ptr<Swapchain>, Error>
+        -> tl::expected<std::unique_ptr<Swapchain>, Error>
     {
         tl::expected value = VulkanSwapchain::create(*this, createInfo);
         if (!value.has_value())
@@ -295,7 +317,7 @@ namespace exage::Graphics
     }
 
     auto VulkanContext::createCommandBuffer() noexcept
-    -> tl::expected<std::unique_ptr<CommandBuffer>, Error>
+        -> tl::expected<std::unique_ptr<CommandBuffer>, Error>
     {
         tl::expected value = VulkanCommandBuffer::create(*this);
         if (!value.has_value())
@@ -311,13 +333,24 @@ namespace exage::Graphics
         tl::expected value = VulkanTexture::create(*this, createInfo);
         if (!value.has_value())
         {
-			return tl::make_unexpected(value.error());
-		}
-		return std::make_shared<VulkanTexture>(std::move(value.value()));
+            return tl::make_unexpected(value.error());
+        }
+        return std::make_shared<VulkanTexture>(std::move(value.value()));
+    }
+
+    auto VulkanContext::createFrameBuffer(glm::uvec2 extent) noexcept
+        -> tl::expected<std::shared_ptr<FrameBuffer>, Error>
+    {
+        tl::expected value = VulkanFrameBuffer::create(*this, extent);
+        if (!value.has_value())
+        {
+            return tl::make_unexpected(value.error());
+        }
+        return std::make_shared<VulkanFrameBuffer>(std::move(value.value()));
     }
 
     auto VulkanContext::createSurface(Window& window) const noexcept
-    -> tl::expected<vk::SurfaceKHR, Error>
+        -> tl::expected<vk::SurfaceKHR, Error>
     {
         VkSurfaceKHR surface = nullptr;
         switch (window.getAPI())
@@ -330,10 +363,7 @@ namespace exage::Graphics
                     return tl::make_unexpected(ErrorCode::eInvalidWindow);
                 }
                 glfwCreateWindowSurface(
-                    _instance.instance,
-                    glfWindow->getGLFWWindow(),
-                    nullptr,
-                    &surface);
+                    _instance.instance, glfWindow->getGLFWWindow(), nullptr, &surface);
                 break;
             }
             default:
@@ -382,4 +412,4 @@ namespace exage::Graphics
     {
         return _physicalDevice.physical_device;
     }
-} // namespace exage::Graphics
+}  // namespace exage::Graphics

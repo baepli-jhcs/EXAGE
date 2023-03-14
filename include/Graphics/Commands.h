@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <variant>
 
 #include "Core/Core.h"
@@ -93,17 +94,55 @@ namespace exage::Graphics
         glm::uvec3 dstOffset;
         uint32_t srcMipLevel;
         uint32_t dstMipLevel;
-        uint32_t srcLayer;
-        uint32_t dstLayer;
+        uint32_t srcFirstLayer;
+        uint32_t dstFirstLayer;
+        uint32_t layerCount;
         glm::uvec3 extent;
     };
 
-    struct ClearColorCommand
+    struct ViewportCommand
+    {
+        glm::uvec2 offset;
+        glm::uvec2 extent;
+    };
+
+    struct ScissorCommand
+    {
+        glm::uvec2 offset;
+        glm::uvec2 extent;
+    };
+
+    struct ClearTextureCommand
     {
         std::shared_ptr<Texture> texture;
         glm::vec4 color;
         uint32_t mipLevel;
-        uint32_t layer;
+        uint32_t firstLayer;
+        uint32_t layerCount;
+    };
+
+    struct BeginRenderingCommand
+    {
+        struct ClearColor
+        {
+            bool clear;
+            glm::vec4 color;
+        };
+
+        struct ClearDepthStencil
+        {
+            bool clear = false;
+            float depth;
+            uint32_t stencil;
+        };
+
+        std::shared_ptr<FrameBuffer> frameBuffer;
+        std::vector<ClearColor> clearColors;
+        ClearDepthStencil clearDepth;
+    };
+
+    struct EndRenderingCommand
+    {
     };
 
     struct UserDefinedCommand
@@ -111,9 +150,18 @@ namespace exage::Graphics
         std::function<void(CommandBuffer&)> commandFunction;
     };
 
-    using GPUCommand = std::
-        variant<DrawCommand, DrawIndexedCommand, TextureBarrier, BlitCommand, UserDefinedCommand>;
+    using GPUCommand = std::variant<DrawCommand,
+                                    DrawIndexedCommand,
+                                    TextureBarrier,
+                                    BlitCommand,
+                                    UserDefinedCommand,
+                                    ViewportCommand,
+                                    ScissorCommand,
+                                    ClearTextureCommand,
+                                    BeginRenderingCommand,
+                                    EndRenderingCommand>;
 
     using DataDependency =
-        std::variant<std::shared_ptr<Texture>>;  // Only required for user defined commands
+        std::variant<std::shared_ptr<Texture>,
+                     std::shared_ptr<FrameBuffer>>;  // Only required for user defined commands
 }  // namespace exage::Graphics

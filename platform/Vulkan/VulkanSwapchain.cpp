@@ -113,10 +113,9 @@ namespace exage::Graphics
 
     VulkanSwapchain::~VulkanSwapchain()
     {
-        _context.get().waitIdle();
-
         if (_swapchain)
         {
+            _context.get().waitIdle();
             vkb::destroy_swapchain(_swapchain);
         }
 
@@ -129,11 +128,40 @@ namespace exage::Graphics
     VulkanSwapchain::VulkanSwapchain(VulkanSwapchain&& old) noexcept
         : _context(old._context)
     {
-        *this = std::move(old);
+        _swapchain = old._swapchain;
+        _surface = old._surface;
+        _oldSwapchain = old._oldSwapchain;
+        _swapchainImages = old._swapchainImages;
+        _swapchainTransitioned = std::move(old._swapchainTransitioned);
+        _extent = old._extent;
+        _format = old._format;
+        _presentMode = old._presentMode;
+
+        old._surface = nullptr;
+        old._swapchain = {};
+        old._oldSwapchain = nullptr;
     }
 
     auto VulkanSwapchain::operator=(VulkanSwapchain&& old) noexcept -> VulkanSwapchain&
     {
+        if (this == &old)
+        {
+            return *this;
+        }
+
+        if (_swapchain)
+        {
+            _context.get().waitIdle();
+            vkb::destroy_swapchain(_swapchain);
+        }
+
+        if (_surface)
+        {
+            vkb::destroy_surface(_context.get().getInstance(), _surface);
+        }
+
+        _context = old._context;
+        
         _swapchain = old._swapchain;
         _surface = old._surface;
         _oldSwapchain = old._oldSwapchain;

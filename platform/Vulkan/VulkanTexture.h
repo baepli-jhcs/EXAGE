@@ -67,6 +67,8 @@ namespace exage::Graphics
         VulkanTexture(VulkanContext& context, const TextureCreateInfo& createInfo) noexcept;
         [[nodiscard]] auto init(const SamplerCreateInfo& samplerInfo) noexcept -> std::optional<Error>;
 
+        void cleanup() noexcept;
+
         std::reference_wrapper<VulkanContext> _context;
 
         vma::Allocation _allocation;

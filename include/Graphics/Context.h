@@ -25,6 +25,7 @@ namespace exage::Graphics
     };
 
     class CommandBuffer;
+    class FrameBuffer;
     class Queue;
     class Swapchain;
     class Texture;
@@ -47,6 +48,8 @@ namespace exage::Graphics
             -> tl::expected<std::unique_ptr<CommandBuffer>, Error> = 0;
         [[nodiscard]] virtual auto createTexture(const TextureCreateInfo& createInfo) noexcept
             -> tl::expected<std::shared_ptr<Texture>, Error> = 0;
+        [[nodiscard]] virtual auto createFrameBuffer(glm::uvec2 extent) noexcept 
+            -> tl::expected<std::shared_ptr<FrameBuffer>, Error> = 0;
 
         EXAGE_BASE_API(API, Context);
         [[nodiscard]] static auto create(ContextCreateInfo& createInfo) noexcept

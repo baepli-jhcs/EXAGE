@@ -1,7 +1,8 @@
 ﻿#pragma once
 
-#include "Core/Core.h"
 #include <variant>
+
+#include "Core/Core.h"
 
 namespace exage::Graphics
 {
@@ -43,8 +44,12 @@ namespace exage::Graphics
         eTextureViewCreationFailed,
 
         eWrongTextureLayout,
-        eWrongTextureType
+        eWrongTextureType,
+
+        eFrameBufferTextureExtentMismatch,
+        eFrameBufferTextureType,
+        eFrameBufferTextureUsage,
     };
 
     using Error = std::variant<ErrorCode>;
-} // namespace exage::Graphics
+}  // namespace exage::Graphics

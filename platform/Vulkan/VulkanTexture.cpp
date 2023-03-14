@@ -27,12 +27,23 @@ namespace exage::Graphics
         : Sampler(std::move(old))
         , _context(old._context)
     {
-        *this = std::move(old);
+        _sampler = old._sampler;
+        old._sampler = nullptr;
     }
 
     auto VulkanSampler::operator=(VulkanSampler&& old) noexcept -> VulkanSampler&
     {
-        Sampler::operator=(std::move(old));
+        if (this == &old)
+        {
+            return *this;
+        }
+
+        if (_sampler)
+        {
+            _context.get().getDevice().destroySampler(_sampler);
+        }
+
+        _context = old._context;
 
         _sampler = old._sampler;
         old._sampler = nullptr;
@@ -95,6 +106,11 @@ namespace exage::Graphics
 
     VulkanTexture::~VulkanTexture()
     {
+        cleanup();
+    }
+
+    void VulkanTexture::cleanup() noexcept
+    {
         if (_imageView)
         {
             _context.get().getDevice().destroyImageView(_imageView);
@@ -115,12 +131,26 @@ namespace exage::Graphics
         : Texture(std::move(old))
         , _context(old._context)
     {
-        *this = std::move(old);
+        _allocation = old._allocation;
+        _image = old._image;
+        _imageView = old._imageView;
+        _sampler = std::move(old._sampler);
+
+        old._allocation = nullptr;
+        old._image = nullptr;
+        old._imageView = nullptr;
     }
 
     auto VulkanTexture::operator=(VulkanTexture&& old) noexcept -> VulkanTexture&
     {
-        Texture::operator=(std::move(old));
+        if (this == &old)
+        {
+            return *this;
+        }
+
+        cleanup();
+
+        _context = old._context;
 
         _allocation = old._allocation;
         _image = old._image;
@@ -182,8 +212,8 @@ namespace exage::Graphics
         viewInfo.image = _image;
         viewInfo.components = vk::ComponentMapping();
         viewInfo.format = format;
-        viewInfo.subresourceRange = vk::ImageSubresourceRange(aspectFlags, 0, _mipLevelCount, 0,
-            															  _layerCount);
+        viewInfo.subresourceRange =
+            vk::ImageSubresourceRange(aspectFlags, 0, _mipLevelCount, 0, _layerCount);
 
         result = _context.get().getDevice().createImageView(&viewInfo, nullptr, &_imageView);
         if (result != vk::Result::eSuccess)
