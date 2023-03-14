@@ -1,4 +1,4 @@
-#include "Core/Core.h"
+﻿#include "Core/Core.h"
 
 #include <GLFW/glfw3.h>
 
@@ -9,4 +9,4 @@ namespace exage
         // Initialize the engine
         glfwInit();
     }
-}
+} // namespace exage

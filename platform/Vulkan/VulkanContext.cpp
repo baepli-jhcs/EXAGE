@@ -1,4 +1,4 @@
-#define VMA_IMPLEMENTATION
+﻿#define VMA_IMPLEMENTATION
 #include "VulkanContext.h"
 
 #include <GLFW/GLFWindow.h>

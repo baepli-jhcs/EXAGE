@@ -1,4 +1,4 @@
-#include "Vulkan/VulkanCommandBuffer.h"
+﻿#include "Vulkan/VulkanCommandBuffer.h"
 
 #include "Vulkan/VulkanFrameBuffer.h"
 #include "Vulkan/VulkanQueue.h"
@@ -214,9 +214,6 @@ namespace exage::Graphics
                     auto& srcTexture = *copy.srcTexture->as<VulkanTexture>();
                     auto& dstTexture = *copy.dstTexture->as<VulkanTexture>();
 
-                    assert(srcTexture.getLayout() == Texture::Layout::eTransferSrc);
-                    assert(dstTexture.getLayout() == Texture::Layout::eTransferDst);
-
                     vk::ImageBlit imageBlit;
                     imageBlit.srcSubresource.aspectMask =
                         toVulkanImageAspectFlags(srcTexture.getUsage());
@@ -277,7 +274,6 @@ namespace exage::Graphics
                 {
                     auto& texture = *cmd.texture->as<VulkanTexture>();
 
-                    assert(texture.getLayout() == Texture::Layout::eTransferDst);
                     assert(texture.getUsage().none(Texture::UsageFlags::eDepthStencilAttachment));
 
                     std::array<float, 4> color = {
@@ -309,6 +305,7 @@ namespace exage::Graphics
                     glm::uvec2 extent = frameBuffer.getExtent();
                     renderingInfo.renderArea =
                         vk::Rect2D {vk::Offset2D {0, 0}, vk::Extent2D {extent.x, extent.y}};
+                    renderingInfo.layerCount = 1;
 
                     std::vector<vk::RenderingAttachmentInfo> info;
                     info.reserve(textures.size());
@@ -320,7 +317,7 @@ namespace exage::Graphics
 
                         vk::RenderingAttachmentInfo attachmentInfo {};
                         attachmentInfo.imageView = vulkanTexture.getImageView();
-                        attachmentInfo.imageLayout = toVulkanImageLayout(vulkanTexture.getLayout());
+                        attachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
                         attachmentInfo.resolveMode = vk::ResolveModeFlagBits::eNone;
                         attachmentInfo.loadOp = clearColor.clear ? vk::AttachmentLoadOp::eClear
                                                                  : vk::AttachmentLoadOp::eLoad;
@@ -342,8 +339,7 @@ namespace exage::Graphics
 
                         vk::RenderingAttachmentInfo depthAttachmentInfo {};
                         depthAttachmentInfo.imageView = vulkanTexture.getImageView();
-                        depthAttachmentInfo.imageLayout =
-                            toVulkanImageLayout(vulkanTexture.getLayout());
+                        depthAttachmentInfo.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
                         depthAttachmentInfo.resolveMode = vk::ResolveModeFlagBits::eNone;
                         depthAttachmentInfo.loadOp = clearDepth.clear ? vk::AttachmentLoadOp::eClear
                                                                       : vk::AttachmentLoadOp::eLoad;

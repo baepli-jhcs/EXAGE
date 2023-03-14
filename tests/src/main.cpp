@@ -1,4 +1,4 @@
-#define CATCH_CONFIG_RUNNER
+﻿#define CATCH_CONFIG_RUNNER
 
 #include "catch2/catch_session.hpp"
 #include "Core/Core.h"

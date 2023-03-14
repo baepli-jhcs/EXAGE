@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <memory_resource>
 #include <optional>
@@ -23,8 +23,8 @@ namespace exage::Graphics
         [[nodiscard]] virtual auto begin() noexcept -> std::optional<Error> = 0;
         [[nodiscard]] virtual auto end() noexcept -> std::optional<Error> = 0;
 
-        [[nodiscard]] virtual void submitCommand(GPUCommand command) noexcept = 0;
-        [[nodiscard]] virtual void insertDataDependency(DataDependency dependency) noexcept = 0;
+        virtual void submitCommand(GPUCommand command) noexcept = 0;
+        virtual void insertDataDependency(DataDependency dependency) noexcept = 0;
 
         EXAGE_BASE_API(API, CommandBuffer);
     };

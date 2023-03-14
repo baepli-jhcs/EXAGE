@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Graphics/Queue.h"
 #include "Vulkan/VulkanContext.h"

@@ -1,4 +1,4 @@
-#ifndef GLFW_INCLUDE_NONE
+﻿#ifndef GLFW_INCLUDE_NONE
 #    define GLFW_INCLUDE_NONE
 #    include "Core/Window.h"
 #endif

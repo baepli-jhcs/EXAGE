@@ -1,17 +1,17 @@
-#pragma once
+﻿#pragma once
 #include <memory_resource>
 
-#include "Vulkan/VulkanContext.h"
 #include "Graphics/CommandBuffer.h"
 #include "Graphics/Commands.h"
+#include "Vulkan/VulkanContext.h"
 
 namespace exage::Graphics
 {
     class EXAGE_EXPORT VulkanCommandBuffer final : public CommandBuffer
     {
-    public:
+      public:
         [[nodiscard]] static auto create(VulkanContext& context) noexcept
-        -> tl::expected<VulkanCommandBuffer, Error>;
+            -> tl::expected<VulkanCommandBuffer, Error>;
         ~VulkanCommandBuffer() override;
 
         EXAGE_DELETE_COPY(VulkanCommandBuffer);
@@ -22,8 +22,8 @@ namespace exage::Graphics
         [[nodiscard]] auto begin() noexcept -> std::optional<Error> override;
         [[nodiscard]] auto end() noexcept -> std::optional<Error> override;
 
-        [[nodiscard]] void submitCommand(GPUCommand command) noexcept override;
-        [[nodiscard]] void insertDataDependency(DataDependency dependency) noexcept override;
+        void submitCommand(GPUCommand command) noexcept override;
+        void insertDataDependency(DataDependency dependency) noexcept override;
 
         [[nodiscard]] auto getCommandBuffer() const noexcept -> vk::CommandBuffer
         {
@@ -32,7 +32,7 @@ namespace exage::Graphics
 
         EXAGE_VULKAN_DERIVED
 
-    private:
+      private:
         explicit VulkanCommandBuffer(VulkanContext& context) noexcept;
         [[nodiscard]] auto init() noexcept -> std::optional<Error>;
 
@@ -42,9 +42,9 @@ namespace exage::Graphics
         vk::CommandPool _commandPool;
         vk::CommandBuffer _commandBuffer;
 
-        std::vector<GPUCommand> _commands{};
+        std::vector<GPUCommand> _commands {};
         std::vector<DataDependency> _dataDependencies {};
         std::unique_ptr<std::mutex> _commandsMutex = std::make_unique<std::mutex>();
         std::unique_ptr<std::mutex> _dataDependenciesMutex = std::make_unique<std::mutex>();
     };
-} // namespace exage::Graphics
+}  // namespace exage::Graphics

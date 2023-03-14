@@ -1,4 +1,4 @@
-// dear imgui: Platform Backend for GLFW
+﻿// dear imgui: Platform Backend for GLFW
 // This needs to be used along with a Renderer (e.g. OpenGL3, Vulkan, WebGPU..)
 // (Info: GLFW is a cross-platform general purpose library for handling windows, inputs,
 // OpenGL/Vulkan graphics context creation, etc.) (Requires: GLFW 3.1+. Prefer GLFW 3.3+ for full
@@ -26,6 +26,8 @@
 // https://github.com/ocornut/imgui/tree/master/docs
 
 #pragma once
+// NOLINTBEGIN
+
 #include "imgui.h"  // IMGUI_IMPL_API
 
 struct GLFWwindow;
@@ -70,3 +72,5 @@ IMGUI_IMPL_API void ImGui_ImplGlfw_KeyCallback(
     GLFWwindow* window, int key, int scancode, int action, int mods);
 IMGUI_IMPL_API void ImGui_ImplGlfw_CharCallback(GLFWwindow* window, unsigned int c);
 IMGUI_IMPL_API void ImGui_ImplGlfw_MonitorCallback(GLFWmonitor* monitor, int event);
+
+// NOLINTEND

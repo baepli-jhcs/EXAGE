@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #define EXAGE_DELETE_COPY(Class) \
     Class(const Class&) noexcept = delete; \

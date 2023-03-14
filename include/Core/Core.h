@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #ifdef EXAGE_WINDOWS
 #    define EXAGE_EXPORT __declspec(dllexport)
@@ -18,4 +18,4 @@ namespace exage
 {
     // Sets up required engine components
     EXAGE_EXPORT void init();
-}
+} // namespace exage

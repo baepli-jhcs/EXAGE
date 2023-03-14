@@ -1,4 +1,4 @@
-#include "VulkanTexture.h"
+﻿#include "VulkanTexture.h"
 
 namespace exage::Graphics
 {
@@ -71,7 +71,25 @@ namespace exage::Graphics
         samplerInfo.addressModeV = vk::SamplerAddressMode::eRepeat;
         samplerInfo.addressModeW = vk::SamplerAddressMode::eRepeat;
         samplerInfo.anisotropyEnable = _anisotropy != Anisotropy::eDisabled;
-        samplerInfo.maxAnisotropy = static_cast<float>(_anisotropy);
+
+        switch (_anisotropy)
+        {
+            case Anisotropy::eDisabled:
+                samplerInfo.maxAnisotropy = 1.0f;
+                break;
+            case Anisotropy::e2:
+                samplerInfo.maxAnisotropy = 2.0f;
+                break;
+            case Anisotropy::e4:
+                samplerInfo.maxAnisotropy = 4.0f;
+                break;
+            case Anisotropy::e8:
+                samplerInfo.maxAnisotropy = 8.0f;
+                break;
+            case Anisotropy::e16:
+                samplerInfo.maxAnisotropy = 16.0f;
+                break;
+        }
         samplerInfo.borderColor = vk::BorderColor::eFloatOpaqueWhite;
         samplerInfo.unnormalizedCoordinates = false;
         samplerInfo.compareEnable = false;
@@ -224,6 +242,7 @@ namespace exage::Graphics
         {
             return sampler.error();
         }
+        _sampler = std::move(sampler.value());
 
         return std::nullopt;
     }

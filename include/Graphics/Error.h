@@ -4,10 +4,14 @@
 
 #include "Core/Core.h"
 
+enum class vk::Result;
+
 namespace exage::Graphics
 {
     enum class ErrorCode : uint32_t
     {
+        eSwapchainOutOfDate,
+
         eInvalidEnum,
         eInvalidAPI,
 
@@ -52,4 +56,11 @@ namespace exage::Graphics
     };
 
     using Error = std::variant<ErrorCode>;
+    
+    struct FatalVulkanError
+    {
+        vk::Result result;
+    };
+
+    using FatalError = std::variant<FatalVulkanError>;
 }  // namespace exage::Graphics

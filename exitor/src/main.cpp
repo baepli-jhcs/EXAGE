@@ -1,7 +1,9 @@
-#include "Core/Core.h"
+﻿#include "Core/Core.h"
 #include "Graphics/Context.h"
+#include "Graphics/FrameBuffer.h"
 #include "Graphics/HLPD/ImGuiTools.h"
 #include "Graphics/Queue.h"
+#include "glm/gtc/random.hpp"
 
 using namespace exage;
 using namespace exage::Graphics;
@@ -13,7 +15,7 @@ struct ResizeData
     Context& ctx;
     Swapchain& swap;
     TextureCreateInfo& textureCreateInfo;
-    tl::expected<std::shared_ptr<Texture>, Error>& texture;
+    FrameBuffer& frameBuffer;
 };
 
 auto main(int argc, char* argv[]) -> int
@@ -35,26 +37,31 @@ auto main(int argc, char* argv[]) -> int
     QueueCreateInfo queueCreateInfo {.maxFramesInFlight = 2};
     tl::expected queue = context.value()->createQueue(queueCreateInfo);
 
-    SwapchainCreateInfo swapchainCreateInfo {.window = *windowReturn.value()};
+    SwapchainCreateInfo swapchainCreateInfo {.window = *windowReturn.value(), .presentMode = PresentMode::eDoubleBufferVSync};
     tl::expected swapchain(context.value()->createSwapchain(swapchainCreateInfo));
 
     QueueCommandRepoCreateInfo queueCommandRepoCreateInfo {.context = *context.value(),
                                                            .queue = *queue.value()};
     tl::expected queueCommandRepo(QueueCommandRepo::create(queueCommandRepoCreateInfo));
 
-    TextureCreateInfo textureCreateInfo {.extent = {1280, 720, 1},
-                                         .usage = Texture::UsageFlags::eTransferSource};
+    TextureCreateInfo textureCreateInfo {
+        .extent = {1280, 720, 1},
+        .usage = Texture::UsageFlags::eTransferSource | Texture::UsageFlags::eColorAttachment};
 
     tl::expected texture = context.value()->createTexture(textureCreateInfo);
+
+    tl::expected frameBuffer = context.value()->createFrameBuffer(glm::uvec2 {1280, 720});
+    std::optional<Error> frameError = frameBuffer.value()->attachColor(texture.value());
 
     Window& window = *windowReturn.value();
     Context& ctx = *context.value();
     Queue& que = *queue.value();
     Swapchain& swap = *swapchain.value();
     QueueCommandRepo& repo = queueCommandRepo.value();
+    FrameBuffer& frame = *frameBuffer.value();
 
     ResizeData resizeData {
-        .ctx = ctx, .swap = swap, .textureCreateInfo = textureCreateInfo, .texture = texture};
+        .ctx = ctx, .swap = swap, .textureCreateInfo = textureCreateInfo, .frameBuffer = frame};
 
     ResizeCallback callback = {&resizeData, resizeCallback};
 
@@ -69,7 +76,34 @@ auto main(int argc, char* argv[]) -> int
         std::optional swapError = swap.acquireNextImage(que);
         std::optional cmdError = cmd.begin();
 
-        TextureBarrier barrier {.texture = texture.value(),
+        std::shared_ptr<Texture> texture = frame.getTexture(0);
+
+        TextureBarrier colorBarrier {
+            .texture = texture,
+            .newLayout = Texture::Layout::eColorAttachment,
+            .srcStage = PipelineStageFlags::eTransfer,
+            .dstStage = PipelineStageFlags::eColorAttachmentOutput,
+            .srcAccess = AccessFlags::eTransferWrite,
+            .dstAccess = AccessFlags::eColorAttachmentWrite,
+        };
+
+        cmd.submitCommand(colorBarrier);
+
+        // glm vec4 random clear color
+        glm::vec4 clearCol = glm::linearRand(glm::vec4 {0.0f}, glm::vec4 {1.0f});
+
+        BeginRenderingCommand::ClearColor clearColor {.clear = true,
+                                                      .color = clearCol};
+        BeginRenderingCommand::ClearDepthStencil clearDepthStencil {.clear = false};
+        BeginRenderingCommand beginRenderingCommand {.frameBuffer = frameBuffer.value(),
+                                                     .clearColors = {clearColor},
+                                                     .clearDepth = clearDepthStencil};
+
+        cmd.submitCommand(beginRenderingCommand);
+
+        cmd.submitCommand(EndRenderingCommand {});
+
+        TextureBarrier barrier {.texture = texture,
                                 .newLayout = Texture::Layout::eTransferSrc,
                                 .srcStage = PipelineStageFlags::eTopOfPipe,
                                 .dstStage = PipelineStageFlags::eTransfer,
@@ -77,7 +111,7 @@ auto main(int argc, char* argv[]) -> int
                                 .dstAccess = AccessFlags::eTransferWrite};
         cmd.submitCommand(barrier);
 
-        swapError = swap.drawImage(cmd, texture.value());
+        swapError = swap.drawImage(cmd, texture);
 
         cmdError = cmd.end();
         QueueSubmitInfo submitInfo {.commandBuffer = cmd};
@@ -93,7 +127,5 @@ static void resizeCallback(void* data, glm::uvec2 extent)
 {
     ResizeData* resizeData = static_cast<ResizeData*>(data);
     std::optional<Error> swapError = resizeData->swap.resize(extent);
-    resizeData->textureCreateInfo.extent = {extent.x, extent.y, 1};
-
-    resizeData->texture = resizeData->ctx.createTexture(resizeData->textureCreateInfo);
+    std::optional<Error> frameError = resizeData->frameBuffer.resize(extent);
 }
