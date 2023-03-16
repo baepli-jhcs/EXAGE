@@ -95,10 +95,7 @@ namespace exage::Graphics
         beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
 
         vk::Result result = _commandBuffer.begin(&beginInfo);
-        if (result != vk::Result::eSuccess)
-        {
-            return ErrorCode::eCommandBufferBeginFailed;
-        }
+        checkVulkan(result);
 
         for (GPUCommand& command : _commands)
         {
@@ -141,11 +138,7 @@ namespace exage::Graphics
 
         vk::Result result = _context.get().getDevice().createCommandPool(
             &commandPoolCreateInfo, nullptr, &_commandPool);
-
-        if (result != vk::Result::eSuccess)
-        {
-            return ErrorCode::eCommandPoolCreationFailed;
-        }
+        checkVulkan(result);
 
         vk::CommandBufferAllocateInfo commandBufferAllocateInfo;
         commandBufferAllocateInfo.level = vk::CommandBufferLevel::ePrimary;
@@ -154,11 +147,7 @@ namespace exage::Graphics
 
         result = _context.get().getDevice().allocateCommandBuffers(&commandBufferAllocateInfo,
                                                                    &_commandBuffer);
-
-        if (result != vk::Result::eSuccess)
-        {
-            return ErrorCode::eCommandBufferCreationFailed;
-        }
+        checkVulkan(result);
 
         return std::nullopt;
     }
@@ -274,7 +263,7 @@ namespace exage::Graphics
                 {
                     auto& texture = *cmd.texture->as<VulkanTexture>();
 
-                    assert(texture.getUsage().none(Texture::UsageFlags::eDepthStencilAttachment));
+                    ASSUME(texture.getUsage().none(Texture::UsageFlags::eDepthStencilAttachment));
 
                     std::array<float, 4> color = {
                         cmd.color.x, cmd.color.y, cmd.color.z, cmd.color.w};
@@ -299,7 +288,7 @@ namespace exage::Graphics
 
                     const std::vector<std::shared_ptr<Texture>>& textures =
                         frameBuffer.getTextures();
-                    assert(textures.size() == cmd.clearColors.size());
+                    ASSUME(textures.size() == cmd.clearColors.size(), "There must be one clear color struct set per texture");
 
                     vk::RenderingInfo renderingInfo {};
                     glm::uvec2 extent = frameBuffer.getExtent();

@@ -39,26 +39,17 @@ namespace exage::Graphics
             vk::Result fenceResult = _context.get().getDevice().createFence(
                 &fenceCreateInfo, nullptr, &_renderFences[i]);
 
-            if (fenceResult != vk::Result::eSuccess)
-            {
-                return ErrorCode::eFenceCreationFailed;
-            }
+            checkVulkan(fenceResult);
 
             vk::Result semaphoreResult = _context.get().getDevice().createSemaphore(
                 &semaphoreCreateInfo, nullptr, &_presentSemaphores[i]);
 
-            if (semaphoreResult != vk::Result::eSuccess)
-            {
-                return ErrorCode::eSemaphoreCreationFailed;
-            }
+            checkVulkan(semaphoreResult);
 
             semaphoreResult = _context.get().getDevice().createSemaphore(
                 &semaphoreCreateInfo, nullptr, &_renderSemaphores[i]);
 
-            if (semaphoreResult != vk::Result::eSuccess)
-            {
-                return ErrorCode::eSemaphoreCreationFailed;
-            }
+           checkVulkan(semaphoreResult);
         }
 
         return std::nullopt;
@@ -131,17 +122,11 @@ namespace exage::Graphics
                                                      true,
                                                      std::numeric_limits<uint64_t>::max());
 
-        if (result != vk::Result::eSuccess)
-        {
-            return ErrorCode::eFenceWaitFailed;
-        }
+        checkVulkan(result);
 
         result = _context.get().getDevice().resetFences(1, &_renderFences[_currentFrame]);
 
-        if (result != vk::Result::eSuccess)
-        {
-            return ErrorCode::eFenceResetFailed;
-        }
+        checkVulkan(result);
 
         return std::nullopt;
     }
@@ -165,10 +150,7 @@ namespace exage::Graphics
 
         vk::Result result =
             _context.get().getVulkanQueue().submit(1, &vkSubmitInfo, _renderFences[_currentFrame]);
-        if (result != vk::Result::eSuccess)
-        {
-            return ErrorCode::eQueueSubmitFailed;
-        }
+        checkVulkan(result);
 
         return std::nullopt;
     }
@@ -192,12 +174,10 @@ namespace exage::Graphics
 
         if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eSuboptimalKHR)
         {
-            return ErrorCode::eSwapchainNeedsResize;
+            return ErrorCode::eSwapchainOutOfDate;
         }
-        if (result != vk::Result::eSuccess)
-        {
-            return ErrorCode::eQueuePresentFailed;
-        }
+
+        checkVulkan(result);
 
         return std::nullopt;
     }
@@ -214,10 +194,7 @@ namespace exage::Graphics
         vkSubmitInfo.pCommandBuffers = &vkCommand;
 
         vk::Result result = _context.get().getVulkanQueue().submit(1, &vkSubmitInfo, nullptr);
-        if (result != vk::Result::eSuccess)
-        {
-            return ErrorCode::eQueueSubmitFailed;
-        }
+        checkVulkan(result);
 
         _context.get().waitIdle();
         return std::nullopt;

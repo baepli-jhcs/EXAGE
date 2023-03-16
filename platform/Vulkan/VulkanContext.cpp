@@ -102,10 +102,7 @@ namespace exage::Graphics
 #endif
 
         auto inst = builder.build();
-        if (!inst)
-        {
-            return ErrorCode::eInstanceCreationFailed;
-        }
+        ASSUME(inst, "Failed to create instance", inst.error());
 
         _instance = inst.value();
 
@@ -126,11 +123,7 @@ namespace exage::Graphics
             tl::expected<std::unique_ptr<Window>, WindowError> windowRes =
                 Window::create(info, createInfo.windowAPI);
 
-            if (!windowRes)
-            {
-                return ErrorCode::eInvalidWindow;
-            }
-
+            ASSUME(windowRes, "Failed to create window", windowRes.error());
             windowMemory = std::move(windowRes.value());
             window = windowMemory.get();
         }
@@ -157,7 +150,7 @@ namespace exage::Graphics
         auto phys = selector.select();
         if (!phys)
         {
-            return ErrorCode::ePhysicalDeviceSelectionFailed;
+            return ErrorCode::eUnsupportedAPI;
         }
         _physicalDevice = phys.value();
 
@@ -194,10 +187,7 @@ namespace exage::Graphics
 
         deviceBuilder.add_pNext(&descriptorIndexingFeatures);
         auto device = deviceBuilder.build();
-        if (!device)
-        {
-            return ErrorCode::eDeviceCreationFailed;
-        }
+        checkVulkan(static_cast<vk::Result>(device.vk_result()));
         _device = device.value();
 
         VULKAN_HPP_DEFAULT_DISPATCHER.init(_device.device);
@@ -212,10 +202,7 @@ namespace exage::Graphics
         allocatorInfo.pVulkanFunctions = &functions;
 
         vk::Result result = vma::createAllocator(&allocatorInfo, &_allocator);
-        if (result != vk::Result::eSuccess)
-        {
-            return ErrorCode::eAllocatorCreationFailed;
-        }
+        checkVulkan(result);
 
         vkb::destroy_surface(_instance, surface);
 
@@ -358,21 +345,18 @@ namespace exage::Graphics
             case WindowAPI::eGLFW:
             {
                 const auto* glfWindow = dynamicCast<GLFWindow*>(&window);
-                if (!glfWindow)
-                {
-                    return tl::make_unexpected(ErrorCode::eInvalidWindow);
-                }
+                ASSUME(glfWindow != nullptr);
                 glfwCreateWindowSurface(
                     _instance.instance, glfWindow->getGLFWWindow(), nullptr, &surface);
                 break;
             }
             default:
-                return tl::make_unexpected(ErrorCode::eInvalidWindow);
+                break;
         }
 
         if (surface == nullptr)
         {
-            return tl::make_unexpected(ErrorCode::eSurfaceCreationFailed);
+            ASSUME(false, "Surface creation failed");
         }
 
         return vk::SurfaceKHR(surface);

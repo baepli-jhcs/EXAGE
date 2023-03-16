@@ -67,10 +67,7 @@ namespace exage::Graphics
                                       | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 
         auto swapchainResult = builder.build();
-        if (!swapchainResult)
-        {
-            return ErrorCode::eSwapchainCreationFailed;
-        }
+        checkVulkan(static_cast<vk::Result>(swapchainResult.vk_result()));
         _swapchain = swapchainResult.value();
 
         if (static_cast<vk::Format>(_swapchain.image_format) == DESIRED_FORMAT)
@@ -206,13 +203,9 @@ namespace exage::Graphics
         if (result.result == vk::Result::eErrorOutOfDateKHR
             || result.result == vk::Result::eSuboptimalKHR)
         {
-            return ErrorCode::eSwapchainNeedsResize;
+            return ErrorCode::eSwapchainOutOfDate;
         }
-        if (result.result != vk::Result::eSuccess)
-        {
-            return ErrorCode::eSwapchainAcquireNextImageFailed;
-        }
-
+        checkVulkan(result.result);
         _currentImage = result.value;
         return std::nullopt;
     }
@@ -220,14 +213,8 @@ namespace exage::Graphics
     std::optional<Error> VulkanSwapchain::drawImage(CommandBuffer& commandBuffer, const std::shared_ptr<Texture>& texture) noexcept
     {
         const auto* vulkanTexture = texture->as<VulkanTexture>();
-        if (vulkanTexture->getLayout() != Texture::Layout::eTransferSrc) [[unlikely]]
-        {
-            return ErrorCode::eWrongTextureLayout;
-        }
-        if (vulkanTexture->getType() != Texture::Type::e2D) [[unlikely]]
-        {
-            return ErrorCode::eWrongTextureType;
-        }
+        ASSUME(vulkanTexture->getLayout() == Texture::Layout::eTransferSrc, "Wrong texture layout");
+        ASSUME(vulkanTexture->getType() != Texture::Type::e2D, "Wrong texture type");
 
         bool transitioned = _swapchainTransitioned[_currentImage];
 

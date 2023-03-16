@@ -101,11 +101,7 @@ namespace exage::Graphics
 
         const vk::Result result =
             _context.get().getDevice().createSampler(&samplerInfo, nullptr, &_sampler);
-
-        if (result != vk::Result::eSuccess)
-        {
-            return ErrorCode::eSamplerCreationFailed;
-        }
+        checkVulkan(result);
 
         return std::nullopt;
     }
@@ -221,9 +217,7 @@ namespace exage::Graphics
 
         vk::Result result = _context.get().getAllocator().createImage(
             &imageInfo, &allocInfo, &_image, &_allocation, nullptr);
-
-        if (result != vk::Result::eSuccess)
-            return ErrorCode::eTextureCreationFailed;
+        checkVulkan(result);
 
         vk::ImageViewCreateInfo viewInfo;
         viewInfo.viewType = toVulkanImageViewType(_type);
@@ -234,8 +228,7 @@ namespace exage::Graphics
             vk::ImageSubresourceRange(aspectFlags, 0, _mipLevelCount, 0, _layerCount);
 
         result = _context.get().getDevice().createImageView(&viewInfo, nullptr, &_imageView);
-        if (result != vk::Result::eSuccess)
-            return ErrorCode::eTextureViewCreationFailed;
+        checkVulkan(result);
 
         tl::expected sampler = VulkanSampler::create(_context, samplerInfo, _mipLevelCount);
         if (!sampler.has_value())

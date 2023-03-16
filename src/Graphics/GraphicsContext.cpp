@@ -15,9 +15,9 @@ namespace exage::Graphics
                     return tl::make_unexpected(value.error());
                 return std::make_unique<VulkanContext>(std::move(value.value()));
             }
-
-            default:
-                return tl::make_unexpected(ErrorCode::eInvalidAPI);
         }
+
+        ASSUME(false, "Unsupported API");
+        return tl::make_unexpected(ErrorCode::eUnsupportedAPI);
     }
 } // namespace exage::Graphics

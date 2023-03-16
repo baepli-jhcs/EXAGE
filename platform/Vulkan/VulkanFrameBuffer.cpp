@@ -67,20 +67,9 @@ namespace exage::Graphics
     auto VulkanFrameBuffer::attachColor(std::shared_ptr<Texture> texture) noexcept
         -> std::optional<Error>
     {
-        if (texture->getExtent() != glm::uvec3 {_extent.x, _extent.y, 1})
-        {
-            return ErrorCode::eFrameBufferTextureExtentMismatch;
-        }
-
-        if (texture->getType() != Texture::Type::e2D)
-        {
-            return ErrorCode::eFrameBufferTextureType;
-        }
-
-        if (texture->getUsage().none(Texture::UsageFlags::eColorAttachment))
-        {
-            return ErrorCode::eFrameBufferTextureUsage;
-        }
+        ASSUME(texture->getExtent() == glm::uvec3 {_extent.x, _extent.y, 1}, "Mismatched framebuffer/texture extent");
+        ASSUME(texture->getType() == Texture::Type::e2D, "Bad texture type");
+        ASSUME(texture->getUsage().any(Texture::UsageFlags::eColorAttachment), "Not a color attachment");
 
         _textures.push_back(texture);
         return std::nullopt;
@@ -89,20 +78,11 @@ namespace exage::Graphics
     auto VulkanFrameBuffer::attachOrReplaceDepthStencil(std::shared_ptr<Texture> texture) noexcept
         -> std::optional<Error>
     {
-        if (texture->getExtent() != glm::uvec3 {_extent.x, _extent.y, 1})
-        {
-            return ErrorCode::eFrameBufferTextureExtentMismatch;
-        }
-
-        if (texture->getType() != Texture::Type::e2D)
-        {
-            return ErrorCode::eFrameBufferTextureType;
-        }
-
-        if (texture->getUsage().none(Texture::UsageFlags::eDepthStencilAttachment))
-        {
-            return ErrorCode::eFrameBufferTextureUsage;
-        }
+        ASSUME(texture->getExtent() == glm::uvec3 {_extent.x, _extent.y, 1},
+               "Mismatched framebuffer/texture extent");
+        ASSUME(texture->getType() == Texture::Type::e2D, "Bad texture type");
+        ASSUME(texture->getUsage().any(Texture::UsageFlags::eDepthStencilAttachment),
+               "Not a depth stencil attachment");
 
         _depthStencilTexture = texture;
         return std::nullopt;

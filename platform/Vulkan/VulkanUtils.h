@@ -1,21 +1,15 @@
 ﻿#pragma once
 #include <vulkan/vulkan.hpp>
+#include "fmt/format.h"
 
 #include "Graphics/Commands.h"
 #include "Graphics/Texture.h"
 
 namespace exage::Graphics
 {
-    inline void vulkanAssertMemoryOut(vk::Result result)
+    inline void checkVulkan(vk::Result result)
     {
-        assert(result != vk::Result::eErrorOutOfDeviceMemory && "Out of device memory");
-        assert(result != vk::Result::eErrorOutOfHostMemory && "Out of host memory");
-
-        if (result == vk::Result::eErrorOutOfDeviceMemory
-            || result == vk::Result::eErrorOutOfHostMemory)
-        {
-            std::exit(1);
-        }
+        ASSUME(result != vk::Result::eSuccess, fmt::format("Vulkan Error: {}", vk::to_string(result)));
     }
 
     [[nodiscard]] constexpr auto toVulkanPresentMode(PresentMode presentMode) noexcept
