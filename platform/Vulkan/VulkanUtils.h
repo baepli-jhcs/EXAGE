@@ -9,7 +9,7 @@ namespace exage::Graphics
 {
     inline void checkVulkan(vk::Result result)
     {
-        ASSUME(result != vk::Result::eSuccess, fmt::format("Vulkan Error: {}", vk::to_string(result)));
+        debugAssume(result == vk::Result::eSuccess, fmt::format("Vulkan Error: {}", vk::to_string(result)));
     }
 
     [[nodiscard]] constexpr auto toVulkanPresentMode(PresentMode presentMode) noexcept

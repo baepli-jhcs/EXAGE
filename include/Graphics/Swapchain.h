@@ -2,11 +2,11 @@
 
 #include <optional>
 
+#include "Context.h"
 #include "Core/Core.h"
 #include "Core/Window.h"
 #include "glm/glm.hpp"
 #include "utils/classes.h"
-#include "Context.h"
 
 namespace exage::Graphics
 {
@@ -28,7 +28,7 @@ namespace exage::Graphics
 
     class EXAGE_EXPORT Swapchain
     {
-    public:
+      public:
         Swapchain() noexcept = default;
         virtual ~Swapchain() = default;
         EXAGE_DELETE_COPY(Swapchain);
@@ -36,12 +36,12 @@ namespace exage::Graphics
 
         [[nodiscard]] virtual auto getPresentMode() const noexcept -> PresentMode = 0;
 
-        [[nodiscard]] virtual auto resize(glm::uvec2 extent) noexcept -> std::optional<Error> = 0;
-        [[nodiscard]] virtual auto acquireNextImage(Queue& queue) noexcept -> std::optional<Error> =
-        0;
-        [[nodiscard]] virtual auto drawImage(CommandBuffer& commandBuffer,
-                                             const std::shared_ptr<Texture>& texture) noexcept -> std::optional<Error> = 0;
+        virtual void resize(glm::uvec2 extent) noexcept = 0;
+        [[nodiscard]] virtual auto acquireNextImage(Queue& queue) noexcept
+            -> std::optional<Error> = 0;
+        virtual void drawImage(CommandBuffer& commandBuffer,
+                               const std::shared_ptr<Texture>& texture) noexcept = 0;
 
         EXAGE_BASE_API(API, Swapchain);
     };
-} // namespace exage::Graphics
+}  // namespace exage::Graphics

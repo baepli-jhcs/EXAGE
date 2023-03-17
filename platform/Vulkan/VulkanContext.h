@@ -36,18 +36,17 @@ namespace exage::Graphics
         void waitIdle() const noexcept override;
 
         [[nodiscard]] auto createQueue(const QueueCreateInfo& createInfo) noexcept
-            -> tl::expected<std::unique_ptr<Queue>, Error> override;
+            -> std::unique_ptr<Queue> override;
         [[nodiscard]] auto createSwapchain(const SwapchainCreateInfo& createInfo) noexcept
-            -> tl::expected<std::unique_ptr<Swapchain>, Error> override;
+            -> std::unique_ptr<Swapchain> override;
         [[nodiscard]] auto createCommandBuffer() noexcept
-            -> tl::expected<std::unique_ptr<CommandBuffer>, Error> override;
+            -> std::unique_ptr<CommandBuffer> override;
         [[nodiscard]] auto createTexture(const TextureCreateInfo& createInfo) noexcept
-            -> tl::expected<std::shared_ptr<Texture>, Error> override;
+            -> std::shared_ptr<Texture> override;
         [[nodiscard]] auto createFrameBuffer(glm::uvec2 extent) noexcept
-            -> tl::expected<std::shared_ptr<FrameBuffer>, Error> override;
+            -> std::shared_ptr<FrameBuffer> override;
 
-        [[nodiscard]] auto createSurface(Window& window) const noexcept
-            -> tl::expected<vk::SurfaceKHR, Error>;
+        [[nodiscard]] auto createSurface(Window& window) const noexcept -> vk::SurfaceKHR;
 
         [[nodiscard]] auto getInstance() const noexcept -> vk::Instance;
         [[nodiscard]] auto getPhysicalDevice() const noexcept -> vk::PhysicalDevice;

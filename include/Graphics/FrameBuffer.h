@@ -23,13 +23,11 @@ namespace exage::Graphics
 
         [[nodiscard]] virtual auto getTextures() const noexcept
             -> const std::vector<std::shared_ptr<Texture>>& = 0;
-            
 
-        [[nodiscard]] virtual auto resize(glm::uvec2 extent) noexcept -> std::optional<Error> = 0;
-        [[nodiscard]] virtual auto attachColor(std::shared_ptr<Texture> texture) noexcept
-            -> std::optional<Error> = 0;
-        [[nodiscard]] virtual auto attachOrReplaceDepthStencil(
-            std::shared_ptr<Texture> texture) noexcept -> std::optional<Error> = 0;
+        virtual void resize(glm::uvec2 extent) noexcept = 0;
+        virtual void attachColor(std::shared_ptr<Texture> texture) noexcept = 0;
+        virtual void attachOrReplaceDepthStencil(
+            std::shared_ptr<Texture> texture) noexcept = 0;
 
         [[nodiscard]] auto getExtent() const noexcept -> glm::uvec2 { return _extent; }
 

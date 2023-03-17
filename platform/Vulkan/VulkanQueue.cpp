@@ -5,25 +5,10 @@
 
 namespace exage::Graphics
 {
-    tl::expected<VulkanQueue, Error> VulkanQueue::create(VulkanContext& context,
-                                                         const QueueCreateInfo& createInfo) noexcept
-    {
-        VulkanQueue queue(context, createInfo);
-        std::optional<Error> result = queue.init();
-        if (result.has_value())
-        {
-            return tl::make_unexpected(result.value());
-        }
-        return queue;
-    }
 
     VulkanQueue::VulkanQueue(VulkanContext& context, const QueueCreateInfo& createInfo) noexcept
         : _context(context)
         , _framesInFlight(createInfo.maxFramesInFlight)
-    {
-    }
-
-    std::optional<Error> VulkanQueue::init() noexcept
     {
         _renderFences.resize(_framesInFlight);
         _presentSemaphores.resize(_framesInFlight);
@@ -49,10 +34,8 @@ namespace exage::Graphics
             semaphoreResult = _context.get().getDevice().createSemaphore(
                 &semaphoreCreateInfo, nullptr, &_renderSemaphores[i]);
 
-           checkVulkan(semaphoreResult);
+            checkVulkan(semaphoreResult);
         }
-
-        return std::nullopt;
     }
 
     VulkanQueue::~VulkanQueue()
@@ -75,7 +58,7 @@ namespace exage::Graphics
         {
             _context.get().waitIdle();
         }
-        
+
         for (const auto& semaphore : _presentSemaphores)
         {
             _context.get().getDevice().destroySemaphore(semaphore);
@@ -111,7 +94,7 @@ namespace exage::Graphics
         return *this;
     }
 
-    auto VulkanQueue::startNextFrame() noexcept -> std::optional<Error>
+    void VulkanQueue::startNextFrame() noexcept
     {
         _currentFrame = (_currentFrame + 1) % _framesInFlight;
 
@@ -121,17 +104,13 @@ namespace exage::Graphics
                                                      /*waitAll=*/
                                                      true,
                                                      std::numeric_limits<uint64_t>::max());
-
         checkVulkan(result);
 
         result = _context.get().getDevice().resetFences(1, &_renderFences[_currentFrame]);
-
         checkVulkan(result);
-
-        return std::nullopt;
     }
 
-    auto VulkanQueue::submit(QueueSubmitInfo& submitInfo) noexcept -> std::optional<Error>
+    void VulkanQueue::submit(QueueSubmitInfo& submitInfo) noexcept
     {
         vk::SubmitInfo vkSubmitInfo;
         vkSubmitInfo.commandBufferCount = 1;
@@ -151,8 +130,6 @@ namespace exage::Graphics
         vk::Result result =
             _context.get().getVulkanQueue().submit(1, &vkSubmitInfo, _renderFences[_currentFrame]);
         checkVulkan(result);
-
-        return std::nullopt;
     }
 
     auto VulkanQueue::present(QueuePresentInfo& presentInfo) noexcept -> std::optional<Error>
@@ -182,8 +159,7 @@ namespace exage::Graphics
         return std::nullopt;
     }
 
-    auto VulkanQueue::submitTemporary(std::unique_ptr<CommandBuffer> commandBuffer)
-        -> std::optional<Error>
+    void VulkanQueue::submitTemporary(std::unique_ptr<CommandBuffer> commandBuffer) noexcept
     {
         vk::SubmitInfo vkSubmitInfo;
         vkSubmitInfo.commandBufferCount = 1;
@@ -197,7 +173,6 @@ namespace exage::Graphics
         checkVulkan(result);
 
         _context.get().waitIdle();
-        return std::nullopt;
     }
 
     auto VulkanQueue::currentFrame() const noexcept -> size_t

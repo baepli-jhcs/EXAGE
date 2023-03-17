@@ -12,40 +12,19 @@ namespace exage::Graphics
         , _presentMode(createInfo.presentMode)
         , _extent(createInfo.window.getExtent())
     {
+        createSurface(createInfo.window);
+        createSwapchain();
     }
 
     constexpr auto DESIRED_FORMAT = toVulkanFormat(Texture::Format::eRGBA8);
     constexpr auto FALLBACK_FORMAT = toVulkanFormat(Texture::Format::eBGRA8);
 
-    auto VulkanSwapchain::init(Window& window) noexcept -> std::optional<Error>
+    void VulkanSwapchain::createSurface(Window& window) noexcept
     {
-        auto result = createSurface(window);
-        if (result.has_value())
-        {
-            return result;
-        }
-        result = createSwapchain();
-        if (result.has_value())
-        {
-            return result;
-        }
-        return std::nullopt;
+        _surface = _context.get().createSurface(window);
     }
 
-    std::optional<Error> VulkanSwapchain::createSurface(Window& window) noexcept
-    {
-        auto& context = _context.get();
-
-        tl::expected<vk::SurfaceKHR, Error> surfaceResult = context.createSurface(window);
-        if (!surfaceResult)
-        {
-            return surfaceResult.error();
-        }
-        _surface = surfaceResult.value();
-        return std::nullopt;
-    }
-
-    std::optional<Error> VulkanSwapchain::createSwapchain() noexcept
+    void VulkanSwapchain::createSwapchain() noexcept
     {
         auto& context = _context.get();
         vkb::SwapchainBuilder builder {context.getPhysicalDevice(), context.getDevice(), _surface};
@@ -67,7 +46,7 @@ namespace exage::Graphics
                                       | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 
         auto swapchainResult = builder.build();
-        checkVulkan(static_cast<vk::Result>(swapchainResult.vk_result()));
+        debugAssume(swapchainResult.has_value(), "Failed to create swapchain");
         _swapchain = swapchainResult.value();
 
         if (static_cast<vk::Format>(_swapchain.image_format) == DESIRED_FORMAT)
@@ -90,22 +69,6 @@ namespace exage::Graphics
 
             _swapchainTransitioned = std::vector<bool>(_swapchainImages.size(), false);
         }
-
-        return std::nullopt;
-    }
-
-    auto VulkanSwapchain::create(VulkanContext& context,
-                                 const SwapchainCreateInfo& createInfo) noexcept
-        -> tl::expected<VulkanSwapchain, Error>
-    {
-        VulkanSwapchain swapchain(context, createInfo);
-        std::optional<Error> result = swapchain.init(createInfo.window);
-        if (result.has_value())
-        {
-            return tl::make_unexpected(result.value());
-        }
-
-        return swapchain;
     }
 
     VulkanSwapchain::~VulkanSwapchain()
@@ -158,7 +121,7 @@ namespace exage::Graphics
         }
 
         _context = old._context;
-        
+
         _swapchain = old._swapchain;
         _surface = old._surface;
         _oldSwapchain = old._oldSwapchain;
@@ -174,21 +137,15 @@ namespace exage::Graphics
         return *this;
     }
 
-    auto VulkanSwapchain::resize(glm::uvec2 extent) noexcept -> std::optional<Error>
+    void VulkanSwapchain::resize(glm::uvec2 extent) noexcept
     {
         _extent = extent;
         const vkb::Swapchain swapchain = _swapchain;
         _oldSwapchain = swapchain.swapchain;
-        std::optional<Error> result = createSwapchain();
-        if (result)
-        {
-            return result;
-        }
+        createSwapchain();
 
         _context.get().waitIdle();
         vkb::destroy_swapchain(swapchain);
-
-        return std::nullopt;
     }
 
     auto VulkanSwapchain::acquireNextImage(Queue& queue) noexcept -> std::optional<Error>
@@ -210,81 +167,81 @@ namespace exage::Graphics
         return std::nullopt;
     }
 
-    std::optional<Error> VulkanSwapchain::drawImage(CommandBuffer& commandBuffer, const std::shared_ptr<Texture>& texture) noexcept
+    void VulkanSwapchain::drawImage(CommandBuffer& commandBuffer,
+                                    const std::shared_ptr<Texture>& texture) noexcept
     {
         const auto* vulkanTexture = texture->as<VulkanTexture>();
-        ASSUME(vulkanTexture->getLayout() == Texture::Layout::eTransferSrc, "Wrong texture layout");
-        ASSUME(vulkanTexture->getType() != Texture::Type::e2D, "Wrong texture type");
+        debugAssume(vulkanTexture->getLayout() == Texture::Layout::eTransferSrc,
+                    "Wrong texture layout");
+        debugAssume(vulkanTexture->getType() == Texture::Type::e2D, "Wrong texture type");
 
         bool transitioned = _swapchainTransitioned[_currentImage];
 
-        UserDefinedCommand command = {
-            .commandFunction = [this, vulkanTexture, transitioned](CommandBuffer& cmd)
-            {
-                const auto* vulkanCommandBuffer = cmd.as<VulkanCommandBuffer>();
-                const vk::CommandBuffer vkCommand = vulkanCommandBuffer->getCommandBuffer();
+        std::function commandFunction = [this, vulkanTexture, transitioned](CommandBuffer& cmd)
+        {
+            const auto* vulkanCommandBuffer = cmd.as<VulkanCommandBuffer>();
+            const vk::CommandBuffer vkCommand = vulkanCommandBuffer->getCommandBuffer();
 
-                glm::uvec3 extent = vulkanTexture->getExtent();
+            glm::uvec3 extent = vulkanTexture->getExtent();
 
-                vk::ImageSubresourceRange subresourceRange;
-                subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
-                subresourceRange.baseMipLevel = 0;
-                subresourceRange.levelCount = 1;
-                subresourceRange.baseArrayLayer = 0;
-                subresourceRange.layerCount = 1;
+            vk::ImageSubresourceRange subresourceRange;
+            subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+            subresourceRange.baseMipLevel = 0;
+            subresourceRange.levelCount = 1;
+            subresourceRange.baseArrayLayer = 0;
+            subresourceRange.layerCount = 1;
 
-                vk::ImageMemoryBarrier barrier;
-                barrier.oldLayout =
-                    transitioned ? vk::ImageLayout::ePresentSrcKHR : vk::ImageLayout::eUndefined;
-                barrier.newLayout = vk::ImageLayout::eTransferDstOptimal;
-                barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-                barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-                barrier.image = _swapchainImages[_currentImage];
-                barrier.subresourceRange = subresourceRange;
+            vk::ImageMemoryBarrier barrier;
+            barrier.oldLayout =
+                transitioned ? vk::ImageLayout::ePresentSrcKHR : vk::ImageLayout::eUndefined;
+            barrier.newLayout = vk::ImageLayout::eTransferDstOptimal;
+            barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            barrier.image = _swapchainImages[_currentImage];
+            barrier.subresourceRange = subresourceRange;
 
-                vkCommand.pipelineBarrier(vk::PipelineStageFlagBits::eTopOfPipe,
-                                          vk::PipelineStageFlagBits::eTransfer,
-                                          vk::DependencyFlags(),
-                                          nullptr,
-                                          nullptr,
-                                          barrier);
+            vkCommand.pipelineBarrier(vk::PipelineStageFlagBits::eTopOfPipe,
+                                      vk::PipelineStageFlagBits::eTransfer,
+                                      vk::DependencyFlags(),
+                                      nullptr,
+                                      nullptr,
+                                      barrier);
 
-                vk::ImageBlit imageBlit = {};
-                imageBlit.srcSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
-                imageBlit.srcSubresource.layerCount = 1;
-                imageBlit.srcOffsets[1].x = static_cast<int32_t>(extent.x);
-                imageBlit.srcOffsets[1].y = static_cast<int32_t>(extent.y);
-                imageBlit.srcOffsets[1].z = 1;
-                imageBlit.dstSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
-                imageBlit.dstSubresource.layerCount = 1;
-                imageBlit.dstOffsets[1].x = static_cast<int32_t>(_extent.x);
-                imageBlit.dstOffsets[1].y = static_cast<int32_t>(_extent.y);
-                imageBlit.dstOffsets[1].z = 1;
+            vk::ImageBlit imageBlit = {};
+            imageBlit.srcSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+            imageBlit.srcSubresource.layerCount = 1;
+            imageBlit.srcOffsets[1].x = static_cast<int32_t>(extent.x);
+            imageBlit.srcOffsets[1].y = static_cast<int32_t>(extent.y);
+            imageBlit.srcOffsets[1].z = 1;
+            imageBlit.dstSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+            imageBlit.dstSubresource.layerCount = 1;
+            imageBlit.dstOffsets[1].x = static_cast<int32_t>(_extent.x);
+            imageBlit.dstOffsets[1].y = static_cast<int32_t>(_extent.y);
+            imageBlit.dstOffsets[1].z = 1;
 
-                vkCommand.blitImage(vulkanTexture->getImage(),
-                                    vk::ImageLayout::eTransferSrcOptimal,
-                                    _swapchainImages[_currentImage],
-                                    vk::ImageLayout::eTransferDstOptimal,
-                                    imageBlit,
-                                    vk::Filter::eLinear);
+            vkCommand.blitImage(vulkanTexture->getImage(),
+                                vk::ImageLayout::eTransferSrcOptimal,
+                                _swapchainImages[_currentImage],
+                                vk::ImageLayout::eTransferDstOptimal,
+                                imageBlit,
+                                vk::Filter::eLinear);
 
-                barrier.oldLayout = vk::ImageLayout::eTransferDstOptimal;
-                barrier.newLayout = vk::ImageLayout::ePresentSrcKHR;
-                barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-                barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-                barrier.image = _swapchainImages[_currentImage];
-                barrier.subresourceRange = subresourceRange;
+            barrier.oldLayout = vk::ImageLayout::eTransferDstOptimal;
+            barrier.newLayout = vk::ImageLayout::ePresentSrcKHR;
+            barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            barrier.image = _swapchainImages[_currentImage];
+            barrier.subresourceRange = subresourceRange;
 
-                vkCommand.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
-                                          vk::PipelineStageFlagBits::eBottomOfPipe,
-                                          vk::DependencyFlags(),
-                                          nullptr,
-                                          nullptr,
-                                          barrier);
-            }};
-        commandBuffer.submitCommand(command);
+            vkCommand.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
+                                      vk::PipelineStageFlagBits::eBottomOfPipe,
+                                      vk::DependencyFlags(),
+                                      nullptr,
+                                      nullptr,
+                                      barrier);
+        };
+        commandBuffer.userDefined(commandFunction);
         commandBuffer.insertDataDependency(texture);
-        return std::nullopt;
     }
 
     auto VulkanSwapchain::getImage(uint32_t index) const noexcept -> vk::Image

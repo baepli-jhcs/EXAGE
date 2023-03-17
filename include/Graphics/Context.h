@@ -41,15 +41,15 @@ namespace exage::Graphics
         virtual void waitIdle() const noexcept = 0;
 
         [[nodiscard]] virtual auto createQueue(const QueueCreateInfo& createInfo) noexcept
-            -> tl::expected<std::unique_ptr<Queue>, Error> = 0;
+            -> std::unique_ptr<Queue> = 0;
         [[nodiscard]] virtual auto createSwapchain(const SwapchainCreateInfo& createInfo) noexcept
-            -> tl::expected<std::unique_ptr<Swapchain>, Error> = 0;
+            -> std::unique_ptr<Swapchain> = 0;
         [[nodiscard]] virtual auto createCommandBuffer() noexcept
-            -> tl::expected<std::unique_ptr<CommandBuffer>, Error> = 0;
+            -> std::unique_ptr<CommandBuffer> = 0;
         [[nodiscard]] virtual auto createTexture(const TextureCreateInfo& createInfo) noexcept
-            -> tl::expected<std::shared_ptr<Texture>, Error> = 0;
-        [[nodiscard]] virtual auto createFrameBuffer(glm::uvec2 extent) noexcept 
-            -> tl::expected<std::shared_ptr<FrameBuffer>, Error> = 0;
+            -> std::shared_ptr<Texture> = 0;
+        [[nodiscard]] virtual auto createFrameBuffer(glm::uvec2 extent) noexcept
+            -> std::shared_ptr<FrameBuffer> = 0;
 
         EXAGE_BASE_API(API, Context);
         [[nodiscard]] static auto create(ContextCreateInfo& createInfo) noexcept

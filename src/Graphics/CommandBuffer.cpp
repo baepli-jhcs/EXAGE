@@ -7,33 +7,11 @@ namespace exage::Graphics
     QueueCommandRepo::QueueCommandRepo(QueueCommandRepoCreateInfo& createInfo) noexcept
         : _queue(createInfo.queue)
     {
-    }
-
-    auto QueueCommandRepo::init(Context& context) noexcept -> std::optional<Error>
-    {
         for (uint32_t i = 0; i < _queue.get().getFramesInFlight(); i++)
         {
-            tl::expected commandBuffer = context.createCommandBuffer();
-            if (!commandBuffer.has_value())
-            {
-                return commandBuffer.error();
-            }
-            _commandBuffers.emplace_back(std::move(commandBuffer.value()));
+            std::unique_ptr commandBuffer = createInfo.context.createCommandBuffer();
+            _commandBuffers.emplace_back(std::move(commandBuffer));
         }
-        return std::nullopt;
-    }
-
-    auto QueueCommandRepo::create(QueueCommandRepoCreateInfo& createInfo) noexcept
-        -> tl::expected<QueueCommandRepo, Error>
-
-    {
-        QueueCommandRepo repo(createInfo);
-        std::optional<Error> result = repo.init(createInfo.context);
-        if (result)
-        {
-            return tl::make_unexpected(result.value());
-        }
-        return repo;
     }
 
     auto QueueCommandRepo::current() noexcept -> CommandBuffer&

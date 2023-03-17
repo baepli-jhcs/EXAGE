@@ -102,7 +102,10 @@ namespace exage::Graphics
 #endif
 
         auto inst = builder.build();
-        ASSUME(inst, "Failed to create instance", inst.error());
+        if (!inst)
+        {
+            return ErrorCode::eUnsupportedAPI;
+        }
 
         _instance = inst.value();
 
@@ -123,17 +126,12 @@ namespace exage::Graphics
             tl::expected<std::unique_ptr<Window>, WindowError> windowRes =
                 Window::create(info, createInfo.windowAPI);
 
-            ASSUME(windowRes, "Failed to create window", windowRes.error());
+            debugAssume(windowRes.has_value(), "Failed to create window");
             windowMemory = std::move(windowRes.value());
             window = windowMemory.get();
         }
 
-        auto surfaceResult = createSurface(*window);
-        if (!surfaceResult)
-        {
-            return surfaceResult.error();
-        }
-        auto surface = surfaceResult.value();
+        auto surface = createSurface(*window);
 
         vkb::PhysicalDeviceSelector selector(_instance);
         selector.set_minimum_version(1, 2);
@@ -187,7 +185,7 @@ namespace exage::Graphics
 
         deviceBuilder.add_pNext(&descriptorIndexingFeatures);
         auto device = deviceBuilder.build();
-        checkVulkan(static_cast<vk::Result>(device.vk_result()));
+        debugAssume(device.has_value(), "Failed to create device");
         _device = device.value();
 
         VULKAN_HPP_DEFAULT_DISPATCHER.init(_device.device);
@@ -261,7 +259,7 @@ namespace exage::Graphics
         {
             vkb::destroy_instance(_instance);
         }
-        
+
         _instance = old._instance;
         _physicalDevice = old._physicalDevice;
         _device = old._device;
@@ -281,71 +279,43 @@ namespace exage::Graphics
     }
 
     auto VulkanContext::createQueue(const QueueCreateInfo& createInfo) noexcept
-        -> tl::expected<std::unique_ptr<Queue>, Error>
+        -> std::unique_ptr<Queue>
     {
-        tl::expected value = VulkanQueue::create(*this, createInfo);
-        if (!value.has_value())
-        {
-            return tl::make_unexpected(value.error());
-        }
-
-        return std::make_unique<VulkanQueue>(std::move(value.value()));
+        return std::make_unique<VulkanQueue>(*this, createInfo);
     }
 
     auto VulkanContext::createSwapchain(const SwapchainCreateInfo& createInfo) noexcept
-        -> tl::expected<std::unique_ptr<Swapchain>, Error>
+        -> std::unique_ptr<Swapchain>
     {
-        tl::expected value = VulkanSwapchain::create(*this, createInfo);
-        if (!value.has_value())
-        {
-            return tl::make_unexpected(value.error());
-        }
-        return std::make_unique<VulkanSwapchain>(std::move(value.value()));
+        return std::make_unique<VulkanSwapchain>(*this, createInfo);
     }
 
-    auto VulkanContext::createCommandBuffer() noexcept
-        -> tl::expected<std::unique_ptr<CommandBuffer>, Error>
+    auto VulkanContext::createCommandBuffer() noexcept -> std::unique_ptr<CommandBuffer>
     {
-        tl::expected value = VulkanCommandBuffer::create(*this);
-        if (!value.has_value())
-        {
-            return tl::make_unexpected(value.error());
-        }
-        return std::make_unique<VulkanCommandBuffer>(std::move(value.value()));
+        return std::make_unique<VulkanCommandBuffer>(*this);
     }
 
     auto VulkanContext::createTexture(const TextureCreateInfo& createInfo) noexcept
-        -> tl::expected<std::shared_ptr<Texture>, Error>
+        -> std::shared_ptr<Texture>
     {
-        tl::expected value = VulkanTexture::create(*this, createInfo);
-        if (!value.has_value())
-        {
-            return tl::make_unexpected(value.error());
-        }
-        return std::make_shared<VulkanTexture>(std::move(value.value()));
+        return std::make_shared<VulkanTexture>(*this, createInfo);
     }
 
     auto VulkanContext::createFrameBuffer(glm::uvec2 extent) noexcept
-        -> tl::expected<std::shared_ptr<FrameBuffer>, Error>
+        -> std::shared_ptr<FrameBuffer>
     {
-        tl::expected value = VulkanFrameBuffer::create(*this, extent);
-        if (!value.has_value())
-        {
-            return tl::make_unexpected(value.error());
-        }
-        return std::make_shared<VulkanFrameBuffer>(std::move(value.value()));
+        return std::make_shared<VulkanFrameBuffer>(*this, extent);
     }
 
-    auto VulkanContext::createSurface(Window& window) const noexcept
-        -> tl::expected<vk::SurfaceKHR, Error>
+    auto VulkanContext::createSurface(Window& window) const noexcept -> vk::SurfaceKHR
     {
         VkSurfaceKHR surface = nullptr;
         switch (window.getAPI())
         {
             case WindowAPI::eGLFW:
             {
-                const auto* glfWindow = dynamicCast<GLFWindow*>(&window);
-                ASSUME(glfWindow != nullptr);
+                const auto* glfWindow = window.as<GLFWindow>();
+                debugAssume(glfWindow != nullptr, "Invalid window type");
                 glfwCreateWindowSurface(
                     _instance.instance, glfWindow->getGLFWWindow(), nullptr, &surface);
                 break;
@@ -356,7 +326,7 @@ namespace exage::Graphics
 
         if (surface == nullptr)
         {
-            ASSUME(false, "Surface creation failed");
+            debugAssume(false, "Surface creation failed");
         }
 
         return vk::SurfaceKHR(surface);

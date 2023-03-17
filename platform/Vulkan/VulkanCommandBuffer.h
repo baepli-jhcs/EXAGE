@@ -10,8 +10,7 @@ namespace exage::Graphics
     class EXAGE_EXPORT VulkanCommandBuffer final : public CommandBuffer
     {
       public:
-        [[nodiscard]] static auto create(VulkanContext& context) noexcept
-            -> tl::expected<VulkanCommandBuffer, Error>;
+        explicit VulkanCommandBuffer(VulkanContext& context) noexcept;
         ~VulkanCommandBuffer() override;
 
         EXAGE_DELETE_COPY(VulkanCommandBuffer);
@@ -19,11 +18,55 @@ namespace exage::Graphics
         VulkanCommandBuffer(VulkanCommandBuffer&& old) noexcept;
         auto operator=(VulkanCommandBuffer&& old) noexcept -> VulkanCommandBuffer&;
 
-        [[nodiscard]] auto begin() noexcept -> std::optional<Error> override;
-        [[nodiscard]] auto end() noexcept -> std::optional<Error> override;
+        void begin() noexcept override;
+        void end() noexcept override;
 
-        void submitCommand(GPUCommand command) noexcept override;
         void insertDataDependency(DataDependency dependency) noexcept override;
+
+        void draw(uint32_t vertexCount,
+                  uint32_t instanceCount,
+                  uint32_t firstVertex,
+                  uint32_t firstInstance) noexcept override;
+
+        void drawIndexed(uint32_t indexCount,
+                         uint32_t instanceCount,
+                         uint32_t firstIndex,
+                         uint32_t vertexOffset,
+                         uint32_t firstInstance) noexcept override;
+
+        void textureBarrier(std::shared_ptr<Texture> texture,
+                            Texture::Layout newLayout,
+                            PipelineStage srcStage,
+                            PipelineStage dstStage,
+                            Access srcAccess,
+                            Access dstAccess) noexcept override;
+
+        void blit(std::shared_ptr<Texture> srcTexture,
+                  std::shared_ptr<Texture> dstTexture,
+                  glm::uvec3 srcOffset,
+                  glm::uvec3 dstOffset,
+                  uint32_t srcMipLevel,
+                  uint32_t dstMipLevel,
+                  uint32_t srcFirstLayer,
+                  uint32_t dstFirstLayer,
+                  uint32_t layerCount,
+                  glm::uvec3 extent) noexcept override;
+
+        void setViewport(glm::uvec2 offset, glm::uvec2 extent) noexcept override;
+        void setScissor(glm::uvec2 offset, glm::uvec2 extent) noexcept override;
+
+        void clearTexture(std::shared_ptr<Texture> texture,
+                          glm::vec4 color,
+                          uint32_t mipLevel,
+                          uint32_t firstLayer,
+                          uint32_t layerCount) noexcept override;
+
+        void beginRendering(std::shared_ptr<FrameBuffer> frameBuffer,
+                            std::vector<ClearColor> clearColors,
+                            ClearDepthStencil clearDepth) noexcept override;
+        void endRendering() noexcept override;
+
+        void userDefined(std::function<void(CommandBuffer&)> commandFunction) noexcept override;
 
         [[nodiscard]] auto getCommandBuffer() const noexcept -> vk::CommandBuffer
         {
@@ -33,9 +76,6 @@ namespace exage::Graphics
         EXAGE_VULKAN_DERIVED
 
       private:
-        explicit VulkanCommandBuffer(VulkanContext& context) noexcept;
-        [[nodiscard]] auto init() noexcept -> std::optional<Error>;
-
         void processCommand(const GPUCommand& command) noexcept;
 
         std::reference_wrapper<VulkanContext> _context;

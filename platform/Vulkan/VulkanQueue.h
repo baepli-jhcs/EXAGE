@@ -7,24 +7,20 @@ namespace exage::Graphics
 {
     class EXAGE_EXPORT VulkanQueue final : public Queue
     {
-    public:
-        [[nodiscard]] static tl::expected<VulkanQueue, Error> create(
-            VulkanContext& context,
-            const QueueCreateInfo& createInfo) noexcept;
+      public:
+        VulkanQueue(VulkanContext& context, const QueueCreateInfo& createInfo) noexcept;
         ~VulkanQueue() override;
 
         EXAGE_DELETE_COPY(VulkanQueue);
         VulkanQueue(VulkanQueue&& old) noexcept;
         auto operator=(VulkanQueue&& old) noexcept -> VulkanQueue&;
 
-        [[nodiscard]] auto startNextFrame() noexcept -> std::optional<Error> override;
-        [[nodiscard]] auto submit(QueueSubmitInfo& submitInfo) noexcept ->
-        std::optional<Error> override;
-        [[nodiscard]] auto present(QueuePresentInfo& presentInfo) noexcept ->
-        std::optional<Error> override;
-        
-        [[nodiscard]] auto submitTemporary(
-            std::unique_ptr<CommandBuffer> commandBuffer) -> std::optional<Error> override;
+        void startNextFrame() noexcept override;
+        void submit(QueueSubmitInfo& submitInfo) noexcept override;
+        [[nodiscard]] auto present(QueuePresentInfo& presentInfo) noexcept
+            -> std::optional<Error> override;
+
+        void submitTemporary(std::unique_ptr<CommandBuffer> commandBuffer) noexcept override;
 
         [[nodiscard]] auto currentFrame() const noexcept -> size_t override;
         [[nodiscard]] auto getFramesInFlight() const noexcept -> size_t override;
@@ -35,12 +31,7 @@ namespace exage::Graphics
 
         EXAGE_VULKAN_DERIVED;
 
-    private:
-        explicit VulkanQueue(
-            VulkanContext& context,
-            const QueueCreateInfo& createInfo) noexcept;
-        std::optional<Error> init() noexcept;
-
+      private:
         void cleanup() noexcept;
 
         std::reference_wrapper<VulkanContext> _context;
@@ -53,4 +44,4 @@ namespace exage::Graphics
 
         size_t _currentFrame = 0;
     };
-} // namespace exage::Graphics
+}  // namespace exage::Graphics

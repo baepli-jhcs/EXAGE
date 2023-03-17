@@ -14,6 +14,6 @@ TEST_CASE("Creating Graphics Queue", "[Queue]")
 
     QueueCreateInfo queueCreateInfo{.maxFramesInFlight = 2};
 
-    tl::expected queue = context.value()->createQueue(queueCreateInfo);
-    REQUIRE(queue.has_value());
+    std::unique_ptr queue = context.value()->createQueue(queueCreateInfo);
+    REQUIRE(queue != nullptr);
 }

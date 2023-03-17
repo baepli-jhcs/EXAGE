@@ -18,21 +18,18 @@ TEST_CASE("Creating Graphics Swapchain", "[Swapchain]")
         exage::Window::create(info, exage::WindowAPI::eGLFW);
     REQUIRE(windowReturn.has_value());
 
-    ContextCreateInfo createInfo{
-        .api = API::eVulkan, .windowAPI = exage::WindowAPI::eGLFW,
-        .optionalWindow = windowReturn.value().get()
-    };
+    ContextCreateInfo createInfo {.api = API::eVulkan,
+                                  .windowAPI = exage::WindowAPI::eGLFW,
+                                  .optionalWindow = windowReturn.value().get()};
 
     tl::expected context(Context::create(createInfo));
 
     REQUIRE(context.has_value());
 
-    SwapchainCreateInfo swapchainCreateInfo{
-        .window = *windowReturn.value()
-    };
-    tl::expected swapchain(context.value()->createSwapchain(swapchainCreateInfo));
+    SwapchainCreateInfo swapchainCreateInfo {.window = *windowReturn.value()};
+    std::unique_ptr swapchain(context.value()->createSwapchain(swapchainCreateInfo));
 
-    REQUIRE(swapchain.has_value());
+    REQUIRE(swapchain != nullptr);
 }
 
 TEST_CASE("Creating Graphics Swapchain and Acquire Next Image", "[Swapchain]")
@@ -49,73 +46,61 @@ TEST_CASE("Creating Graphics Swapchain and Acquire Next Image", "[Swapchain]")
         exage::Window::create(info, exage::WindowAPI::eGLFW);
     REQUIRE(windowReturn.has_value());
 
-    ContextCreateInfo createInfo{
-        .api = API::eVulkan, .windowAPI = exage::WindowAPI::eGLFW,
-        .optionalWindow = windowReturn.value().get()
-    };
+    ContextCreateInfo createInfo {.api = API::eVulkan,
+                                  .windowAPI = exage::WindowAPI::eGLFW,
+                                  .optionalWindow = windowReturn.value().get()};
 
     tl::expected context(Context::create(createInfo));
     REQUIRE(context.has_value());
 
-    QueueCreateInfo queueCreateInfo{.maxFramesInFlight = 2};
+    QueueCreateInfo queueCreateInfo {.maxFramesInFlight = 2};
 
-    tl::expected queue = context.value()->createQueue(queueCreateInfo);
-    REQUIRE(queue.has_value());
+    std::unique_ptr queue = context.value()->createQueue(queueCreateInfo);
+    REQUIRE(queue != nullptr);
 
-    SwapchainCreateInfo swapchainCreateInfo{.window = *windowReturn.value()};
-    tl::expected swapchain(context.value()->createSwapchain(swapchainCreateInfo));
+    SwapchainCreateInfo swapchainCreateInfo {.window = *windowReturn.value()};
+    std::unique_ptr swapchain(context.value()->createSwapchain(swapchainCreateInfo));
 
-    REQUIRE(swapchain.has_value());
+    REQUIRE(swapchain != nullptr);
 
-    tl::expected commandBuffer = context.value()->createCommandBuffer();
-    REQUIRE(commandBuffer.has_value());
+    std::unique_ptr commandBuffer = context.value()->createCommandBuffer();
+    REQUIRE(commandBuffer != nullptr);
 
-    TextureCreateInfo textureCreateInfo{
-		.extent = {1280, 720, 1},
-        .usage = Texture::UsageFlags::eTransferSource
-	};
+    TextureCreateInfo textureCreateInfo {.extent = {1280, 720, 1},
+                                         .usage = Texture::UsageFlags::eTransferSource};
 
-    tl::expected texture = context.value()->createTexture(textureCreateInfo);
-    REQUIRE(texture.has_value());
-
+    std::shared_ptr texture = context.value()->createTexture(textureCreateInfo);
+    REQUIRE(texture != nullptr);
 
     Context& ctx = *context.value();
-    Queue& que = *queue.value();
-    Swapchain& swap = *swapchain.value();
-    CommandBuffer& cmd = *commandBuffer.value();
+    Queue& que = *queue;
+    Swapchain& swap = *swapchain;
+    CommandBuffer& cmd = *commandBuffer;
 
-    std::optional error = que.startNextFrame();
-    REQUIRE(!error.has_value());
+    que.startNextFrame();
 
     std::optional swapError = swap.acquireNextImage(que);
     REQUIRE(!swapError.has_value());
 
-    std::optional commandError = cmd.begin();
-    REQUIRE(!commandError.has_value());
+    cmd.begin();
 
-    TextureBarrier barrier{
-		.texture = texture.value(),
-		.newLayout = Texture::Layout::eTransferSrc,
-        .srcStage = PipelineStageFlags::eTopOfPipe,
-        .dstStage = PipelineStageFlags::eTransfer,
-        .srcAccess = {},
-        .dstAccess = AccessFlags::eTransferWrite,
-	};
-    cmd.submitCommand(barrier);
+    cmd.textureBarrier(texture,
+                       Texture::Layout::eTransferSrc,
+                       PipelineStageFlags::eTopOfPipe,
+                       PipelineStageFlags::eTransfer,
+                       {},
+                       AccessFlags::eTransferWrite);
 
-    swapError = swap.drawImage(cmd, texture.value());
-    REQUIRE(!swapError.has_value());
+    swap.drawImage(cmd, texture);
 
-    commandError = cmd.end();
-    REQUIRE(!commandError.has_value());
+    cmd.end();
 
-    QueueSubmitInfo submitInfo{.commandBuffer = cmd};
-    error = que.submit(submitInfo);
-    REQUIRE(!error.has_value());
+    QueueSubmitInfo submitInfo {.commandBuffer = cmd};
+    que.submit(submitInfo);
 
-    QueuePresentInfo presentInfo{.swapchain = swap};
-    error = que.present(presentInfo);
-    REQUIRE(!error.has_value());
+    QueuePresentInfo presentInfo {.swapchain = swap};
+    std::optional presentError = que.present(presentInfo);
+    REQUIRE(!presentError.has_value());
 
     ctx.waitIdle();
 }

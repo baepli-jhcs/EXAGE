@@ -6,17 +6,25 @@
 
 namespace exage::Graphics
 {
-    auto VulkanCommandBuffer::create(VulkanContext& context) noexcept
-        -> tl::expected<VulkanCommandBuffer, Error>
+    VulkanCommandBuffer::VulkanCommandBuffer(VulkanContext& context) noexcept
+        : _context(context)
     {
-        VulkanCommandBuffer commandBuffer(context);
-        std::optional<Error> result = commandBuffer.init();
-        if (result.has_value())
-        {
-            return tl::make_unexpected(result.value());
-        }
+        vk::CommandPoolCreateInfo commandPoolCreateInfo;
+        commandPoolCreateInfo.queueFamilyIndex = _context.get().getQueueIndex();
+        commandPoolCreateInfo.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
 
-        return commandBuffer;
+        vk::Result result = _context.get().getDevice().createCommandPool(
+            &commandPoolCreateInfo, nullptr, &_commandPool);
+        checkVulkan(result);
+
+        vk::CommandBufferAllocateInfo commandBufferAllocateInfo;
+        commandBufferAllocateInfo.level = vk::CommandBufferLevel::ePrimary;
+        commandBufferAllocateInfo.commandPool = _commandPool;
+        commandBufferAllocateInfo.commandBufferCount = 1;
+
+        result = _context.get().getDevice().allocateCommandBuffers(&commandBufferAllocateInfo,
+                                                                   &_commandBuffer);
+        checkVulkan(result);
     }
 
     VulkanCommandBuffer::~VulkanCommandBuffer()
@@ -78,18 +86,16 @@ namespace exage::Graphics
         return *this;
     }
 
-    auto VulkanCommandBuffer::begin() noexcept -> std::optional<Error>
+    void VulkanCommandBuffer::begin() noexcept
     {
         _commands.clear();
         _dataDependencies.clear();
         _commandBuffer.reset();
 
         _context.get().getDevice().resetCommandPool(_commandPool, {});
-
-        return std::nullopt;
     }
 
-    auto VulkanCommandBuffer::end() noexcept -> std::optional<Error>
+    void VulkanCommandBuffer::end() noexcept
     {
         vk::CommandBufferBeginInfo beginInfo;
         beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
@@ -103,20 +109,6 @@ namespace exage::Graphics
         }
 
         _commandBuffer.end();
-        return std::nullopt;
-    }
-
-    void VulkanCommandBuffer::submitCommand(GPUCommand command) noexcept
-    {
-        if (std::holds_alternative<TextureBarrier>(command))
-        {
-            TextureBarrier& barrier = std::get<TextureBarrier>(command);
-            barrier._oldLayout = barrier.texture->_layout;
-            barrier.texture->_layout = barrier.newLayout;
-        }
-
-        std::lock_guard<std::mutex> lock(*_commandsMutex);
-        _commands.push_back(command);
     }
 
     void VulkanCommandBuffer::insertDataDependency(DataDependency dependency) noexcept
@@ -125,31 +117,209 @@ namespace exage::Graphics
         _dataDependencies.push_back(dependency);
     }
 
-    VulkanCommandBuffer::VulkanCommandBuffer(VulkanContext& context) noexcept
-        : _context(context)
+    /*        void begin() noexcept override;
+void end() noexcept override;
+
+void insertDataDependency(DataDependency dependency) noexcept override;
+
+void draw(uint32_t vertexCount,
+uint32_t instanceCount,
+uint32_t firstVertex,
+uint32_t firstInstance) noexcept override;
+
+void drawIndexed(uint32_t indexCount,
+     uint32_t instanceCount,
+     uint32_t firstIndex,
+     uint32_t vertexOffset,
+     uint32_t firstInstance) noexcept override;
+
+void textureBarrier(std::shared_ptr<Texture> texture,
+        Texture::Layout newLayout,
+        PipelineStage srcStage,
+        PipelineStage dstStage,
+        Access srcAccess,
+        Access dstAccess) noexcept override;
+
+void blit(std::shared_ptr<Texture> srcTexture,
+std::shared_ptr<Texture> dstTexture,
+glm::uvec3 srcOffset,
+glm::uvec3 dstOffset,
+uint32_t srcMipLevel,
+uint32_t dstMipLevel,
+uint32_t srcFirstLayer,
+uint32_t dstFirstLayer,
+uint32_t layerCount,
+glm::uvec3 extent) noexcept override;
+
+void setViewport(glm::uvec2 offset, glm::uvec2 extent) noexcept override;
+void setScissor(glm::uvec2 offset, glm::uvec2 extent) noexcept override;
+
+void clearTexture(std::shared_ptr<Texture> texture,
+      glm::vec4 color,
+      uint32_t mipLevel,
+      uint32_t firstLayer,
+      uint32_t layerCount) noexcept override;
+
+void beginRendering(std::shared_ptr<FrameBuffer> frameBuffer,
+        std::vector<ClearColor> clearColors,
+        ClearDepthStencil clearDepth) noexcept override;
+void endRendering() noexcept override;*/
+
+    void VulkanCommandBuffer::draw(uint32_t vertexCount,
+                                   uint32_t instanceCount,
+                                   uint32_t firstVertex,
+                                   uint32_t firstInstance) noexcept
     {
+        DrawCommand drawCommand;
+        drawCommand.vertexCount = vertexCount;
+        drawCommand.instanceCount = instanceCount;
+        drawCommand.firstVertex = firstVertex;
+        drawCommand.firstInstance = firstInstance;
+
+        std::lock_guard<std::mutex> lock(*_commandsMutex);
+        _commands.emplace_back(drawCommand);
     }
 
-    auto VulkanCommandBuffer::init() noexcept -> std::optional<Error>
+    void VulkanCommandBuffer::drawIndexed(uint32_t indexCount,
+                                          uint32_t instanceCount,
+                                          uint32_t firstIndex,
+                                          uint32_t vertexOffset,
+                                          uint32_t firstInstance) noexcept
     {
-        vk::CommandPoolCreateInfo commandPoolCreateInfo;
-        commandPoolCreateInfo.queueFamilyIndex = _context.get().getQueueIndex();
-        commandPoolCreateInfo.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
+        DrawIndexedCommand drawIndexedCommand;
+        drawIndexedCommand.indexCount = indexCount;
+        drawIndexedCommand.instanceCount = instanceCount;
+        drawIndexedCommand.firstIndex = firstIndex;
+        drawIndexedCommand.vertexOffset = vertexOffset;
+        drawIndexedCommand.firstInstance = firstInstance;
 
-        vk::Result result = _context.get().getDevice().createCommandPool(
-            &commandPoolCreateInfo, nullptr, &_commandPool);
-        checkVulkan(result);
+        std::lock_guard<std::mutex> lock(*_commandsMutex);
+        _commands.emplace_back(drawIndexedCommand);
+    }
 
-        vk::CommandBufferAllocateInfo commandBufferAllocateInfo;
-        commandBufferAllocateInfo.level = vk::CommandBufferLevel::ePrimary;
-        commandBufferAllocateInfo.commandPool = _commandPool;
-        commandBufferAllocateInfo.commandBufferCount = 1;
+    void VulkanCommandBuffer::textureBarrier(std::shared_ptr<Texture> texture,
+                                             Texture::Layout newLayout,
+                                             PipelineStage srcStage,
+                                             PipelineStage dstStage,
+                                             Access srcAccess,
+                                             Access dstAccess) noexcept
+    {
+        TextureBarrierCommand textureBarrierCommand;
+        textureBarrierCommand.texture = texture;
+        textureBarrierCommand.newLayout = newLayout;
+        textureBarrierCommand.oldLayout = texture->getLayout();
+        textureBarrierCommand.srcStage = srcStage;
+        textureBarrierCommand.dstStage = dstStage;
+        textureBarrierCommand.srcAccess = srcAccess;
+        textureBarrierCommand.dstAccess = dstAccess;
 
-        result = _context.get().getDevice().allocateCommandBuffers(&commandBufferAllocateInfo,
-                                                                   &_commandBuffer);
-        checkVulkan(result);
+        texture->_layout = newLayout;
 
-        return std::nullopt;
+        std::lock_guard<std::mutex> lock(*_commandsMutex);
+        _commands.emplace_back(textureBarrierCommand);
+    }
+
+    void VulkanCommandBuffer::blit(std::shared_ptr<Texture> srcTexture,
+                                   std::shared_ptr<Texture> dstTexture,
+                                   glm::uvec3 srcOffset,
+                                   glm::uvec3 dstOffset,
+                                   uint32_t srcMipLevel,
+                                   uint32_t dstMipLevel,
+                                   uint32_t srcFirstLayer,
+                                   uint32_t dstFirstLayer,
+                                   uint32_t layerCount,
+                                   glm::uvec3 extent) noexcept
+    {
+        BlitCommand blitCommand;
+        blitCommand.srcTexture = srcTexture;
+        blitCommand.dstTexture = dstTexture;
+        blitCommand.srcOffset = srcOffset;
+        blitCommand.dstOffset = dstOffset;
+        blitCommand.srcMipLevel = srcMipLevel;
+        blitCommand.dstMipLevel = dstMipLevel;
+        blitCommand.srcFirstLayer = srcFirstLayer;
+        blitCommand.dstFirstLayer = dstFirstLayer;
+        blitCommand.layerCount = layerCount;
+        blitCommand.extent = extent;
+
+        std::lock_guard<std::mutex> lock(*_commandsMutex);
+        _commands.emplace_back(blitCommand);
+    }
+
+    void VulkanCommandBuffer::setViewport(glm::uvec2 offset, glm::uvec2 extent) noexcept
+    {
+        SetViewportCommand setViewportCommand;
+        setViewportCommand.offset = offset;
+        setViewportCommand.extent = extent;
+
+        std::lock_guard<std::mutex> lock(*_commandsMutex);
+        _commands.emplace_back(setViewportCommand);
+    }
+
+    void VulkanCommandBuffer::setScissor(glm::uvec2 offset, glm::uvec2 extent) noexcept
+    {
+        SetScissorCommand setScissorCommand;
+        setScissorCommand.offset = offset;
+        setScissorCommand.extent = extent;
+
+        std::lock_guard<std::mutex> lock(*_commandsMutex);
+        _commands.emplace_back(setScissorCommand);
+    }
+
+    void VulkanCommandBuffer::clearTexture(std::shared_ptr<Texture> texture,
+                                           glm::vec4 color,
+                                           uint32_t mipLevel,
+                                           uint32_t firstLayer,
+                                           uint32_t layerCount) noexcept
+    {
+        debugAssume(texture->getUsage().none(Texture::UsageFlags::eDepthStencilAttachment),
+                    "Depth textures cannot be cleared");
+        debugAssume(texture->getLayout() == Texture::Layout::eTransferDst,
+                    "Image must be in transfer layout");
+
+        ClearTextureCommand clearTextureCommand;
+        clearTextureCommand.texture = texture;
+        clearTextureCommand.color = color;
+        clearTextureCommand.mipLevel = mipLevel;
+        clearTextureCommand.firstLayer = firstLayer;
+        clearTextureCommand.layerCount = layerCount;
+
+        std::lock_guard<std::mutex> lock(*_commandsMutex);
+        _commands.emplace_back(clearTextureCommand);
+    }
+
+    void VulkanCommandBuffer::beginRendering(std::shared_ptr<FrameBuffer> frameBuffer,
+                                             std::vector<ClearColor> clearColors,
+                                             ClearDepthStencil clearDepth) noexcept
+    {
+        debugAssume(frameBuffer->getTextures().size() == clearColors.size(),
+                    "There must be one clear color struct set per texture");
+
+        BeginRenderingCommand beginRenderingCommand;
+        beginRenderingCommand.frameBuffer = frameBuffer;
+        beginRenderingCommand.clearColors = clearColors;
+        beginRenderingCommand.clearDepth = clearDepth;
+
+        std::lock_guard<std::mutex> lock(*_commandsMutex);
+        _commands.emplace_back(beginRenderingCommand);
+    }
+
+    void VulkanCommandBuffer::endRendering() noexcept
+    {
+        EndRenderingCommand endRenderingCommand;
+
+        std::lock_guard<std::mutex> lock(*_commandsMutex);
+        _commands.emplace_back(endRenderingCommand);
+    }
+
+    void VulkanCommandBuffer::userDefined(
+        std::function<void(CommandBuffer&)> commandFunction) noexcept
+    {
+        UserDefinedCommand userDefinedCommand;
+        userDefinedCommand.commandFunction = commandFunction;
+
+        std::lock_guard<std::mutex> lock(*_commandsMutex);
+        _commands.emplace_back(userDefinedCommand);
     }
 
     void VulkanCommandBuffer::processCommand(const GPUCommand& command) noexcept
@@ -169,12 +339,12 @@ namespace exage::Graphics
                                                draw.vertexOffset,
                                                draw.firstInstance);
                 },
-                [this](const TextureBarrier& barrier)
+                [this](const TextureBarrierCommand& barrier)
                 {
                     auto& texture = *barrier.texture->as<VulkanTexture>();
 
                     vk::ImageMemoryBarrier imageMemoryBarrier;
-                    imageMemoryBarrier.oldLayout = toVulkanImageLayout(barrier._oldLayout);
+                    imageMemoryBarrier.oldLayout = toVulkanImageLayout(barrier.oldLayout);
                     imageMemoryBarrier.newLayout = toVulkanImageLayout(barrier.newLayout);
                     imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
                     imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -238,7 +408,7 @@ namespace exage::Graphics
                                              vk::Filter::eLinear);
                 },
                 [this](const UserDefinedCommand& cmd) { cmd.commandFunction(*this); },
-                [this](const ViewportCommand& cmd)
+                [this](const SetViewportCommand& cmd)
                 {
                     vk::Viewport viewport {};
                     viewport.x = cmd.offset.x;
@@ -250,7 +420,7 @@ namespace exage::Graphics
 
                     _commandBuffer.setViewport(0, viewport);
                 },
-                [this](const ScissorCommand& cmd)
+                [this](const SetScissorCommand& cmd)
                 {
                     vk::Rect2D rect {};
                     rect.offset.x = cmd.offset.x;
@@ -262,8 +432,6 @@ namespace exage::Graphics
                 [this](const ClearTextureCommand& cmd)
                 {
                     auto& texture = *cmd.texture->as<VulkanTexture>();
-
-                    ASSUME(texture.getUsage().none(Texture::UsageFlags::eDepthStencilAttachment));
 
                     std::array<float, 4> color = {
                         cmd.color.x, cmd.color.y, cmd.color.z, cmd.color.w};
@@ -288,7 +456,6 @@ namespace exage::Graphics
 
                     const std::vector<std::shared_ptr<Texture>>& textures =
                         frameBuffer.getTextures();
-                    ASSUME(textures.size() == cmd.clearColors.size(), "There must be one clear color struct set per texture");
 
                     vk::RenderingInfo renderingInfo {};
                     glm::uvec2 extent = frameBuffer.getExtent();

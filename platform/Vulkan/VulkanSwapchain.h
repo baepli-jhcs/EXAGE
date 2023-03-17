@@ -10,10 +10,8 @@ namespace exage::Graphics
 {
     class EXAGE_EXPORT VulkanSwapchain final : public Swapchain
     {
-    public:
-        [[nodiscard]] static auto create(VulkanContext& context,
-                                         const SwapchainCreateInfo& createInfo) noexcept
-        -> tl::expected<VulkanSwapchain, Error>;
+      public:
+        VulkanSwapchain(VulkanContext& context, const SwapchainCreateInfo& createInfo) noexcept;
         ~VulkanSwapchain() override;
 
         EXAGE_DELETE_COPY(VulkanSwapchain);
@@ -26,10 +24,10 @@ namespace exage::Graphics
             return _presentMode;
         }
 
-        [[nodiscard]] auto resize(glm::uvec2 extent) noexcept -> std::optional<Error> override;
+        void resize(glm::uvec2 extent) noexcept override;
         [[nodiscard]] auto acquireNextImage(Queue& queue) noexcept -> std::optional<Error> override;
-        [[nodiscard]] auto drawImage(CommandBuffer& commandBuffer,
-                                     const std::shared_ptr<Texture>& texture) noexcept -> std::optional<Error> override;
+        void drawImage(CommandBuffer& commandBuffer,
+                       const std::shared_ptr<Texture>& texture) noexcept override;
 
         [[nodiscard]] auto getSwapchain() const noexcept -> vk::SwapchainKHR
         {
@@ -39,14 +37,11 @@ namespace exage::Graphics
         [[nodiscard]] auto getImage(uint32_t index) const noexcept -> vk::Image;
         [[nodiscard]] auto getCurrentImage() const noexcept -> size_t { return _currentImage; }
 
-
         EXAGE_VULKAN_DERIVED;
 
-    private:
-        VulkanSwapchain(VulkanContext& context, const SwapchainCreateInfo& createInfo) noexcept;
-        [[nodiscard]] std::optional<Error> init(Window& window) noexcept;
-        [[nodiscard]] std::optional<Error> createSurface(Window& window) noexcept;
-        [[nodiscard]] std::optional<Error> createSwapchain() noexcept;
+      private:
+        [[nodiscard]] void createSurface(Window& window) noexcept;
+        [[nodiscard]] void createSwapchain() noexcept;
 
         std::reference_wrapper<VulkanContext> _context;
 
@@ -66,4 +61,4 @@ namespace exage::Graphics
 
         size_t _currentImage = 0;
     };
-} // namespace exage::Graphics
+}  // namespace exage::Graphics

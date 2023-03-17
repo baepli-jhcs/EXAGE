@@ -56,6 +56,8 @@ namespace exage::Graphics
             default:
                 break;
         }
+
+        buildFonts();
     }
 
     ImGuiInstance::~ImGuiInstance()
@@ -79,15 +81,10 @@ namespace exage::Graphics
         }
     }
 
-    void ImGuiInstance::end(CommandBuffer& commandBuffer) noexcept
+    void ImGuiInstance::end() noexcept
     {
-        auto* vulkanCommandBuffer = commandBuffer.as<VulkanCommandBuffer>();
-
         ImGui::SetCurrentContext(_imCtx);
-
         ImGui::Render();
-        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(),
-                                        vulkanCommandBuffer->getCommandBuffer());
     }
 
     void ImGuiInstance::addFont(const std::string& path, float size, bool isDefault) noexcept
@@ -106,30 +103,28 @@ namespace exage::Graphics
 
     void ImGuiInstance::buildFonts() noexcept
     {
-        tl::expected commandBufferEx = _context.get().createCommandBuffer();
-        std::unique_ptr<CommandBuffer> commandBuffer =
-            std::move(commandBufferEx.value());  // TODO: Handle error
+        std::unique_ptr<CommandBuffer> commandBuffer = _context.get().createCommandBuffer();
+        commandBuffer->begin();
 
         switch (_api)
         {
             case API::eVulkan:
             {
-                UserDefinedCommand command {
-                    .commandFunction = [this](CommandBuffer& cmd)
-                    {
-                        ImGui::SetCurrentContext(_imCtx);
-                        vk::CommandBuffer vkCommand =
-                            cmd.as<VulkanCommandBuffer>()->getCommandBuffer();
-                        ImGui_ImplVulkan_CreateFontsTexture(vkCommand);
-                    }};
-                commandBuffer->submitCommand(command);
+                std::function commandFunction = [this](CommandBuffer& cmd)
+                {
+                    ImGui::SetCurrentContext(_imCtx);
+                    vk::CommandBuffer vkCommand = cmd.as<VulkanCommandBuffer>()->getCommandBuffer();
+                    ImGui_ImplVulkan_CreateFontsTexture(vkCommand);
+                };
+                commandBuffer->userDefined(commandFunction);
             }
             break;
             default:
                 break;
         }
-
-        std::optional<Error> error = _queue.get().submitTemporary(std::move(commandBuffer));
+        
+        commandBuffer->end();
+        _queue.get().submitTemporary(std::move(commandBuffer));
 
         switch (_api)
         {
@@ -141,6 +136,8 @@ namespace exage::Graphics
             default:
                 break;
         }
+
+        _context.get().waitIdle();
     }
 
     void ImGuiInstance::renderMainWindow(CommandBuffer& commandBuffer) noexcept
@@ -149,15 +146,14 @@ namespace exage::Graphics
         {
             case API::eVulkan:
             {
-                UserDefinedCommand command {
-                    .commandFunction = [this](CommandBuffer& commandBuffer)
-                    {
-                        ImGui::SetCurrentContext(_imCtx);
-                        vk::CommandBuffer vkCommand =
-                            commandBuffer.as<VulkanCommandBuffer>()->getCommandBuffer();
-                        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), vkCommand);
-                    }};
-                commandBuffer.submitCommand(command);
+                std::function commandFunction = [this](CommandBuffer& commandBuffer)
+                {
+                    ImGui::SetCurrentContext(_imCtx);
+                    vk::CommandBuffer vkCommand =
+                        commandBuffer.as<VulkanCommandBuffer>()->getCommandBuffer();
+                    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), vkCommand);
+                };
+                commandBuffer.userDefined(commandFunction);
                 break;
             }
             default:

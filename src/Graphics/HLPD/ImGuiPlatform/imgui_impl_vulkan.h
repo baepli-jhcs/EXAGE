@@ -48,8 +48,8 @@
 // #define IMGUI_IMPL_VULKAN_NO_PROTOTYPES
 
 // Vulkan includes
-#if defined(IMGUI_IMPL_VULKAN_NO_PROTOTYPES) && !defined(VK_NO_PROTOTYPES)
-#    define VK_NO_PROTOTYPES
+#ifndef VK_NO_PROTOTYPES
+    #define VK_NO_PROTOTYPES
 #endif
 #include <vulkan/vulkan.h>
 

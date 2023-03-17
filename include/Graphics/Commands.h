@@ -74,16 +74,15 @@ namespace exage::Graphics
         uint32_t firstInstance;
     };
 
-    struct TextureBarrier
+    struct TextureBarrierCommand
     {
         std::shared_ptr<Texture> texture;
         Texture::Layout newLayout;
+        Texture::Layout oldLayout;
         PipelineStage srcStage;
         PipelineStage dstStage;
         Access srcAccess;
         Access dstAccess;
-
-        Texture::Layout _oldLayout = Texture::Layout::eUndefined;  // Handled by the command buffer
     };
 
     struct BlitCommand
@@ -100,13 +99,13 @@ namespace exage::Graphics
         glm::uvec3 extent;
     };
 
-    struct ViewportCommand
+    struct SetViewportCommand
     {
         glm::uvec2 offset;
         glm::uvec2 extent;
     };
 
-    struct ScissorCommand
+    struct SetScissorCommand
     {
         glm::uvec2 offset;
         glm::uvec2 extent;
@@ -121,21 +120,21 @@ namespace exage::Graphics
         uint32_t layerCount;
     };
 
+            struct ClearColor
+    {
+        bool clear;
+        glm::vec4 color;
+    };
+
+    struct ClearDepthStencil
+    {
+        bool clear = false;
+        float depth;
+        uint32_t stencil;
+    };
+
     struct BeginRenderingCommand
     {
-        struct ClearColor
-        {
-            bool clear;
-            glm::vec4 color;
-        };
-
-        struct ClearDepthStencil
-        {
-            bool clear = false;
-            float depth;
-            uint32_t stencil;
-        };
-
         std::shared_ptr<FrameBuffer> frameBuffer;
         std::vector<ClearColor> clearColors;
         ClearDepthStencil clearDepth;
@@ -152,11 +151,11 @@ namespace exage::Graphics
 
     using GPUCommand = std::variant<DrawCommand,
                                     DrawIndexedCommand,
-                                    TextureBarrier,
+                                    TextureBarrierCommand,
                                     BlitCommand,
                                     UserDefinedCommand,
-                                    ViewportCommand,
-                                    ScissorCommand,
+                                    SetViewportCommand,
+                                    SetScissorCommand,
                                     ClearTextureCommand,
                                     BeginRenderingCommand,
                                     EndRenderingCommand>;

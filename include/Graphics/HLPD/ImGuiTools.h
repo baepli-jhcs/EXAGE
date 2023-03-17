@@ -26,12 +26,14 @@ namespace exage::Graphics
         EXAGE_DEFAULT_MOVE(ImGuiInstance);
 
         void begin() noexcept;
-        void end(CommandBuffer& commandBuffer) noexcept;
+        void end() noexcept;
 
         void addFont(const std::string& path, float size, bool isDefault = false) noexcept;
 
         void renderMainWindow(CommandBuffer& commandBuffer) noexcept;
         void renderAdditional();
+
+        [[nodiscard]] auto getContext() const noexcept -> ImGuiContext* { return _imCtx; }
 
       private:
         void initGLFW(const ImGuiInitInfo& initInfo) noexcept;

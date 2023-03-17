@@ -8,8 +8,7 @@ namespace exage::Graphics
     class EXAGE_EXPORT VulkanFrameBuffer : public FrameBuffer
     {
       public:
-        [[nodiscard]] static auto create(VulkanContext& context, glm::uvec2 extent) noexcept
-            -> tl::expected<VulkanFrameBuffer, Error>;
+        VulkanFrameBuffer(VulkanContext& context, glm::uvec2 extent) noexcept;
         ~VulkanFrameBuffer() override = default;
 
         EXAGE_DELETE_COPY(VulkanFrameBuffer);
@@ -26,18 +25,15 @@ namespace exage::Graphics
             return _textures;
         }
 
-        [[nodiscard]] auto resize(glm::uvec2 extent) noexcept -> std::optional<Error> override;
-        [[nodiscard]] auto attachColor(std::shared_ptr<Texture> texture) noexcept
-            -> std::optional<Error> override;
-        [[nodiscard]] auto attachOrReplaceDepthStencil(std::shared_ptr<Texture> texture) noexcept
-            -> std::optional<Error> override;
+        [[nodiscard]] void resize(glm::uvec2 extent) noexcept override;
+        [[nodiscard]] void attachColor(std::shared_ptr<Texture> texture) noexcept override;
+        [[nodiscard]] void attachOrReplaceDepthStencil(
+            std::shared_ptr<Texture> texture) noexcept override;
 
         EXAGE_VULKAN_DERIVED
 
       private:
-        explicit VulkanFrameBuffer(VulkanContext& context, glm::uvec2 extent) noexcept;
-
-        VulkanContext& _context;
+        std::reference_wrapper<VulkanContext> _context;
         std::vector<std::shared_ptr<Texture>> _textures;
         std::shared_ptr<Texture> _depthStencilTexture;
     };

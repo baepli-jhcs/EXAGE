@@ -11,9 +11,7 @@ namespace exage::Graphics
     class EXAGE_EXPORT VulkanSampler final : public Sampler
     {
     public:
-        static auto create(VulkanContext& context,
-                           const SamplerCreateInfo& createInfo,
-                           uint32_t mipLevelCount) noexcept -> tl::expected<VulkanSampler, Error>;
+        VulkanSampler(VulkanContext& context, const SamplerCreateInfo& createInfo, uint32_t mipLevelCount) noexcept;
         ~VulkanSampler() override;
 
         VulkanSampler(VulkanSampler&&) noexcept;
@@ -26,9 +24,6 @@ namespace exage::Graphics
         EXAGE_VULKAN_DERIVED
 
     private:
-        VulkanSampler(VulkanContext& context, const SamplerCreateInfo& createInfo) noexcept;
-        [[nodiscard]] auto init(uint32_t mipLevelCount) noexcept -> std::optional<Error>;
-
         std::reference_wrapper<VulkanContext> _context;
         vk::Sampler _sampler;
     };
@@ -36,9 +31,7 @@ namespace exage::Graphics
     class EXAGE_EXPORT VulkanTexture final : public Texture
     {
     public:
-        [[nodiscard]] static auto create(VulkanContext& context,
-                                         const TextureCreateInfo& createInfo) noexcept
-        -> tl::expected<VulkanTexture, Error>;
+        VulkanTexture(VulkanContext& context, const TextureCreateInfo& createInfo) noexcept;
         ~VulkanTexture() override;
 
         EXAGE_DELETE_COPY(VulkanTexture);
@@ -64,9 +57,7 @@ namespace exage::Graphics
 
         EXAGE_VULKAN_DERIVED
     private:
-        VulkanTexture(VulkanContext& context, const TextureCreateInfo& createInfo) noexcept;
-        [[nodiscard]] auto init(const SamplerCreateInfo& samplerInfo) noexcept -> std::optional<Error>;
-
+        
         void cleanup() noexcept;
 
         std::reference_wrapper<VulkanContext> _context;

@@ -2,18 +2,6 @@
 
 namespace exage::Graphics
 {
-    auto VulkanSampler::create(VulkanContext& context,
-                               const SamplerCreateInfo& createInfo,
-                               uint32_t mipLevelCount) noexcept
-        -> tl::expected<VulkanSampler, Error>
-    {
-        VulkanSampler sampler {context, createInfo};
-        if (std::optional<Error> error = sampler.init(mipLevelCount); error.has_value())
-        {
-            return tl::make_unexpected(error.value());
-        }
-        return sampler;
-    }
 
     VulkanSampler::~VulkanSampler()
     {
@@ -51,14 +39,10 @@ namespace exage::Graphics
     }
 
     VulkanSampler::VulkanSampler(VulkanContext& context,
-                                 const SamplerCreateInfo& createInfo) noexcept
+                                 const SamplerCreateInfo& createInfo, uint32_t mipLevelCount) noexcept
         : Sampler(
             createInfo.anisotropy, createInfo.filter, createInfo.mipmapMode, createInfo.lodBias)
         , _context(context)
-    {
-    }
-
-    auto VulkanSampler::init(uint32_t mipLevelCount) noexcept -> std::optional<Error>
     {
         vk::Filter filter = toVulkanFilter(_filter);
         vk::SamplerMipmapMode mipmapMode = toVulkanSamplerMipmapMode(_mipmapMode);
@@ -102,21 +86,8 @@ namespace exage::Graphics
         const vk::Result result =
             _context.get().getDevice().createSampler(&samplerInfo, nullptr, &_sampler);
         checkVulkan(result);
-
-        return std::nullopt;
     }
 
-    auto VulkanTexture::create(VulkanContext& context, const TextureCreateInfo& createInfo) noexcept
-        -> tl::expected<VulkanTexture, Error>
-    {
-        VulkanTexture texture {context, createInfo};
-        std::optional<Error> result = texture.init(createInfo.samplerCreateInfo);
-        if (result.has_value())
-        {
-            return tl::make_unexpected(result.value());
-        }
-        return texture;
-    }
 
     VulkanTexture::~VulkanTexture()
     {
@@ -188,10 +159,6 @@ namespace exage::Graphics
                   createInfo.mipLevels)
         , _context(context)
     {
-    }
-
-    auto VulkanTexture::init(const SamplerCreateInfo& samplerInfo) noexcept -> std::optional<Error>
-    {
         vk::ImageUsageFlags usage = toVulkanImageUsageFlags(_usage);
         vk::ImageAspectFlags aspectFlags = toVulkanImageAspectFlags(_usage);
         vk::Format format = toVulkanFormat(_format);
@@ -230,13 +197,6 @@ namespace exage::Graphics
         result = _context.get().getDevice().createImageView(&viewInfo, nullptr, &_imageView);
         checkVulkan(result);
 
-        tl::expected sampler = VulkanSampler::create(_context, samplerInfo, _mipLevelCount);
-        if (!sampler.has_value())
-        {
-            return sampler.error();
-        }
-        _sampler = std::move(sampler.value());
-
-        return std::nullopt;
+        _sampler = VulkanSampler{_context, createInfo.samplerCreateInfo, _mipLevelCount};
     }
 }  // namespace exage::Graphics

@@ -17,7 +17,7 @@ namespace exage::Graphics
             }
         }
 
-        ASSUME(false, "Unsupported API");
+        debugAssume(false, "Unsupported API");
         return tl::make_unexpected(ErrorCode::eUnsupportedAPI);
     }
 } // namespace exage::Graphics
