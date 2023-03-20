@@ -249,69 +249,33 @@ namespace exage
     GLFWindow::GLFWindow(const WindowInfo& info) noexcept
         : _name(info.name)
         , _extent(info.extent)
-        , _refreshRate(info.refreshRate)
-        , _fullScreenMode(info.fullScreenMode)
+        , _fullScreen(info.fullScreen)
+        , _windowBordered(info.windowBordered)
+        , _exclusiveRefreshRate(info.exclusiveRefreshRate)
+        , _exclusiveMonitor(info.exclusiveMonitor)
     {
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-        GLFWmonitor* monitor = glfwGetPrimaryMonitor();
-
-        switch (info.fullScreenMode)
+        if (info.fullScreen)
         {
-            case FullScreenMode::eWindowedBorderless:
+            glfwWindowHint(GLFW_REFRESH_RATE, info.exclusiveRefreshRate);
+
+            _window =
+                glfwCreateWindow(_extent.x, _extent.y, _name.c_str(), exclusiveMonitor(), nullptr);
+        }
+        else
+        {
+            if (_windowBordered)
             {
-                const GLFWvidmode* mode = glfwGetVideoMode(monitor);
-
-                glfwWindowHint(GLFW_RED_BITS, mode->redBits);
-                glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
-                glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
-                glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
-
-                glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
-
-                _window =
-                    glfwCreateWindow(mode->width, mode->height, _name.c_str(), nullptr, nullptr);
-
-                _extent = {mode->width, mode->height};
-            }
-            break;
-
-            case FullScreenMode::eExclusive:
-            {
-                const GLFWvidmode* mode = glfwGetVideoMode(monitor);
-
-                glfwWindowHint(GLFW_RED_BITS, mode->redBits);
-                glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
-                glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
-
-                int refreshRate = _refreshRate == 0 ? mode->refreshRate : _refreshRate;
-
-                glfwWindowHint(GLFW_REFRESH_RATE, refreshRate);
-
-                _window =
-                    glfwCreateWindow(mode->width, mode->height, _name.c_str(), monitor, nullptr);
-            }
-            break;
-
-            case FullScreenMode::eWindowed:
-            {
-                const GLFWvidmode* mode = glfwGetVideoMode(monitor);
-
-                glfwWindowHint(GLFW_RED_BITS, mode->redBits);
-                glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
-                glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
-                glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
-
                 glfwWindowHint(GLFW_DECORATED, GLFW_TRUE);
-
-                _window = glfwCreateWindow(static_cast<int>(info.extent.x),
-                                           static_cast<int>(info.extent.y),
-                                           _name.c_str(),
-                                           nullptr,
-                                           nullptr);
             }
-            break;
+            else
+            {
+                glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
+            }
+
+            _window = glfwCreateWindow(_extent.x, _extent.y, _name.c_str(), nullptr, nullptr);
         }
 
         glfwSetWindowUserPointer(_window, this);
@@ -407,22 +371,22 @@ namespace exage
         }
     }
 
-    auto GLFWindow::getRefreshRate() const noexcept -> uint32_t
+    auto GLFWindow::exclusiveMonitor() noexcept -> GLFWmonitor*
     {
-        switch (_fullScreenMode)
+        int monitorCount = 0;
+        GLFWmonitor** monitors = glfwGetMonitors(&monitorCount);
+
+        for (int i = 0; i < monitorCount; i++)
         {
-            case FullScreenMode::eExclusive:
-                return _refreshRate;
+            std::string_view name = glfwGetMonitorName(monitors[i]);
+
+            if (name.compare(_exclusiveMonitor.name) == 0)
+            {
+                return monitors[i];
+            }
         }
 
-        GLFWmonitor* monitor = glfwGetPrimaryMonitor();
-        const GLFWvidmode* mode = glfwGetVideoMode(monitor);
-        return mode->refreshRate;
-    }
-
-    auto GLFWindow::getFullScreenMode() const noexcept -> FullScreenMode
-    {
-        return _fullScreenMode;
+        return nullptr;
     }
 
     auto GLFWindow::getNativeHandle() const noexcept -> void*
@@ -445,58 +409,49 @@ namespace exage
         glfwSetWindowSize(_window, static_cast<int>(extent.x), static_cast<int>(extent.y));
     }
 
-    void GLFWindow::setRefreshRate(uint32_t refreshRate) noexcept
+    void GLFWindow::setFullScreen(bool fullScreen) noexcept
     {
-        debugAssume(_fullScreenMode == FullScreenMode::eExclusive,
-                    "Refresh rate can only be set in fullscreen");
+        _fullScreen = fullScreen;
 
-        GLFWmonitor* monitor = glfwGetPrimaryMonitor();
-        const GLFWvidmode* mode = glfwGetVideoMode(monitor);
-        int refreshRate = _refreshRate == 0 ? mode->refreshRate : _refreshRate;
+        if (_fullScreen)
+        {
+            glfwSetWindowMonitor(
+                _window, exclusiveMonitor(), 0, 0, _extent.x, _extent.y, _exclusiveRefreshRate);
+        }
+        else
+        {
+            int xpos, ypos;
+            glfwGetWindowPos(_window, &xpos, &ypos);
 
-        glfwWindowHint(GLFW_REFRESH_RATE, refreshRate);
-        glfwSetWindowMonitor(_window, monitor, 0, 0, _extent.x, _extent.y, refreshRate);
+            glfwSetWindowMonitor(
+                _window, nullptr, xpos, ypos, _extent.x, _extent.y, _exclusiveRefreshRate);
+        }
     }
 
-    void GLFWindow::setFullScreenMode(FullScreenMode mode) noexcept
+    void GLFWindow::setWindowBordered(bool bordered) noexcept
     {
-        _fullScreenMode = mode;
+        glfwSetWindowAttrib(_window, GLFW_DECORATED, _windowBordered ? GLFW_TRUE : GLFW_FALSE);
+    }
 
-        GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+    void GLFWindow::setExclusiveRefreshRate(uint32_t refreshRate) noexcept
+    {
+        _exclusiveRefreshRate = refreshRate;
 
-        switch (mode)
+        if (_fullScreen)
         {
-            case FullScreenMode::eWindowedBorderless:
-            {
-                const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+            glfwSetWindowMonitor(
+                _window, exclusiveMonitor(), 0, 0, _extent.x, _extent.y, _exclusiveRefreshRate);
+        }
+    }
 
-                glfwSetWindowMonitor(
-                    _window, nullptr, 0, 0, mode->width, mode->height, mode->refreshRate);
-            }
-            break;
+    void GLFWindow::setExclusiveMonitor(Monitor monitor) noexcept
+    {
+        _exclusiveMonitor = monitor;
 
-            case FullScreenMode::eExclusive:
-            {
-                const GLFWvidmode* mode = glfwGetVideoMode(monitor);
-
-                int refreshRate = _refreshRate == 0 ? mode->refreshRate : _refreshRate;
-                glfwSetWindowMonitor(_window, monitor, 0, 0, _extent.x, _extent.y, refreshRate);
-            }
-            break;
-
-            case FullScreenMode::eWindowed:
-            {
-                const GLFWvidmode* mode = glfwGetVideoMode(monitor);
-
-                glfwSetWindowMonitor(_window,
-                                     nullptr,
-                                     0,
-                                     0,
-                                     static_cast<int>(_extent.x),
-                                     static_cast<int>(_extent.y),
-                                     mode->refreshRate);
-            }
-            break;
+        if (_fullScreen)
+        {
+            glfwSetWindowMonitor(
+                _window, exclusiveMonitor(), 0, 0, _extent.x, _extent.y, _exclusiveRefreshRate);
         }
     }
 
@@ -507,6 +462,45 @@ namespace exage
 
     auto GLFWindow::isMinimized() const noexcept -> bool
     {
-        return !glfwGetWindowAttrib(_window, GLFW_MAXIMIZED);
+        return glfwGetWindowAttrib(_window, GLFW_ICONIFIED) == GLFW_TRUE;
+    }
+
+    auto GLFWindow::getMonitorCount() noexcept -> uint32_t
+    {
+        int count;
+        glfwGetMonitors(&count);
+        return count;
+    }
+
+    auto GLFWindow::getMonitor(uint32_t index) noexcept -> Monitor
+    {
+        int count = getMonitorCount();
+
+        debugAssert(index < count, "Monitor index out of bounds");
+
+        GLFWmonitor* monitor = glfwGetMonitors(&count)[index];
+        const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+
+        Monitor mon;
+        mon.name = glfwGetMonitorName(monitor);
+        mon.extent = {mode->width, mode->height};
+        mon.refreshRate = mode->refreshRate;
+
+        return mon;
+    }
+
+    auto GLFWindow::getMonitors() noexcept -> std::vector<Monitor>
+    {
+        int count = getMonitorCount();
+
+        std::vector<Monitor> monitors;
+        monitors.reserve(count);
+
+        for (int i = 0; i < count; i++)
+        {
+            monitors.push_back(getMonitor(i));
+        }
+
+        return monitors;
     }
 }  // namespace exage

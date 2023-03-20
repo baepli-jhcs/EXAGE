@@ -1,15 +1,17 @@
 ﻿#pragma once
 #include <vulkan/vulkan.hpp>
-#include "fmt/format.h"
 
+#include "Graphics/Buffer.h"
 #include "Graphics/Commands.h"
 #include "Graphics/Texture.h"
+#include "fmt/format.h"
 
 namespace exage::Graphics
 {
     inline void checkVulkan(vk::Result result)
     {
-        debugAssume(result == vk::Result::eSuccess, fmt::format("Vulkan Error: {}", vk::to_string(result)));
+        debugAssume(result == vk::Result::eSuccess,
+                    fmt::format("Vulkan Error: {}", vk::to_string(result)));
     }
 
     [[nodiscard]] constexpr auto toVulkanPresentMode(PresentMode presentMode) noexcept
@@ -388,6 +390,44 @@ namespace exage::Graphics
             flags |= vk::PipelineStageFlagBits::eAllCommands;
         }
 
+        return flags;
+    }
+
+    [[nodiscard]] constexpr auto toVmaMemoryUsage(Buffer::AllocationType type) -> vma::MemoryUsage
+    {
+        vma::MemoryUsage usage {};
+
+        if (type == Buffer::AllocationType::eDeviceLocal)
+        {
+            return vma::MemoryUsage::eAutoPreferDevice;
+        }
+
+        if (type == Buffer::AllocationType::eHostVisible)
+        {
+            return vma::MemoryUsage::eAutoPreferHost;
+        }
+
+        return vma::MemoryUsage::eAutoPreferDevice;
+    }
+
+    [[nodiscard]] constexpr auto toVmaAllocationCreateFlags(Buffer::MemoryUsage usage)
+        -> vma::AllocationCreateFlags
+    {
+        vma::AllocationCreateFlags flags {};
+
+        if (usage.any(Buffer::MemoryUsageFlags::eMapped))
+        {
+            flags |= vma::AllocationCreateFlagBits::eMapped;
+            if (usage.any(Buffer::MemoryUsageFlags::eCached))
+            {
+                flags |= vma::AllocationCreateFlagBits::eHostAccessRandom;
+            }
+            else
+            {
+                flags |= vma::AllocationCreateFlagBits::eHostAccessSequentialWrite;
+            }
+        }
+        
         return flags;
     }
 }  // namespace exage::Graphics

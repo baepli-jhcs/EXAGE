@@ -22,16 +22,19 @@ auto main(int argc, char* argv[]) -> int
 {
     exage::init();
 
-    glm::uvec2 initialExtent = {1280, 720};
+    exage::Monitor monitor = exage::getDefaultMonitor(WindowAPI::eGLFW);
 
     exage::WindowInfo info = {
-        .extent = initialExtent,
         .name = "Main Window",
-        .fullScreenMode = exage::FullScreenMode::eBorderless,
+        .extent = monitor.extent,
+        .fullScreen = false,
+        .windowBordered = true,
+        .exclusiveRefreshRate = monitor.refreshRate,
+        .exclusiveMonitor = monitor,
     };
 
     tl::expected windowReturn = Window::create(info, exage::WindowAPI::eGLFW);
-    initialExtent = windowReturn.value()->getExtent();  // in case of a borderless window
+    glm::uvec2 initialExtent = windowReturn.value()->getExtent();
 
     ContextCreateInfo createInfo {.api = API::eVulkan,
                                   .windowAPI = exage::WindowAPI::eGLFW,
@@ -76,6 +79,11 @@ auto main(int argc, char* argv[]) -> int
     while (!window.shouldClose())
     {
         window.update();
+
+        if (window.isMinimized())
+        {
+            continue;
+        }
 
         CommandBuffer& cmd = repo.current();
         que.startNextFrame();

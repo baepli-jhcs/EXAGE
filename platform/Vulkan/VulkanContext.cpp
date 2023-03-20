@@ -14,6 +14,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include "VulkanBuffer.h"
 #include "VulkanCommandBuffer.h"
 #include "VulkanFrameBuffer.h"
 #include "VulkanQueue.h"
@@ -118,9 +119,10 @@ namespace exage::Graphics
         if (createWindow)
         {
             constexpr WindowInfo info = {
-                .extent = {800, 600},
                 .name = "Setup Window",
-                .fullScreenMode = FullScreenMode::eWindowed,
+                .extent = {800, 600},
+                .fullScreen = false,
+                .windowBordered = true,
             };
 
             tl::expected<std::unique_ptr<Window>, WindowError> windowRes =
@@ -305,6 +307,12 @@ namespace exage::Graphics
         -> std::shared_ptr<FrameBuffer>
     {
         return std::make_shared<VulkanFrameBuffer>(*this, extent);
+    }
+
+    auto VulkanContext::createBuffer(const BufferCreateInfo& createInfo) noexcept
+        -> std::shared_ptr<Buffer>
+    {
+        return std::make_shared<VulkanBuffer>(*this, createInfo);
     }
 
     auto VulkanContext::createSurface(Window& window) const noexcept -> vk::SurfaceKHR

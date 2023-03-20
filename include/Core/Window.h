@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string_view>
 
 #include "Core/Core.h"
@@ -19,19 +20,21 @@ namespace exage
 
     enum class WindowError;
 
-    enum class FullScreenMode
+    struct Monitor
     {
-        eWindowed,
-        eWindowedBorderless,
-        eExclusive
+        std::string_view name;
+        glm::uvec2 extent;
+        uint32_t refreshRate;
     };
 
     struct WindowInfo
     {
-        glm::uvec2 extent;
         std::string_view name;
-        FullScreenMode fullScreenMode = FullScreenMode::eWindowed;
-        uint32_t refreshRate = 0;  // 0 = Use monitor refresh rate
+        glm::uvec2 extent;
+        bool fullScreen = false;
+        bool windowBordered = true;
+        uint32_t exclusiveRefreshRate;
+        Monitor exclusiveMonitor;
     };
 
     struct ResizeCallback
@@ -69,15 +72,21 @@ namespace exage
         [[nodiscard]] virtual auto getHeight() const noexcept -> uint32_t = 0;
         [[nodiscard]] virtual auto getExtent() const noexcept -> glm::uvec2 = 0;
 
-        [[nodiscard]] virtual auto getRefreshRate() const noexcept -> uint32_t = 0;
-        [[nodiscard]] virtual auto getFullScreenMode() const noexcept -> FullScreenMode = 0;
+        [[nodiscard]] virtual auto isFullScreen() const noexcept -> bool = 0;
+        [[nodiscard]] virtual auto isWindowBordered() const noexcept -> bool = 0;
+
+        [[nodiscard]] virtual auto getExclusiveRefreshRate() const noexcept -> uint32_t = 0;
+        [[nodiscard]] virtual auto getExclusiveMonitor() const noexcept -> Monitor = 0;
 
         [[nodiscard]] virtual auto getNativeHandle() const noexcept -> void* = 0;
 
         virtual void resize(glm::uvec2 extent) noexcept = 0;
 
-        virtual void setRefreshRate(uint32_t refreshRate) noexcept = 0;
-        virtual void setFullScreenMode(FullScreenMode mode) noexcept = 0;
+        virtual void setFullScreen(bool fullScreen) noexcept = 0;
+        virtual void setWindowBordered(bool bordered) noexcept = 0;
+
+        virtual void setExclusiveRefreshRate(uint32_t refreshRate) noexcept = 0;
+        virtual void setExclusiveMonitor(Monitor monitorIndex) noexcept = 0;
 
         [[nodiscard]] virtual auto shouldClose() const noexcept -> bool = 0;
         [[nodiscard]] virtual auto isMinimized() const noexcept -> bool = 0;
@@ -86,6 +95,15 @@ namespace exage
         [[nodiscard]] static auto create(const WindowInfo& info, WindowAPI api) noexcept
             -> tl::expected<std::unique_ptr<Window>, WindowError>;
     };
+
+    EXAGE_EXPORT auto getMonitorCount(WindowAPI api) noexcept -> uint32_t;
+    EXAGE_EXPORT auto getMonitor(uint32_t index, WindowAPI api) noexcept -> Monitor;
+    EXAGE_EXPORT auto getMonitors(WindowAPI api) noexcept -> std::vector<Monitor>;
+
+    inline auto getDefaultMonitor(WindowAPI api) noexcept -> Monitor
+    {
+        return getMonitor(0, api);
+    }
 
     enum class WindowError
     {

@@ -29,6 +29,7 @@ namespace exage::Graphics
     class Queue;
     class Swapchain;
     class Texture;
+    class Buffer;
 
     class EXAGE_EXPORT Context
     {
@@ -50,6 +51,8 @@ namespace exage::Graphics
             -> std::shared_ptr<Texture> = 0;
         [[nodiscard]] virtual auto createFrameBuffer(glm::uvec2 extent) noexcept
             -> std::shared_ptr<FrameBuffer> = 0;
+        [[nodiscard]] virtual auto createBuffer(const BufferCreateInfo& createInfo) noexcept
+            -> std::shared_ptr<Buffer> = 0;
 
         EXAGE_BASE_API(API, Context);
         [[nodiscard]] static auto create(ContextCreateInfo& createInfo) noexcept

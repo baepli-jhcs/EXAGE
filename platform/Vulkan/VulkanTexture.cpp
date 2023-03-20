@@ -26,6 +26,8 @@ namespace exage::Graphics
             return *this;
         }
 
+        Sampler::operator=(std::move(old));
+
         if (_sampler)
         {
             _context.get().getDevice().destroySampler(_sampler);

@@ -215,8 +215,8 @@ namespace exage::Graphics
             imageBlit.srcOffsets[1].z = 1;
             imageBlit.dstSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
             imageBlit.dstSubresource.layerCount = 1;
-            imageBlit.dstOffsets[1].x = static_cast<int32_t>(_extent.x);
-            imageBlit.dstOffsets[1].y = static_cast<int32_t>(_extent.y);
+            imageBlit.dstOffsets[1].x = static_cast<int32_t>(_swapchain.extent.width);
+            imageBlit.dstOffsets[1].y = static_cast<int32_t>(_swapchain.extent.height);
             imageBlit.dstOffsets[1].z = 1;
 
             vkCommand.blitImage(vulkanTexture->getImage(),
