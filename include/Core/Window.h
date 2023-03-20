@@ -1,8 +1,8 @@
 ﻿#pragma once
 
 #include <cstdint>
-#include <string_view>
 #include <memory>
+#include <string_view>
 
 #include "Core/Core.h"
 #include "Input/KeyCode.h"
@@ -14,7 +14,7 @@ namespace exage
     enum class WindowAPI
     {
         eGLFW,
-        eSDL // TODO: Implement SDL
+        eSDL  // TODO: Implement SDL
     };
 
     enum class WindowError;
@@ -22,7 +22,7 @@ namespace exage
     enum class FullScreenMode
     {
         eWindowed,
-        eBorderless,
+        eWindowedBorderless,
         eExclusive
     };
 
@@ -31,7 +31,7 @@ namespace exage
         glm::uvec2 extent;
         std::string_view name;
         FullScreenMode fullScreenMode = FullScreenMode::eWindowed;
-        uint32_t refreshRate = 0; // 0 = Use monitor refresh rate
+        uint32_t refreshRate = 0;  // 0 = Use monitor refresh rate
     };
 
     struct ResizeCallback
@@ -48,7 +48,7 @@ namespace exage
 
     class EXAGE_EXPORT Window
     {
-    public:
+      public:
         Window() = default;
         virtual ~Window() = default;
         EXAGE_DELETE_COPY(Window);
@@ -75,14 +75,16 @@ namespace exage
         [[nodiscard]] virtual auto getNativeHandle() const noexcept -> void* = 0;
 
         virtual void resize(glm::uvec2 extent) noexcept = 0;
+
+        virtual void setRefreshRate(uint32_t refreshRate) noexcept = 0;
         virtual void setFullScreenMode(FullScreenMode mode) noexcept = 0;
 
         [[nodiscard]] virtual auto shouldClose() const noexcept -> bool = 0;
+        [[nodiscard]] virtual auto isMinimized() const noexcept -> bool = 0;
 
         EXAGE_BASE_API(WindowAPI, Window);
-        [[nodiscard]] static auto create(const WindowInfo& info,
-                                         WindowAPI api) noexcept -> tl::expected<
-            std::unique_ptr<Window>, WindowError>;
+        [[nodiscard]] static auto create(const WindowInfo& info, WindowAPI api) noexcept
+            -> tl::expected<std::unique_ptr<Window>, WindowError>;
     };
 
     enum class WindowError
@@ -90,4 +92,4 @@ namespace exage
         eInvalidAPI,
         eUnsupportedAPI,
     };
-} // namespace exage
+}  // namespace exage

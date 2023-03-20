@@ -5,7 +5,7 @@
 
 namespace exage::Graphics
 {
-    class EXAGE_EXPORT VulkanFrameBuffer : public FrameBuffer
+    class EXAGE_EXPORT VulkanFrameBuffer final : public FrameBuffer
     {
       public:
         VulkanFrameBuffer(VulkanContext& context, glm::uvec2 extent) noexcept;

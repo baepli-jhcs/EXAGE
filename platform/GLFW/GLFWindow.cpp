@@ -20,7 +20,7 @@
 
 namespace exage
 {
-    namespace 
+    namespace
     {
         KeyCode toKeyCode(int key)
         {
@@ -243,13 +243,14 @@ namespace exage
                 default:
                     return KeyCode::eUnknown;
             }
-        }           
-    } // namespace
-    
+        }
+    }  // namespace
+
     GLFWindow::GLFWindow(const WindowInfo& info) noexcept
         : _name(info.name)
-          , _extent(info.extent)
-          , _fullScreenMode(info.fullScreenMode)
+        , _extent(info.extent)
+        , _refreshRate(info.refreshRate)
+        , _fullScreenMode(info.fullScreenMode)
     {
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
@@ -258,22 +259,19 @@ namespace exage
 
         switch (info.fullScreenMode)
         {
-            case FullScreenMode::eBorderless:
+            case FullScreenMode::eWindowedBorderless:
             {
                 const GLFWvidmode* mode = glfwGetVideoMode(monitor);
 
                 glfwWindowHint(GLFW_RED_BITS, mode->redBits);
                 glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
                 glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
-
                 glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
 
-                _window = glfwCreateWindow(
-                    mode->width,
-                    mode->height,
-                    _name.c_str(),
-                    monitor,
-                    nullptr);
+                glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
+
+                _window =
+                    glfwCreateWindow(mode->width, mode->height, _name.c_str(), nullptr, nullptr);
 
                 _extent = {mode->width, mode->height};
             }
@@ -287,20 +285,26 @@ namespace exage
                 glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
                 glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
 
-                glfwWindowHint(GLFW_REFRESH_RATE,
-                               static_cast<int>(info.refreshRate));
+                int refreshRate = _refreshRate == 0 ? mode->refreshRate : _refreshRate;
 
-                _window = glfwCreateWindow(
-                    mode->width,
-                    mode->height,
-                    _name.c_str(),
-                    monitor,
-                    nullptr);
+                glfwWindowHint(GLFW_REFRESH_RATE, refreshRate);
+
+                _window =
+                    glfwCreateWindow(mode->width, mode->height, _name.c_str(), monitor, nullptr);
             }
             break;
 
             case FullScreenMode::eWindowed:
             {
+                const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+
+                glfwWindowHint(GLFW_RED_BITS, mode->redBits);
+                glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
+                glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
+                glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
+
+                glfwWindowHint(GLFW_DECORATED, GLFW_TRUE);
+
                 _window = glfwCreateWindow(static_cast<int>(info.extent.x),
                                            static_cast<int>(info.extent.y),
                                            _name.c_str(),
@@ -340,10 +344,7 @@ namespace exage
     {
         std::erase_if(_resizeCallbacks,
                       [&](const ResizeCallback& cab)
-                      {
-                          return cab.callback == callback.callback
-                              && cab.data == callback.data;
-                      });
+                      { return cab.callback == callback.callback && cab.data == callback.data; });
     }
 
     void GLFWindow::addKeyCallback(const KeyCallback& callback) noexcept
@@ -355,17 +356,19 @@ namespace exage
     {
         std::erase_if(_keyCallbacks,
                       [&](const KeyCallback& cab)
-                      {
-                          return cab.callback == callback.callback
-                              && cab.data == callback.data;
-                      });
+                      { return cab.callback == callback.callback && cab.data == callback.data; });
     }
 
     void GLFWindow::resizeCallback(GLFWwindow* window, int width, int height)
     {
         auto* win = static_cast<GLFWindow*>(glfwGetWindowUserPointer(window));
-        win->_extent = {static_cast<uint32_t>(width),
-                        static_cast<uint32_t>(height)};
+
+        if (width == 0 || height == 0)
+        {
+            return;
+        }
+
+        win->_extent = {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
 
         for (const ResizeCallback& callback : win->_resizeCallbacks)
         {
@@ -374,11 +377,7 @@ namespace exage
     }
 
     void GLFWindow::keyCallback(
-        GLFWwindow* window,
-        int key,
-        int /*scancode*/,
-        int action,
-        int /*mods*/)
+        GLFWwindow* window, int key, int /*scancode*/, int action, int /*mods*/)
     {
         auto* win = static_cast<GLFWindow*>(glfwGetWindowUserPointer(window));
 
@@ -410,6 +409,12 @@ namespace exage
 
     auto GLFWindow::getRefreshRate() const noexcept -> uint32_t
     {
+        switch (_fullScreenMode)
+        {
+            case FullScreenMode::eExclusive:
+                return _refreshRate;
+        }
+
         GLFWmonitor* monitor = glfwGetPrimaryMonitor();
         const GLFWvidmode* mode = glfwGetVideoMode(monitor);
         return mode->refreshRate;
@@ -424,8 +429,8 @@ namespace exage
     {
 #ifdef EXAGE_WINDOWS
         return glfwGetWin32Window(_window);
-        #endif
- #ifdef EXAGE_MACOS
+#endif
+#ifdef EXAGE_MACOS
         return glfwGetCocoaWindow(_window);
 #endif
 #ifdef EXAGE_LINUX
@@ -437,10 +442,20 @@ namespace exage
     void GLFWindow::resize(glm::uvec2 extent) noexcept
     {
         _extent = extent;
-        glfwSetWindowSize(
-            _window,
-            static_cast<int>(extent.x),
-            static_cast<int>(extent.y));
+        glfwSetWindowSize(_window, static_cast<int>(extent.x), static_cast<int>(extent.y));
+    }
+
+    void GLFWindow::setRefreshRate(uint32_t refreshRate) noexcept
+    {
+        debugAssume(_fullScreenMode == FullScreenMode::eExclusive,
+                    "Refresh rate can only be set in fullscreen");
+
+        GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+        const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+        int refreshRate = _refreshRate == 0 ? mode->refreshRate : _refreshRate;
+
+        glfwWindowHint(GLFW_REFRESH_RATE, refreshRate);
+        glfwSetWindowMonitor(_window, monitor, 0, 0, _extent.x, _extent.y, refreshRate);
     }
 
     void GLFWindow::setFullScreenMode(FullScreenMode mode) noexcept
@@ -451,23 +466,12 @@ namespace exage
 
         switch (mode)
         {
-            case FullScreenMode::eBorderless:
+            case FullScreenMode::eWindowedBorderless:
             {
                 const GLFWvidmode* mode = glfwGetVideoMode(monitor);
 
-                glfwWindowHint(GLFW_RED_BITS, mode->redBits);
-                glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
-                glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
-
-                glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
-
-                glfwSetWindowMonitor(_window,
-                                     monitor,
-                                     0,
-                                     0,
-                                     mode->width,
-                                     mode->height,
-                                     mode->refreshRate);
+                glfwSetWindowMonitor(
+                    _window, nullptr, 0, 0, mode->width, mode->height, mode->refreshRate);
             }
             break;
 
@@ -475,31 +479,22 @@ namespace exage
             {
                 const GLFWvidmode* mode = glfwGetVideoMode(monitor);
 
-                glfwWindowHint(GLFW_RED_BITS, mode->redBits);
-                glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
-                glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
-
-                glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
-
-                glfwSetWindowMonitor(_window,
-                                     monitor,
-                                     0,
-                                     0,
-                                     mode->width,
-                                     mode->height,
-                                     mode->refreshRate);
+                int refreshRate = _refreshRate == 0 ? mode->refreshRate : _refreshRate;
+                glfwSetWindowMonitor(_window, monitor, 0, 0, _extent.x, _extent.y, refreshRate);
             }
             break;
 
             case FullScreenMode::eWindowed:
             {
+                const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+
                 glfwSetWindowMonitor(_window,
                                      nullptr,
                                      0,
                                      0,
                                      static_cast<int>(_extent.x),
                                      static_cast<int>(_extent.y),
-                                     GLFW_DONT_CARE);
+                                     mode->refreshRate);
             }
             break;
         }
@@ -509,4 +504,9 @@ namespace exage
     {
         return glfwWindowShouldClose(_window) != 0;
     }
-} // namespace exage
+
+    auto GLFWindow::isMinimized() const noexcept -> bool
+    {
+        return !glfwGetWindowAttrib(_window, GLFW_MAXIMIZED);
+    }
+}  // namespace exage

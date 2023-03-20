@@ -62,6 +62,28 @@ namespace exage::Graphics
 
     ImGuiInstance::~ImGuiInstance()
     {
+        switch (_api)
+        {
+			case API::eVulkan:
+            {
+				ImGui_ImplVulkan_Shutdown();
+				break;
+			}
+			default:
+				break;
+		}
+
+        switch (_windowAPI)
+        {
+            case WindowAPI::eGLFW:
+            {
+				ImGui_ImplGlfw_Shutdown();
+				break;
+			}
+			default:
+				break;
+        }
+
         ImGui::DestroyContext(_imCtx);
     }
 
@@ -79,6 +101,19 @@ namespace exage::Graphics
             default:
                 break;
         }
+
+        switch (_windowAPI)
+        {
+			case WindowAPI::eGLFW:
+            {
+				ImGui_ImplGlfw_NewFrame();
+				break;
+			}
+			default:
+				break;
+		}
+
+        ImGui::NewFrame();
     }
 
     void ImGuiInstance::end() noexcept

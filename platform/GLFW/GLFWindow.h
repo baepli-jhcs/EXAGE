@@ -38,9 +38,12 @@ namespace exage
         [[nodiscard]] auto getNativeHandle() const noexcept -> void* override;
 
         void resize(glm::uvec2 extent) noexcept override;
+
+        void setRefreshRate(uint32_t refreshRate) noexcept override;
         void setFullScreenMode(FullScreenMode mode) noexcept override;
 
         [[nodiscard]] auto shouldClose() const noexcept -> bool override;
+        [[nodiscard]] auto isMinimized() const noexcept -> bool override;
 
         [[nodiscard]] auto getGLFWWindow() const noexcept -> GLFWwindow* { return _window; }
 
@@ -59,6 +62,7 @@ namespace exage
         std::string _name;
 
         glm::uvec2 _extent;
+        uint32_t _refreshRate = 0;
         FullScreenMode _fullScreenMode = FullScreenMode::eWindowed;
 
         std::vector<ResizeCallback> _resizeCallbacks;

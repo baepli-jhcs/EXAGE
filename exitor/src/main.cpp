@@ -22,13 +22,17 @@ auto main(int argc, char* argv[]) -> int
 {
     exage::init();
 
-    constexpr exage::WindowInfo info = {
-        .extent = {1280, 720},
+    glm::uvec2 initialExtent = {1280, 720};
+
+    exage::WindowInfo info = {
+        .extent = initialExtent,
         .name = "Main Window",
-        .fullScreenMode = exage::FullScreenMode::eWindowed,
+        .fullScreenMode = exage::FullScreenMode::eBorderless,
     };
 
     tl::expected windowReturn = Window::create(info, exage::WindowAPI::eGLFW);
+    initialExtent = windowReturn.value()->getExtent();  // in case of a borderless window
+
     ContextCreateInfo createInfo {.api = API::eVulkan,
                                   .windowAPI = exage::WindowAPI::eGLFW,
                                   .optionalWindow = windowReturn.value().get()};
@@ -46,12 +50,12 @@ auto main(int argc, char* argv[]) -> int
     auto queueCommandRepo = std::make_unique<QueueCommandRepo>(queueCommandRepoCreateInfo);
 
     TextureCreateInfo textureCreateInfo {
-        .extent = {1280, 720, 1},
+        .extent = {initialExtent.x, initialExtent.y, 1},
         .usage = Texture::UsageFlags::eTransferSource | Texture::UsageFlags::eColorAttachment};
 
     std::shared_ptr texture = context.value()->createTexture(textureCreateInfo);
 
-    std::shared_ptr frameBuffer = context.value()->createFrameBuffer(glm::uvec2 {1280, 720});
+    std::shared_ptr frameBuffer = context.value()->createFrameBuffer(initialExtent);
     frameBuffer->attachColor(texture);
 
     Window& window = *windowReturn.value();
@@ -128,6 +132,9 @@ auto main(int argc, char* argv[]) -> int
             ImGuiID dockspaceId = ImGui::GetID("DockSpace");
             ImGui::DockSpace(dockspaceId, ImVec2(0.0f, 0.0f), dockspaceFlags);
         }
+
+        bool showDemoWindow = true;
+        ImGui::ShowDemoWindow(&showDemoWindow);
 
         ImGui::End();
 

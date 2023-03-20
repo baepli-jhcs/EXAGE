@@ -1,6 +1,6 @@
 add_rules("mode.debug", "mode.release", "mode.releasedbg")
 
-add_requires("debugbreak", "fmt", "glfw", "glm", "imgui v1.89.3-docking", "magic_enum", "unordered_dense v3.0.0", "vk-bootstrap", "vulkan-headers")
+add_requires("debugbreak", "entt v3.11.1", "fmt", "glfw", "glm", "imgui v1.89.3-docking", "magic_enum", "unordered_dense v3.0.0", "vk-bootstrap", "vulkan-headers")
 add_requires("vcpkg::tl-expected", {alias = "tl_expected"})
 add_requires("vcpkg::vulkan-memory-allocator-hpp", {alias = "vma-hpp"})
 
@@ -22,7 +22,7 @@ target("EXAGE")
     add_headerfiles("platform/**.h")
     add_includedirs("platform", {public = true})
 
-    add_packages("debugbreak", "fmt", "glfw", "glm", "imgui", "magic_enum", "tl_expected", "unordered_dense", "vk-bootstrap", "vulkan-headers", "vma-hpp", {public = true})
+    add_packages("debugbreak", "entt", "fmt", "glfw", "glm", "imgui", "magic_enum", "tl_expected", "unordered_dense", "vk-bootstrap", "vulkan-headers", "vma-hpp", {public = true})
 
     if is_mode("debug") or is_mode("releasedbg") then
         add_defines("EXAGE_DEBUG")
