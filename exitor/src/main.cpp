@@ -2,6 +2,7 @@
 #include "Graphics/Context.h"
 #include "Graphics/FrameBuffer.h"
 #include "Graphics/HLPD/ImGuiTools.h"
+#include "Graphics/Utils/QueueCommand.h"
 #include "Graphics/Queue.h"
 #include "glm/gtc/random.hpp"
 

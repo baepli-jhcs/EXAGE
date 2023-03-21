@@ -29,10 +29,10 @@ namespace exage::Graphics
         EXAGE_DEFAULT_COPY(Buffer);
         EXAGE_DEFAULT_MOVE(Buffer);
 
-        virtual void write(std::span<const std::byte> data, uint64_t offset) noexcept = 0;
-        virtual void read(std::span<std::byte> data, uint64_t offset) const noexcept = 0;
+        virtual void write(std::span<const std::byte> data, size_t offset) noexcept = 0;
+        virtual void read(std::span<std::byte> data, size_t offset) const noexcept = 0;
 
-        [[nodiscard]] auto getSize() const noexcept -> uint64_t { return _size; }
+        [[nodiscard]] auto getSize() const noexcept -> size_t { return _size; }
         [[nodiscard]] auto getAllocationType() const noexcept -> AllocationType
         {
             return _allocationType;
@@ -42,7 +42,7 @@ namespace exage::Graphics
         EXAGE_BASE_API(API, Buffer);
 
       protected:
-        uint64_t _size;
+        size_t _size;
         AllocationType _allocationType;
         MemoryUsage _memoryUsage;
 
@@ -56,7 +56,7 @@ namespace exage::Graphics
 
     struct BufferCreateInfo
     {
-        uint64_t size;
+        size_t size;
         Buffer::AllocationType allocationType;
         Buffer::MemoryUsage memoryUsage;
     };

@@ -4,8 +4,10 @@
 #include <variant>
 
 #include "Core/Core.h"
+#include "Graphics/Buffer.h"
 #include "Graphics/Context.h"
-#include "Texture.h"
+#include "Graphics/FrameBuffer.h"
+#include "Graphics/Texture.h"
 
 namespace exage::Graphics
 {
@@ -120,7 +122,7 @@ namespace exage::Graphics
         uint32_t layerCount;
     };
 
-            struct ClearColor
+    struct ClearColor
     {
         bool clear;
         glm::vec4 color;
@@ -149,6 +151,39 @@ namespace exage::Graphics
         std::function<void(CommandBuffer&)> commandFunction;
     };
 
+    struct CopyBufferCommand
+    {
+        std::shared_ptr<Buffer> srcBuffer;
+        std::shared_ptr<Buffer> dstBuffer;
+        size_t srcOffset;
+        size_t dstOffset;
+        size_t size;
+    };
+
+    struct CopyBufferToTextureCommand
+    {
+        std::shared_ptr<Buffer> srcBuffer;
+        std::shared_ptr<Texture> dstTexture;
+        size_t srcOffset;
+        glm::uvec3 dstOffset;
+        uint32_t dstMipLevel;
+        uint32_t dstFirstLayer;
+        uint32_t layerCount;
+        glm::uvec3 extent;
+    };
+
+    struct CopyTextureToBufferCommand
+    {
+        std::shared_ptr<Texture> srcTexture;
+        std::shared_ptr<Buffer> dstBuffer;
+        glm::uvec3 srcOffset;
+        uint32_t srcMipLevel;
+        uint32_t srcFirstLayer;
+        uint32_t layerCount;
+        glm::uvec3 extent;
+        size_t dstOffset;
+    };
+
     using GPUCommand = std::variant<DrawCommand,
                                     DrawIndexedCommand,
                                     TextureBarrierCommand,
@@ -158,9 +193,13 @@ namespace exage::Graphics
                                     SetScissorCommand,
                                     ClearTextureCommand,
                                     BeginRenderingCommand,
-                                    EndRenderingCommand>;
+                                    EndRenderingCommand,
+                                    CopyBufferCommand,
+                                    CopyBufferToTextureCommand,
+                                    CopyTextureToBufferCommand>;
 
     using DataDependency =
         std::variant<std::shared_ptr<Texture>,
+                     std::shared_ptr<Buffer>,
                      std::shared_ptr<FrameBuffer>>;  // Only required for user defined commands
 }  // namespace exage::Graphics

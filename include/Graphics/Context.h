@@ -41,6 +41,8 @@ namespace exage::Graphics
         EXAGE_DEFAULT_MOVE(Context);
 
         virtual void waitIdle() const noexcept = 0;
+        
+        [[nodiscard]] virtual auto getQueue() const noexcept -> Queue& = 0;
 
         [[nodiscard]] virtual auto createQueue(const QueueCreateInfo& createInfo) noexcept
             -> std::unique_ptr<Queue> = 0;

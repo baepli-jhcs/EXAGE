@@ -73,7 +73,7 @@ namespace exage::Graphics
         return *this;
     }
 
-    void VulkanBuffer::write(std::span<const std::byte> data, uint64_t offset) noexcept
+    void VulkanBuffer::write(std::span<const std::byte> data, size_t offset) noexcept
     {
         debugAssume(offset + data.size() <= _size, "Buffer overflow");
         debugAssume(_memoryUsage.any(MemoryUsageFlags::eMapped), "Buffer is not mapped");
@@ -81,7 +81,7 @@ namespace exage::Graphics
         std::memcpy(static_cast<std::byte*>(_mappedData) + offset, data.data(), data.size());
     }
 
-    void VulkanBuffer::read(std::span<std::byte> data, uint64_t offset) const noexcept 
+    void VulkanBuffer::read(std::span<std::byte> data, size_t offset) const noexcept 
     {
         debugAssume(offset + data.size() <= _size, "Buffer overflow");
         debugAssume(_memoryUsage.any(MemoryUsageFlags::eMapped), "Buffer is not mapped");
