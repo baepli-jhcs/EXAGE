@@ -11,13 +11,13 @@ namespace exage::Graphics
 {
     ImGuiInstance::ImGuiInstance(const ImGuiInitInfo& initInfo) noexcept
         : _context(initInfo.context)
-        , _queue(initInfo.queue)
+        , _queue(initInfo.queue), _api(initInfo.context.getAPI()), _windowAPI(initInfo.window.getAPI()), _imCtx(ImGui::CreateContext())
     {
-        _api = initInfo.context.getAPI();
-        _windowAPI = initInfo.window.getAPI();
+        
+        
 
         IMGUI_CHECKVERSION();
-        _imCtx = ImGui::CreateContext();
+        
         ImGuiIO& io = ImGui::GetIO();
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;  // Enable Gamepad Controls
@@ -28,10 +28,10 @@ namespace exage::Graphics
         ImGui::StyleColorsDark();
 
         ImGuiStyle& style = ImGui::GetStyle();
-        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+        if ((io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) != 0)
         {
-            style.WindowRounding = 0.0f;
-            style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+            style.WindowRounding = 0.0F;
+            style.Colors[ImGuiCol_WindowBg].w = 1.0F;
         }
 
         switch (_windowAPI)
@@ -145,10 +145,10 @@ namespace exage::Graphics
         {
             case API::eVulkan:
             {
-                std::function commandFunction = [this](CommandBuffer& cmd)
+                std::function const commandFunction = [this](CommandBuffer& cmd)
                 {
                     ImGui::SetCurrentContext(_imCtx);
-                    vk::CommandBuffer vkCommand = cmd.as<VulkanCommandBuffer>()->getCommandBuffer();
+                    vk::CommandBuffer const vkCommand = cmd.as<VulkanCommandBuffer>()->getCommandBuffer();
                     ImGui_ImplVulkan_CreateFontsTexture(vkCommand);
                 };
                 commandBuffer->userDefined(commandFunction);
@@ -181,10 +181,10 @@ namespace exage::Graphics
         {
             case API::eVulkan:
             {
-                std::function commandFunction = [this](CommandBuffer& commandBuffer)
+                std::function const commandFunction = [this](CommandBuffer& commandBuffer)
                 {
                     ImGui::SetCurrentContext(_imCtx);
-                    vk::CommandBuffer vkCommand =
+                    vk::CommandBuffer const vkCommand =
                         commandBuffer.as<VulkanCommandBuffer>()->getCommandBuffer();
                     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), vkCommand);
                 };
@@ -200,8 +200,8 @@ namespace exage::Graphics
     {
         ImGui::SetCurrentContext(_imCtx);
 
-        ImGuiIO& io = ImGui::GetIO();
-        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+        ImGuiIO const& io = ImGui::GetIO();
+        if ((io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) != 0)
         {
             ImGui::UpdatePlatformWindows();
             ImGui::RenderPlatformWindowsDefault();
@@ -214,7 +214,7 @@ namespace exage::Graphics
         switch (_api)
         {
             case API::eVulkan:
-                ImGui_ImplGlfw_InitForVulkan(window->getGLFWWindow(), true);
+                ImGui_ImplGlfw_InitForVulkan(window->getGLFWWindow(), /*install_callbacks=*/true);
                 break;
             default:
                 break;

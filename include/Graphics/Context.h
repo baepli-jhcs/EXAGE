@@ -10,6 +10,7 @@ namespace exage::Graphics
     struct QueueCreateInfo;
     struct SwapchainCreateInfo;
     struct TextureCreateInfo;
+    struct BufferCreateInfo;
 
     enum class API
     {

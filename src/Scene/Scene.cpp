@@ -7,7 +7,7 @@ namespace exage
 {
     auto Scene::createEntity(Entity parent) noexcept -> Entity
     {
-        Entity entity {_registry.create(), *this};
+        Entity const entity {_registry.create(), *this};
         auto& relationship = entity.addComponent<EntityRelationship>();
 
         relationship.parent = parent;
@@ -60,7 +60,7 @@ namespace exage
             previousSiblingRelationship.nextSibling = relationship.nextSibling;
         }
 
-        size_t childCount = relationship.childCount;
+        size_t const childCount = relationship.childCount;
         for (size_t i = 0; i < childCount; i++)
         {
 			destroyEntity(relationship.firstChild);

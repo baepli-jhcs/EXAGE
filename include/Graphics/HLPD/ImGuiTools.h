@@ -37,7 +37,7 @@ namespace exage::Graphics
 
       private:
         void initGLFW(const ImGuiInitInfo& initInfo) noexcept;
-        void initVulkan(const ImGuiInitInfo& initInfo) noexcept;
+        static void initVulkan(const ImGuiInitInfo& initInfo) noexcept;
 
         void buildFonts() noexcept;
         

@@ -4,7 +4,7 @@
 namespace exage::Graphics
 {
     auto Context::create(ContextCreateInfo& createInfo) noexcept
-    -> tl::expected<std::unique_ptr<Context>, Error>
+        -> tl::expected<std::unique_ptr<Context>, Error>
     {
         switch (createInfo.api)
         {
@@ -12,12 +12,14 @@ namespace exage::Graphics
             {
                 tl::expected value = VulkanContext::create(createInfo);
                 if (!value.has_value())
+                {
                     return tl::make_unexpected(value.error());
+                }
                 return std::make_unique<VulkanContext>(std::move(value.value()));
             }
         }
 
-        debugAssume(false, "Unsupported API");
+        debugAssume(/*condition=*/false, "Unsupported API");
         return tl::make_unexpected(ErrorCode::eUnsupportedAPI);
     }
-} // namespace exage::Graphics
+}  // namespace exage::Graphics
