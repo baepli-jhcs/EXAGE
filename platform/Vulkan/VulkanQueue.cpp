@@ -1,14 +1,18 @@
-﻿#include "VulkanQueue.h"
+﻿#include "Vulkan/VulkanQueue.h"
 
-#include "VulkanCommandBuffer.h"
-#include "VulkanSwapchain.h"
+#include "Vulkan/VulkanCommandBuffer.h"
+#include "Vulkan/VulkanContext.h"
+#include "Vulkan/VulkanSwapchain.h"
 
 namespace exage::Graphics
 {
 
-    VulkanQueue::VulkanQueue(VulkanContext& context, const QueueCreateInfo& createInfo) noexcept
+    VulkanQueue::VulkanQueue(VulkanContext& context,
+                             const VulkanQueueCreateInfo& createInfo) noexcept
         : _context(context)
         , _framesInFlight(createInfo.maxFramesInFlight)
+        , _queue(createInfo.queue)
+        , _familyIndex(createInfo.familyIndex)
     {
         _renderFences.resize(_framesInFlight);
         _presentSemaphores.resize(_framesInFlight);
@@ -47,6 +51,8 @@ namespace exage::Graphics
         : _context(old._context)
     {
         _framesInFlight = old._framesInFlight;
+        _queue = old._queue;
+        _familyIndex = old._familyIndex;
         _renderFences = std::move(old._renderFences);
         _presentSemaphores = std::move(old._presentSemaphores);
         _renderSemaphores = std::move(old._renderSemaphores);
@@ -87,6 +93,8 @@ namespace exage::Graphics
         _context = old._context;
 
         _framesInFlight = old._framesInFlight;
+        _queue = old._queue;
+        _familyIndex = old._familyIndex;
         _renderFences = std::move(old._renderFences);
         _presentSemaphores = std::move(old._presentSemaphores);
         _renderSemaphores = std::move(old._renderSemaphores);
@@ -127,8 +135,7 @@ namespace exage::Graphics
         vk::PipelineStageFlags waitStages[] = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
         vkSubmitInfo.pWaitDstStageMask = waitStages;
 
-        vk::Result result =
-            _context.get().getVulkanQueue().submit(1, &vkSubmitInfo, _renderFences[_currentFrame]);
+        vk::Result result = _queue.submit(1, &vkSubmitInfo, _renderFences[_currentFrame]);
         checkVulkan(result);
     }
 
@@ -147,7 +154,7 @@ namespace exage::Graphics
         presentInfoKHR.waitSemaphoreCount = 1;
         presentInfoKHR.pWaitSemaphores = &_renderSemaphores[_currentFrame];
 
-        vk::Result result = _context.get().getVulkanQueue().presentKHR(&presentInfoKHR);
+        vk::Result result = _queue.presentKHR(&presentInfoKHR);
 
         if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eSuboptimalKHR)
         {
@@ -169,7 +176,7 @@ namespace exage::Graphics
         const vk::CommandBuffer vkCommand = queueCommandBuffer->getCommandBuffer();
         vkSubmitInfo.pCommandBuffers = &vkCommand;
 
-        vk::Result result = _context.get().getVulkanQueue().submit(1, &vkSubmitInfo, nullptr);
+        vk::Result result = _queue.submit(1, &vkSubmitInfo, nullptr);
         checkVulkan(result);
 
         _context.get().waitIdle();

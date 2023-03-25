@@ -10,8 +10,10 @@ namespace exage::Graphics
 {
     class EXAGE_EXPORT VulkanSampler final : public Sampler
     {
-    public:
-        VulkanSampler(VulkanContext& context, const SamplerCreateInfo& createInfo, uint32_t mipLevelCount) noexcept;
+      public:
+        VulkanSampler(VulkanContext& context,
+                      const SamplerCreateInfo& createInfo,
+                      uint32_t mipLevelCount) noexcept;
         ~VulkanSampler() override;
 
         VulkanSampler(VulkanSampler&&) noexcept;
@@ -23,14 +25,14 @@ namespace exage::Graphics
 
         EXAGE_VULKAN_DERIVED
 
-    private:
+      private:
         std::reference_wrapper<VulkanContext> _context;
         vk::Sampler _sampler;
     };
 
     class EXAGE_EXPORT VulkanTexture final : public Texture
     {
-    public:
+      public:
         VulkanTexture(VulkanContext& context, const TextureCreateInfo& createInfo) noexcept;
         ~VulkanTexture() override;
 
@@ -48,16 +50,21 @@ namespace exage::Graphics
 
         [[nodiscard]] auto getImage() const noexcept -> vk::Image { return _image; }
         [[nodiscard]] auto getImageView() const noexcept -> vk::ImageView { return _imageView; }
-        
+
         [[nodiscard]] auto getDescriptorImageInfo() const noexcept -> vk::DescriptorImageInfo
         {
             return vk::DescriptorImageInfo(
-                _sampler ->getSampler(), _imageView, toVulkanImageLayout(_layout));
+                _sampler->getSampler(), _imageView, vk::ImageLayout::eShaderReadOnlyOptimal);
+        }
+
+        [[nodiscard]] auto getVulkanSampler() noexcept -> VulkanSampler& { return *_sampler; }
+        [[nodiscard]] auto getVulkanSampler() const noexcept -> const VulkanSampler&
+        {
+            return *_sampler;
         }
 
         EXAGE_VULKAN_DERIVED
-    private:
-        
+      private:
         void cleanup() noexcept;
 
         std::reference_wrapper<VulkanContext> _context;
@@ -68,4 +75,4 @@ namespace exage::Graphics
 
         std::optional<VulkanSampler> _sampler;
     };
-} // namespace exage::Graphics
+}  // namespace exage::Graphics

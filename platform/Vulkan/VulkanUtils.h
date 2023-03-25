@@ -395,19 +395,19 @@ namespace exage::Graphics
 
     [[nodiscard]] constexpr auto toVmaMemoryUsage(Buffer::AllocationType type) -> vma::MemoryUsage
     {
-        vma::MemoryUsage usage {};
 
-        if (type == Buffer::AllocationType::eDeviceLocal)
+        switch (type)
         {
-            return vma::MemoryUsage::eAutoPreferDevice;
+            case Buffer::AllocationType::eHost:
+                return vma::MemoryUsage::eAutoPreferHost;
+            case Buffer::AllocationType::eDevice:
+                return vma::MemoryUsage::eAutoPreferDevice;
+            case Buffer::AllocationType::eHostVisible:
+                return vma::MemoryUsage::eAuto;
+                
         }
 
-        if (type == Buffer::AllocationType::eHostVisible)
-        {
-            return vma::MemoryUsage::eAutoPreferHost;
-        }
-
-        return vma::MemoryUsage::eAutoPreferDevice;
+        return vma::MemoryUsage::eAuto;
     }
 
     [[nodiscard]] constexpr auto toVmaAllocationCreateFlags(Buffer::MemoryUsage usage)
@@ -427,7 +427,7 @@ namespace exage::Graphics
                 flags |= vma::AllocationCreateFlagBits::eHostAccessSequentialWrite;
             }
         }
-        
+
         return flags;
     }
 }  // namespace exage::Graphics

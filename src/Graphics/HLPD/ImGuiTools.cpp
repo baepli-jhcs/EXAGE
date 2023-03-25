@@ -11,13 +11,12 @@ namespace exage::Graphics
 {
     ImGuiInstance::ImGuiInstance(const ImGuiInitInfo& initInfo) noexcept
         : _context(initInfo.context)
-        , _queue(initInfo.queue), _api(initInfo.context.getAPI()), _windowAPI(initInfo.window.getAPI()), _imCtx(ImGui::CreateContext())
+        , _api(initInfo.context.getAPI())
+        , _windowAPI(initInfo.window.getAPI())
+        , _imCtx(ImGui::CreateContext())
     {
-        
-        
-
         IMGUI_CHECKVERSION();
-        
+
         ImGuiIO& io = ImGui::GetIO();
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;  // Enable Gamepad Controls
@@ -64,24 +63,24 @@ namespace exage::Graphics
     {
         switch (_api)
         {
-			case API::eVulkan:
+            case API::eVulkan:
             {
-				ImGui_ImplVulkan_Shutdown();
-				break;
-			}
-			default:
-				break;
-		}
+                ImGui_ImplVulkan_Shutdown();
+                break;
+            }
+            default:
+                break;
+        }
 
         switch (_windowAPI)
         {
             case WindowAPI::eGLFW:
             {
-				ImGui_ImplGlfw_Shutdown();
-				break;
-			}
-			default:
-				break;
+                ImGui_ImplGlfw_Shutdown();
+                break;
+            }
+            default:
+                break;
         }
 
         ImGui::DestroyContext(_imCtx);
@@ -104,14 +103,14 @@ namespace exage::Graphics
 
         switch (_windowAPI)
         {
-			case WindowAPI::eGLFW:
+            case WindowAPI::eGLFW:
             {
-				ImGui_ImplGlfw_NewFrame();
-				break;
-			}
-			default:
-				break;
-		}
+                ImGui_ImplGlfw_NewFrame();
+                break;
+            }
+            default:
+                break;
+        }
 
         ImGui::NewFrame();
     }
@@ -148,7 +147,8 @@ namespace exage::Graphics
                 std::function const commandFunction = [this](CommandBuffer& cmd)
                 {
                     ImGui::SetCurrentContext(_imCtx);
-                    vk::CommandBuffer const vkCommand = cmd.as<VulkanCommandBuffer>()->getCommandBuffer();
+                    vk::CommandBuffer const vkCommand =
+                        cmd.as<VulkanCommandBuffer>()->getCommandBuffer();
                     ImGui_ImplVulkan_CreateFontsTexture(vkCommand);
                 };
                 commandBuffer->userDefined(commandFunction);
@@ -157,9 +157,9 @@ namespace exage::Graphics
             default:
                 break;
         }
-        
+
         commandBuffer->end();
-        _queue.get().submitTemporary(std::move(commandBuffer));
+        _context.get().getQueue().submitTemporary(std::move(commandBuffer));
 
         switch (_api)
         {
@@ -230,8 +230,8 @@ namespace exage::Graphics
         imInit.Instance = context->getInstance();
         imInit.PhysicalDevice = context->getPhysicalDevice();
         imInit.Device = context->getDevice();
-        imInit.QueueFamily = context->getQueueIndex();
-        imInit.Queue = context->getVulkanQueue();
+        imInit.QueueFamily = context->getVulkanQueue().getFamilyIndex();
+        imInit.Queue = context->getVulkanQueue().getVulkanQueue();
         imInit.PipelineCache = nullptr;
         imInit.Allocator = nullptr;
         imInit.MinImageCount = initInfo.maxImageCount;

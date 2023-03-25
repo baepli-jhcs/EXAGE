@@ -1,9 +1,12 @@
-﻿#include "Core/Core.h"
+﻿#include <random>
+
+#include "Core/Core.h"
 #include "Graphics/Context.h"
 #include "Graphics/FrameBuffer.h"
 #include "Graphics/HLPD/ImGuiTools.h"
-#include "Graphics/Utils/QueueCommand.h"
 #include "Graphics/Queue.h"
+#include "Graphics/Utils/BufferTypes.h"
+#include "Graphics/Utils/QueueCommand.h"
 #include "glm/gtc/random.hpp"
 
 using namespace exage;
@@ -27,7 +30,7 @@ auto main(int argc, char* argv[]) -> int
 
     exage::WindowInfo info = {
         .name = "Main Window",
-        .extent = monitor.extent,
+        .extent = {monitor.extent.x * 3 / 4, monitor.extent.y * 3 / 4},
         .fullScreen = false,
         .windowBordered = true,
         .exclusiveRefreshRate = monitor.refreshRate,
@@ -42,15 +45,11 @@ auto main(int argc, char* argv[]) -> int
                                   .optionalWindow = windowReturn.value().get()};
     tl::expected context(Context::create(createInfo));
 
-    QueueCreateInfo queueCreateInfo {.maxFramesInFlight = 2};
-    std::unique_ptr queue = context.value()->createQueue(queueCreateInfo);
-
     SwapchainCreateInfo swapchainCreateInfo {.window = *windowReturn.value(),
                                              .presentMode = PresentMode::eDoubleBufferVSync};
     std::unique_ptr swapchain(context.value()->createSwapchain(swapchainCreateInfo));
 
-    QueueCommandRepoCreateInfo queueCommandRepoCreateInfo {.context = *context.value(),
-                                                           .queue = *queue};
+    QueueCommandRepoCreateInfo queueCommandRepoCreateInfo {.context = *context.value()};
     auto queueCommandRepo = std::make_unique<QueueCommandRepo>(queueCommandRepoCreateInfo);
 
     TextureCreateInfo textureCreateInfo {
@@ -64,18 +63,32 @@ auto main(int argc, char* argv[]) -> int
 
     Window& window = *windowReturn.value();
     Context& ctx = *context.value();
-    Queue& que = *queue;
     Swapchain& swap = *swapchain;
     QueueCommandRepo& repo = *queueCommandRepo;
     FrameBuffer& frame = *frameBuffer;
 
-    ImGuiInitInfo imguiInitInfo {.context = ctx, .queue = que, .window = window};
+    ImGuiInitInfo imguiInitInfo {.context = ctx, .window = window};
     ImGuiInstance imgui(imguiInitInfo);
 
     ResizeData resizeData {
         .ctx = ctx, .swap = swap, .textureCreateInfo = textureCreateInfo, .frameBuffer = frame};
     ResizeCallback callback = {&resizeData, resizeCallback};
     window.addResizeCallback(callback);
+
+    glm::uvec2 cpuTextureExtent = {500, 500};
+    DynamicFixedBufferCreateInfo textureBufferCreateInfo {
+        .context = ctx,
+        .size = cpuTextureExtent.x * cpuTextureExtent.y * 4,
+        .cached = true,
+        .useStagingBuffer = false};
+    DynamicFixedBuffer cpuTextureBuffer {textureBufferCreateInfo};
+
+    TextureCreateInfo cpuTextureCreateInfo {
+        .extent = {cpuTextureExtent.x, cpuTextureExtent.y, 1},
+        .usage = Texture::UsageFlags::eTransferDestination,
+    };
+    std::shared_ptr cpuTexture = ctx.createTexture(cpuTextureCreateInfo);
+    std::vector<uint8_t> cpuTextureData(cpuTextureExtent.x * cpuTextureExtent.y * 4);
 
     while (!window.shouldClose())
     {
@@ -87,8 +100,8 @@ auto main(int argc, char* argv[]) -> int
         }
 
         CommandBuffer& cmd = repo.current();
-        que.startNextFrame();
-        std::optional swapError = swap.acquireNextImage(que);
+        ctx.getQueue().startNextFrame();
+        std::optional swapError = swap.acquireNextImage();
         if (swapError.has_value())
         {
             continue;
@@ -104,12 +117,51 @@ auto main(int argc, char* argv[]) -> int
                            AccessFlags::eTransferWrite,
                            AccessFlags::eColorAttachmentWrite);
 
-        // glm vec4 random clear color
-        glm::vec4 clearCol = glm::linearRand(glm::vec4 {0.0f}, glm::vec4 {1.0f});
+        for (uint32_t i = 0; i < cpuTextureExtent.x * cpuTextureExtent.y; i++)
+        {
+            cpuTextureData[i * 4 + 0] = 50;
+            cpuTextureData[i * 4 + 1] = 50;
+            cpuTextureData[i * 4 + 2] = 200;
+            cpuTextureData[i * 4 + 3] = 255;
+        }
 
+        std::span<std::byte> cpuTextureDataSpan {
+            reinterpret_cast<std::byte*>(cpuTextureData.data()), cpuTextureData.size()};
+        cpuTextureBuffer.write(cpuTextureDataSpan, 0);
+        cpuTextureBuffer.update(cmd);
+
+        cmd.bufferBarrier(cpuTextureBuffer.currentHost(),
+                          PipelineStageFlags::eTransfer,
+                          PipelineStageFlags::eTransfer,
+                          AccessFlags::eTransferWrite,
+                          AccessFlags::eTransferRead);
+
+        cmd.textureBarrier(cpuTexture,
+                           Texture::Layout::eTransferDst,  // new layout
+                           PipelineStageFlags::eTransfer,
+                           PipelineStageFlags::eTransfer,
+                           AccessFlags::eTransferWrite,
+                           AccessFlags::eTransferRead);
+
+        cmd.copyBufferToTexture(cpuTextureBuffer.currentHost(),
+                                cpuTexture,
+                                /*srcOffset*/ 0,
+                                /*dstOffset*/ glm::uvec3 {0, 0, 0},
+                                /*dstMipLevel*/ 0,
+                                /*dstFirstLayer*/ 0,
+                                /*dstNumLayers*/ 1,
+                                /*extent*/ {cpuTextureExtent.x, cpuTextureExtent.y, 1});
+
+        cmd.textureBarrier(cpuTexture,
+                           Texture::Layout::eShaderReadOnly,
+                           PipelineStageFlags::eTransfer,
+                           PipelineStageFlags::eFragmentShader,
+                           AccessFlags::eTransferWrite,
+                           AccessFlags::eShaderRead);
+
+        glm::vec4 clearCol = glm::linearRand(glm::vec4 {0.0f}, glm::vec4 {1.0f});
         ClearColor clearColor {.clear = true, .color = clearCol};
         ClearDepthStencil clearDepthStencil {.clear = false};
-
         cmd.beginRendering(frameBuffer, {clearColor}, clearDepthStencil);
 
         imgui.begin();
@@ -145,6 +197,16 @@ auto main(int argc, char* argv[]) -> int
         bool showDemoWindow = true;
         ImGui::ShowDemoWindow(&showDemoWindow);
 
+        bool showTextureWindow = true;
+        ImVec2 textureWindowSize = {static_cast<float>(cpuTextureExtent.x),
+                                    static_cast<float>(cpuTextureExtent.y)};
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+        ImGui::SetNextWindowContentSize(textureWindowSize);
+        ImGui::Begin("Texture", &showTextureWindow, ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Image(cpuTexture.get(), textureWindowSize);
+        ImGui::End();
+        ImGui::PopStyleVar();
+
         ImGui::End();
 
         imgui.end();
@@ -166,9 +228,9 @@ auto main(int argc, char* argv[]) -> int
         imgui.renderAdditional();
 
         QueueSubmitInfo submitInfo {.commandBuffer = cmd};
-        que.submit(submitInfo);
+        ctx.getQueue().submit(submitInfo);
         QueuePresentInfo presentInfo {.swapchain = swap};
-        swapError = que.present(presentInfo);
+        swapError = ctx.getQueue().present(presentInfo);
     }
 
     ctx.waitIdle();

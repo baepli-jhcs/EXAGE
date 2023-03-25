@@ -41,6 +41,12 @@ namespace exage::Graphics
                             Access srcAccess,
                             Access dstAccess) noexcept override;
 
+        void bufferBarrier(std::shared_ptr<Buffer> buffer,
+                           PipelineStage srcStage,
+                           PipelineStage dstStage,
+                           Access srcAccess,
+                           Access dstAccess) noexcept override;
+
         void blit(std::shared_ptr<Texture> srcTexture,
                   std::shared_ptr<Texture> dstTexture,
                   glm::uvec3 srcOffset,
@@ -65,6 +71,30 @@ namespace exage::Graphics
                             std::vector<ClearColor> clearColors,
                             ClearDepthStencil clearDepth) noexcept override;
         void endRendering() noexcept override;
+
+        void copyBuffer(std::shared_ptr<Buffer> srcBuffer,
+                        std::shared_ptr<Buffer> dstBuffer,
+                        uint64_t srcOffset,
+                        uint64_t dstOffset,
+                        uint64_t size) noexcept override;
+        
+        void copyBufferToTexture(std::shared_ptr<Buffer> srcBuffer,
+                                 std::shared_ptr<Texture> dstTexture,
+                                 uint64_t srcOffset,
+                                 glm::uvec3 dstOffset,
+                                 uint32_t dstMipLevel,
+                                 uint32_t dstFirstLayer,
+                                 uint32_t layerCount,
+                                 glm::uvec3 extent) noexcept override;
+
+        void copyTextureToBuffer(std::shared_ptr<Texture> srcTexture,
+                                 std::shared_ptr<Buffer> dstBuffer,
+                                 glm::uvec3 srcOffset,
+                                 uint32_t srcMipLevel,
+                                 uint32_t srcFirstLayer,
+                                 uint32_t layerCount,
+                                 glm::uvec3 extent,
+                                 size_t dstOffset) noexcept override;
 
         void userDefined(std::function<void(CommandBuffer&)> commandFunction) noexcept override;
 

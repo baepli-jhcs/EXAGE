@@ -76,10 +76,11 @@ namespace exage::Graphics
 {
     static vk::DynamicLoader dl {};
 
-    tl::expected<VulkanContext, Error> VulkanContext::create(ContextCreateInfo& createInfo) noexcept
+    tl::expected<std::unique_ptr<VulkanContext>, Error> VulkanContext::create(
+        ContextCreateInfo& createInfo) noexcept
     {
-        VulkanContext context {};
-        std::optional<Error> result = context.init(createInfo);
+        std::unique_ptr<VulkanContext> context(new VulkanContext());
+        std::optional<Error> result = context->init(createInfo);
         if (result.has_value())
         {
             return tl::make_unexpected(result.value());
@@ -142,10 +143,10 @@ namespace exage::Graphics
                                           VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
                                           VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME,
                                           VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME,
-                                          VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
                                           VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
                                           VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME});
-        // selector.add_desired_extensions({VK_EXT_MESH_SHADER_EXTENSION_NAME});
+        selector.add_desired_extensions({VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
+                                         VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME});
 
         auto phys = selector.select();
         if (!phys)
@@ -153,6 +154,23 @@ namespace exage::Graphics
             return ErrorCode::eUnsupportedAPI;
         }
         _physicalDevice = phys.value();
+
+        // Check if the device supports the desired extensions
+        auto extensions = vk::PhysicalDevice(_physicalDevice.physical_device)
+                              .enumerateDeviceExtensionProperties();
+
+        for (auto& extension : extensions)
+        {
+            if (strcmp(extension.extensionName, VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME) == 0)
+            {
+                _hardwareSupport.bindlessBuffer = true;
+                _hardwareSupport.bindlessTexture = true;
+            }
+            if (strcmp(extension.extensionName, VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME) == 0)
+            {
+                _hardwareSupport.bufferAddress = true;
+            }
+        }
 
         vkb::DeviceBuilder deviceBuilder(_physicalDevice);
 
@@ -206,46 +224,25 @@ namespace exage::Graphics
 
         vkb::destroy_surface(_instance, surface);
 
+        auto graphicsQueueResult = _device.get_queue(vkb::QueueType::graphics);
+        debugAssume(graphicsQueueResult.has_value(), "Failed to create queue");
+        auto graphicsQueueIndex = _device.get_queue_index(vkb::QueueType::graphics);
+        debugAssume(graphicsQueueIndex.has_value(), "Failed to create queue");
+
+        VulkanQueueCreateInfo queueCreateInfo {
+            .maxFramesInFlight = createInfo.maxFramesInFlight,
+            .queue = graphicsQueueResult.value(),
+            .familyIndex = graphicsQueueIndex.value(),
+        };
+
+        _queue = VulkanQueue {*this, queueCreateInfo};
+
         return std::nullopt;
     }
 
     VulkanContext::~VulkanContext()
     {
-        if (_allocator)
-        {
-            _allocator.destroy();
-        }
-
-        if (_device)
-        {
-            vkb::destroy_device(_device);
-        }
-
-        if (_instance)
-        {
-            vkb::destroy_instance(_instance);
-        }
-    }
-
-    VulkanContext::VulkanContext(VulkanContext&& old) noexcept
-    {
-        _instance = old._instance;
-        _physicalDevice = old._physicalDevice;
-        _device = old._device;
-        _allocator = old._allocator;
-
-        old._instance = {};
-        old._physicalDevice = {};
-        old._device = {};
-        old._allocator = nullptr;
-    }
-
-    auto VulkanContext::operator=(VulkanContext&& old) noexcept -> VulkanContext&
-    {
-        if (this == &old)
-        {
-            return *this;
-        }
+        _queue = std::nullopt;
 
         if (_allocator)
         {
@@ -261,29 +258,11 @@ namespace exage::Graphics
         {
             vkb::destroy_instance(_instance);
         }
-
-        _instance = old._instance;
-        _physicalDevice = old._physicalDevice;
-        _device = old._device;
-        _allocator = old._allocator;
-
-        old._instance = {};
-        old._physicalDevice = {};
-        old._device = {};
-        old._allocator = nullptr;
-
-        return *this;
     }
 
     void VulkanContext::waitIdle() const noexcept
     {
         getDevice().waitIdle();
-    }
-
-    auto VulkanContext::createQueue(const QueueCreateInfo& createInfo) noexcept
-        -> std::unique_ptr<Queue>
-    {
-        return std::make_unique<VulkanQueue>(*this, createInfo);
     }
 
     auto VulkanContext::createSwapchain(const SwapchainCreateInfo& createInfo) noexcept
@@ -313,6 +292,11 @@ namespace exage::Graphics
         -> std::shared_ptr<Buffer>
     {
         return std::make_shared<VulkanBuffer>(*this, createInfo);
+    }
+
+    auto VulkanContext::getHardwareSupport() const noexcept -> HardwareSupport
+    {
+        return _hardwareSupport;
     }
 
     auto VulkanContext::createSurface(Window& window) const noexcept -> vk::SurfaceKHR
@@ -348,16 +332,6 @@ namespace exage::Graphics
     auto VulkanContext::getAllocator() const noexcept -> vma::Allocator
     {
         return _allocator;
-    }
-
-    auto VulkanContext::getQueueIndex() const noexcept -> uint32_t
-    {
-        return _device.get_queue_index(vkb::QueueType::graphics).value();
-    }
-
-    auto VulkanContext::getVulkanQueue() const noexcept -> vk::Queue
-    {
-        return _device.get_queue(vkb::QueueType::graphics).value();
     }
 
     auto VulkanContext::getVulkanBootstrapDevice() const noexcept -> vkb::Device

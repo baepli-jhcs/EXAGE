@@ -79,6 +79,7 @@ namespace exage::Graphics
         debugAssume(_memoryUsage.any(MemoryUsageFlags::eMapped), "Buffer is not mapped");
 
         std::memcpy(static_cast<std::byte*>(_mappedData) + offset, data.data(), data.size());
+        _context.get().getAllocator().flushAllocation(_allocation, offset, data.size());
     }
 
     void VulkanBuffer::read(std::span<std::byte> data, size_t offset) const noexcept 
@@ -86,6 +87,7 @@ namespace exage::Graphics
         debugAssume(offset + data.size() <= _size, "Buffer overflow");
         debugAssume(_memoryUsage.any(MemoryUsageFlags::eMapped), "Buffer is not mapped");
 
+        _context.get().getAllocator().invalidateAllocation(_allocation, offset, data.size());
         std::memcpy(data.data(), static_cast<std::byte*>(_mappedData) + offset, data.size());
     }
 

@@ -15,7 +15,7 @@ namespace exage::Graphics
                 {
                     return tl::make_unexpected(value.error());
                 }
-                return std::make_unique<VulkanContext>(std::move(value.value()));
+                return std::unique_ptr<Context>(value.value().release());
             }
         }
 

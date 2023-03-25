@@ -1,8 +1,9 @@
 ﻿#include "Vulkan/VulkanCommandBuffer.h"
 
+#include "Vulkan/VulkanBuffer.h"
 #include "Vulkan/VulkanFrameBuffer.h"
 #include "Vulkan/VulkanQueue.h"
-#include "VulkanTexture.h"
+#include "Vulkan/VulkanTexture.h"
 
 namespace exage::Graphics
 {
@@ -10,7 +11,7 @@ namespace exage::Graphics
         : _context(context)
     {
         vk::CommandPoolCreateInfo commandPoolCreateInfo;
-        commandPoolCreateInfo.queueFamilyIndex = _context.get().getQueueIndex();
+        commandPoolCreateInfo.queueFamilyIndex = _context.get().getVulkanQueue().getFamilyIndex();
         commandPoolCreateInfo.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
 
         vk::Result result = _context.get().getDevice().createCommandPool(
@@ -117,54 +118,6 @@ namespace exage::Graphics
         _dataDependencies.push_back(dependency);
     }
 
-    /*        void begin() noexcept override;
-void end() noexcept override;
-
-void insertDataDependency(DataDependency dependency) noexcept override;
-
-void draw(uint32_t vertexCount,
-uint32_t instanceCount,
-uint32_t firstVertex,
-uint32_t firstInstance) noexcept override;
-
-void drawIndexed(uint32_t indexCount,
-     uint32_t instanceCount,
-     uint32_t firstIndex,
-     uint32_t vertexOffset,
-     uint32_t firstInstance) noexcept override;
-
-void textureBarrier(std::shared_ptr<Texture> texture,
-        Texture::Layout newLayout,
-        PipelineStage srcStage,
-        PipelineStage dstStage,
-        Access srcAccess,
-        Access dstAccess) noexcept override;
-
-void blit(std::shared_ptr<Texture> srcTexture,
-std::shared_ptr<Texture> dstTexture,
-glm::uvec3 srcOffset,
-glm::uvec3 dstOffset,
-uint32_t srcMipLevel,
-uint32_t dstMipLevel,
-uint32_t srcFirstLayer,
-uint32_t dstFirstLayer,
-uint32_t layerCount,
-glm::uvec3 extent) noexcept override;
-
-void setViewport(glm::uvec2 offset, glm::uvec2 extent) noexcept override;
-void setScissor(glm::uvec2 offset, glm::uvec2 extent) noexcept override;
-
-void clearTexture(std::shared_ptr<Texture> texture,
-      glm::vec4 color,
-      uint32_t mipLevel,
-      uint32_t firstLayer,
-      uint32_t layerCount) noexcept override;
-
-void beginRendering(std::shared_ptr<FrameBuffer> frameBuffer,
-        std::vector<ClearColor> clearColors,
-        ClearDepthStencil clearDepth) noexcept override;
-void endRendering() noexcept override;*/
-
     void VulkanCommandBuffer::draw(uint32_t vertexCount,
                                    uint32_t instanceCount,
                                    uint32_t firstVertex,
@@ -217,6 +170,23 @@ void endRendering() noexcept override;*/
 
         std::lock_guard<std::mutex> lock(*_commandsMutex);
         _commands.emplace_back(textureBarrierCommand);
+    }
+
+    void VulkanCommandBuffer::bufferBarrier(std::shared_ptr<Buffer> buffer,
+                                            PipelineStage srcStage,
+                                            PipelineStage dstStage,
+                                            Access srcAccess,
+                                            Access dstAccess) noexcept
+    {
+        BufferBarrierCommand bufferBarrierCommand;
+        bufferBarrierCommand.buffer = buffer;
+        bufferBarrierCommand.srcStage = srcStage;
+        bufferBarrierCommand.dstStage = dstStage;
+        bufferBarrierCommand.srcAccess = srcAccess;
+        bufferBarrierCommand.dstAccess = dstAccess;
+
+        std::lock_guard<std::mutex> lock(*_commandsMutex);
+        _commands.emplace_back(bufferBarrierCommand);
     }
 
     void VulkanCommandBuffer::blit(std::shared_ptr<Texture> srcTexture,
@@ -312,6 +282,75 @@ void endRendering() noexcept override;*/
         _commands.emplace_back(endRenderingCommand);
     }
 
+    void VulkanCommandBuffer::copyBuffer(std::shared_ptr<Buffer> srcBuffer,
+                                         std::shared_ptr<Buffer> dstBuffer,
+                                         uint64_t srcOffset,
+                                         uint64_t dstOffset,
+                                         uint64_t size) noexcept
+    {
+        CopyBufferCommand copyBufferCommand;
+        copyBufferCommand.srcBuffer = srcBuffer;
+        copyBufferCommand.dstBuffer = dstBuffer;
+        copyBufferCommand.srcOffset = srcOffset;
+        copyBufferCommand.dstOffset = dstOffset;
+        copyBufferCommand.size = size;
+
+        std::lock_guard<std::mutex> lock(*_commandsMutex);
+        _commands.emplace_back(copyBufferCommand);
+    }
+
+    void VulkanCommandBuffer::copyBufferToTexture(std::shared_ptr<Buffer> srcBuffer,
+                                                  std::shared_ptr<Texture> dstTexture,
+                                                  uint64_t srcOffset,
+                                                  glm::uvec3 dstOffset,
+                                                  uint32_t dstMipLevel,
+                                                  uint32_t dstFirstLayer,
+                                                  uint32_t layerCount,
+                                                  glm::uvec3 extent) noexcept
+    {
+        debugAssume(dstTexture->getLayout() == Texture::Layout::eTransferDst,
+                    "Image must be in transfer layout");
+
+        CopyBufferToTextureCommand copyBufferToTextureCommand;
+        copyBufferToTextureCommand.srcBuffer = srcBuffer;
+        copyBufferToTextureCommand.dstTexture = dstTexture;
+        copyBufferToTextureCommand.srcOffset = srcOffset;
+        copyBufferToTextureCommand.dstOffset = dstOffset;
+        copyBufferToTextureCommand.dstMipLevel = dstMipLevel;
+        copyBufferToTextureCommand.dstFirstLayer = dstFirstLayer;
+        copyBufferToTextureCommand.layerCount = layerCount;
+        copyBufferToTextureCommand.extent = extent;
+
+        std::lock_guard<std::mutex> lock(*_commandsMutex);
+        _commands.emplace_back(copyBufferToTextureCommand);
+    }
+
+    void VulkanCommandBuffer::copyTextureToBuffer(std::shared_ptr<Texture> srcTexture,
+                                                  std::shared_ptr<Buffer> dstBuffer,
+                                                  glm::uvec3 srcOffset,
+                                                  uint32_t srcMipLevel,
+                                                  uint32_t srcFirstLayer,
+                                                  uint32_t layerCount,
+                                                  glm::uvec3 extent,
+                                                  size_t dstOffset) noexcept
+    {
+        debugAssume(srcTexture->getLayout() == Texture::Layout::eTransferSrc,
+                    "Image must be in transfer layout");
+
+        CopyTextureToBufferCommand copyTextureToBufferCommand;
+        copyTextureToBufferCommand.srcTexture = srcTexture;
+        copyTextureToBufferCommand.dstBuffer = dstBuffer;
+        copyTextureToBufferCommand.srcOffset = srcOffset;
+        copyTextureToBufferCommand.srcMipLevel = srcMipLevel;
+        copyTextureToBufferCommand.srcFirstLayer = srcFirstLayer;
+        copyTextureToBufferCommand.layerCount = layerCount;
+        copyTextureToBufferCommand.extent = extent;
+        copyTextureToBufferCommand.dstOffset = dstOffset;
+
+        std::lock_guard<std::mutex> lock(*_commandsMutex);
+        _commands.emplace_back(copyTextureToBufferCommand);
+    }
+
     void VulkanCommandBuffer::userDefined(
         std::function<void(CommandBuffer&)> commandFunction) noexcept
     {
@@ -367,6 +406,29 @@ void endRendering() noexcept override;*/
                                                    nullptr,
                                                    1,
                                                    &imageMemoryBarrier);
+                },
+                [this](const BufferBarrierCommand& barrier)
+                {
+                    auto& buffer = *barrier.buffer->as<VulkanBuffer>();
+
+                    vk::BufferMemoryBarrier bufferMemoryBarrier;
+                    bufferMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+                    bufferMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+                    bufferMemoryBarrier.buffer = buffer.getBuffer();
+                    bufferMemoryBarrier.offset = 0;
+                    bufferMemoryBarrier.size = VK_WHOLE_SIZE;
+                    bufferMemoryBarrier.srcAccessMask = toVulkanAccessFlags(barrier.srcAccess);
+                    bufferMemoryBarrier.dstAccessMask = toVulkanAccessFlags(barrier.dstAccess);
+
+                    _commandBuffer.pipelineBarrier(toVulkanPipelineStageFlags(barrier.srcStage),
+                                                   toVulkanPipelineStageFlags(barrier.dstStage),
+                                                   {},
+                                                   0,
+                                                   nullptr,
+                                                   1,
+                                                   &bufferMemoryBarrier,
+                                                   0,
+                                                   nullptr);
                 },
                 [this](const BlitCommand& copy)
                 {
@@ -508,7 +570,70 @@ void endRendering() noexcept override;*/
 
                     _commandBuffer.beginRendering(renderingInfo);
                 },
-                [this](const EndRenderingCommand& cmd) { _commandBuffer.endRendering(); }
+                [this](const EndRenderingCommand& cmd) { _commandBuffer.endRendering(); },
+                [this](const CopyBufferCommand& cmd)
+                {
+                    auto& srcBuffer = *cmd.srcBuffer->as<VulkanBuffer>();
+                    auto& dstBuffer = *cmd.dstBuffer->as<VulkanBuffer>();
+
+                    vk::BufferCopy copy {};
+                    copy.srcOffset = cmd.srcOffset;
+                    copy.dstOffset = cmd.dstOffset;
+                    copy.size = cmd.size;
+
+                    _commandBuffer.copyBuffer(srcBuffer.getBuffer(), dstBuffer.getBuffer(), copy);
+                },
+                [this](const CopyBufferToTextureCommand& cmd)
+                {
+                    auto& srcBuffer = *cmd.srcBuffer->as<VulkanBuffer>();
+                    auto& dstTexture = *cmd.dstTexture->as<VulkanTexture>();
+
+                    vk::BufferImageCopy copy {};
+                    copy.bufferOffset = cmd.srcOffset;
+                    copy.bufferRowLength = cmd.extent.x;
+                    copy.bufferImageHeight = cmd.extent.y;
+                    copy.imageSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+                    copy.imageSubresource.mipLevel = cmd.dstMipLevel;
+                    copy.imageSubresource.baseArrayLayer = cmd.dstFirstLayer;
+                    copy.imageSubresource.layerCount = cmd.layerCount;
+                    copy.imageOffset.x = cmd.dstOffset.x;
+                    copy.imageOffset.y = cmd.dstOffset.y;
+                    copy.imageOffset.z = cmd.dstOffset.z;
+                    copy.imageExtent.width = cmd.extent.x;
+                    copy.imageExtent.height = cmd.extent.y;
+                    copy.imageExtent.depth = cmd.extent.z;
+
+                    _commandBuffer.copyBufferToImage(srcBuffer.getBuffer(),
+                                                     dstTexture.getImage(),
+                                                     vk::ImageLayout::eTransferDstOptimal,
+                                                     copy);
+                },
+                [this](const CopyTextureToBufferCommand& cmd)
+                {
+                    auto& srcTexture = *cmd.srcTexture->as<VulkanTexture>();
+                    auto& dstBuffer = *cmd.dstBuffer->as<VulkanBuffer>();
+
+                    vk::BufferImageCopy copy {};
+                    copy.bufferOffset = cmd.dstOffset;
+                    copy.bufferRowLength = cmd.extent.x;
+                    copy.bufferImageHeight = cmd.extent.y;
+
+                    copy.imageSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+                    copy.imageSubresource.mipLevel = cmd.srcMipLevel;
+                    copy.imageSubresource.baseArrayLayer = cmd.srcFirstLayer;
+                    copy.imageSubresource.layerCount = cmd.layerCount;
+                    copy.imageOffset.x = cmd.srcOffset.x;
+                    copy.imageOffset.y = cmd.srcOffset.y;
+                    copy.imageOffset.z = cmd.srcOffset.z;
+                    copy.imageExtent.width = cmd.extent.x;
+                    copy.imageExtent.height = cmd.extent.y;
+                    copy.imageExtent.depth = cmd.extent.z;
+
+                    _commandBuffer.copyImageToBuffer(srcTexture.getImage(),
+                                                     vk::ImageLayout::eTransferSrcOptimal,
+                                                     dstBuffer.getBuffer(),
+                                                     copy);
+                },
 
             },
             command);

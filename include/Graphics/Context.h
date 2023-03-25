@@ -7,7 +7,6 @@
 
 namespace exage::Graphics
 {
-    struct QueueCreateInfo;
     struct SwapchainCreateInfo;
     struct TextureCreateInfo;
     struct BufferCreateInfo;
@@ -23,6 +22,7 @@ namespace exage::Graphics
         WindowAPI windowAPI;
 
         Window* optionalWindow = nullptr;
+        size_t maxFramesInFlight = 2;
     };
 
     class CommandBuffer;
@@ -31,6 +31,14 @@ namespace exage::Graphics
     class Swapchain;
     class Texture;
     class Buffer;
+
+    struct HardwareSupport
+    {
+        bool bindlessTexture = false;
+        bool bindlessBuffer = false;
+
+        bool bufferAddress = false;  // as in VK_EXT_buffer_device_address
+    };
 
     class EXAGE_EXPORT Context
     {
@@ -41,11 +49,10 @@ namespace exage::Graphics
         EXAGE_DEFAULT_MOVE(Context);
 
         virtual void waitIdle() const noexcept = 0;
-        
-        [[nodiscard]] virtual auto getQueue() const noexcept -> Queue& = 0;
 
-        [[nodiscard]] virtual auto createQueue(const QueueCreateInfo& createInfo) noexcept
-            -> std::unique_ptr<Queue> = 0;
+        [[nodiscard]] virtual auto getQueue() noexcept -> Queue& = 0;  // Only one queue per context
+        [[nodiscard]] virtual auto getQueue() const noexcept -> const Queue& = 0;
+
         [[nodiscard]] virtual auto createSwapchain(const SwapchainCreateInfo& createInfo) noexcept
             -> std::unique_ptr<Swapchain> = 0;
         [[nodiscard]] virtual auto createCommandBuffer() noexcept
@@ -56,6 +63,8 @@ namespace exage::Graphics
             -> std::shared_ptr<FrameBuffer> = 0;
         [[nodiscard]] virtual auto createBuffer(const BufferCreateInfo& createInfo) noexcept
             -> std::shared_ptr<Buffer> = 0;
+
+        [[nodiscard]] virtual auto getHardwareSupport() const noexcept -> HardwareSupport = 0;
 
         EXAGE_BASE_API(API, Context);
         [[nodiscard]] static auto create(ContextCreateInfo& createInfo) noexcept

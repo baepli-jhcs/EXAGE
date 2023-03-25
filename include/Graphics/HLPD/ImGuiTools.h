@@ -10,7 +10,6 @@ namespace exage::Graphics
     struct ImGuiInitInfo
     {
         Context& context;
-        Queue& queue;
         Window& window;
 
         uint32_t maxImageCount = 3;
@@ -42,7 +41,6 @@ namespace exage::Graphics
         void buildFonts() noexcept;
         
         std::reference_wrapper<Context> _context;
-        std::reference_wrapper<Queue> _queue;
         
         API _api;
         WindowAPI _windowAPI;

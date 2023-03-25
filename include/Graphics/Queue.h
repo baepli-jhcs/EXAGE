@@ -6,11 +6,6 @@
 
 namespace exage::Graphics
 {
-    struct QueueCreateInfo
-    {
-        size_t maxFramesInFlight = 2;
-    };
-
     struct QueueSubmitInfo
     {
         CommandBuffer& commandBuffer;  // Only one command buffer per submit is supported

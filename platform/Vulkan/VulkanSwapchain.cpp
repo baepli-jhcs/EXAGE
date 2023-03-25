@@ -148,14 +148,14 @@ namespace exage::Graphics
         vkb::destroy_swapchain(swapchain);
     }
 
-    auto VulkanSwapchain::acquireNextImage(Queue& queue) noexcept -> std::optional<Error>
+    auto VulkanSwapchain::acquireNextImage() noexcept -> std::optional<Error>
     {
-        const VulkanQueue* vulkanQueue = queue.as<VulkanQueue>();
+        const VulkanQueue& vulkanQueue = _context.get().getVulkanQueue();
         const vk::SwapchainKHR swapchain = _swapchain.swapchain;
         vk::ResultValue<uint32_t> const result = _context.get().getDevice().acquireNextImageKHR(
             swapchain,
             std::numeric_limits<uint64_t>::max(),
-            vulkanQueue->getCurrentPresentSemaphore(),
+            vulkanQueue.getCurrentPresentSemaphore(),
             nullptr);
         if (result.result == vk::Result::eErrorOutOfDateKHR
             || result.result == vk::Result::eSuboptimalKHR)

@@ -87,6 +87,15 @@ namespace exage::Graphics
         Access dstAccess;
     };
 
+    struct BufferBarrierCommand
+    {
+        std::shared_ptr<Buffer> buffer;
+        PipelineStage srcStage;
+        PipelineStage dstStage;
+        Access srcAccess;
+        Access dstAccess;
+    };
+
     struct BlitCommand
     {
         std::shared_ptr<Texture> srcTexture;
@@ -187,6 +196,7 @@ namespace exage::Graphics
     using GPUCommand = std::variant<DrawCommand,
                                     DrawIndexedCommand,
                                     TextureBarrierCommand,
+                                    BufferBarrierCommand,
                                     BlitCommand,
                                     UserDefinedCommand,
                                     SetViewportCommand,

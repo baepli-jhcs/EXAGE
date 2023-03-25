@@ -12,8 +12,9 @@ namespace exage::Graphics
       public:
         enum class AllocationType : uint32_t
         {
+            eHost,
             eHostVisible,
-            eDeviceLocal,
+            eDevice,
         };
 
         enum class MemoryUsageFlags : uint32_t

@@ -37,8 +37,7 @@ namespace exage::Graphics
         [[nodiscard]] virtual auto getPresentMode() const noexcept -> PresentMode = 0;
 
         virtual void resize(glm::uvec2 extent) noexcept = 0;
-        [[nodiscard]] virtual auto acquireNextImage(Queue& queue) noexcept
-            -> std::optional<Error> = 0;
+        [[nodiscard]] virtual auto acquireNextImage() noexcept -> std::optional<Error> = 0;
         virtual void drawImage(CommandBuffer& commandBuffer,
                                const std::shared_ptr<Texture>& texture) noexcept = 0;
 
