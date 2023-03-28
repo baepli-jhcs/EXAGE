@@ -279,6 +279,10 @@ IMGUI_VULKAN_FUNC_MAP(IMGUI_VULKAN_FUNC_DEF)
 // SHADERS
 //-----------------------------------------------------------------------------
 
+// Forward Declarations
+static void ImGui_ImplVulkan_InitPlatformInterface();
+static void ImGui_ImplVulkan_ShutdownPlatformInterface();
+
 // glsl_shader.vert, compiled with:
 // # glslangValidator -V -x -o glsl_shader.vert.u32 glsl_shader.vert
 /*
@@ -527,7 +531,7 @@ void ImGui_ImplVulkan_RenderDrawData(ImDrawData* draw_data,
 {
     if (!draw_data)
         return;
-    
+
     // Avoid rendering when minimized, scale coordinates for retina displays (screen coordinates !=
     // framebuffer coordinates)
     int fb_width = (int)(draw_data->DisplaySize.x * draw_data->FramebufferScale.x);
@@ -917,7 +921,7 @@ static void ImGui_ImplVulkan_CreatePipeline(VkDevice device,
                                             const VkAllocationCallbacks* allocator,
                                             VkPipelineCache pipelineCache,
                                             VkSampleCountFlagBits MSAASamples,
-                                            VkPipeline* pipeline)
+                                            VkPipeline* pipeline, VkFormat format)
 {
     ImGui_ImplVulkan_Data* bd = ImGui_ImplVulkan_GetBackendData();
     ImGui_ImplVulkan_CreateShaderModules(device, allocator);
@@ -1022,7 +1026,7 @@ static void ImGui_ImplVulkan_CreatePipeline(VkDevice device,
     VkPipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo = {};
     pipelineRenderingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR;
     pipelineRenderingCreateInfo.colorAttachmentCount = 1;
-    pipelineRenderingCreateInfo.pColorAttachmentFormats = &bd->VulkanInitInfo.ColorAttachmentFormat;
+    pipelineRenderingCreateInfo.pColorAttachmentFormats = &format;
     info.pNext = &pipelineRenderingCreateInfo;
 
     VkResult err = vkCreateGraphicsPipelines(device, pipelineCache, 1, &info, allocator, pipeline);
@@ -1090,7 +1094,7 @@ bool ImGui_ImplVulkan_CreateDeviceObjects()
     }
 
     ImGui_ImplVulkan_CreatePipeline(
-        v->Device, v->Allocator, v->PipelineCache, v->MSAASamples, &bd->Pipeline);
+        v->Device, v->Allocator, v->PipelineCache, v->MSAASamples, &bd->Pipeline, bd->VulkanInitInfo.ColorAttachmentFormat);
 
     return true;
 }
@@ -1187,7 +1191,9 @@ bool ImGui_ImplVulkan_Init(ImGui_ImplVulkan_InitInfo* info)
     io.BackendRendererName = "imgui_impl_vulkan";
     io.BackendFlags |=
         ImGuiBackendFlags_RendererHasVtxOffset;  // We can honor the ImDrawCmd::VtxOffset field,
-                                                 // allowing for large meshes.
+                                                 // allowing for large meshes
+    io.BackendFlags |= ImGuiBackendFlags_RendererHasViewports;  // We can create multi-viewports on
+                                                                // the Renderer side (optional)
 
     IM_ASSERT(info->Instance != VK_NULL_HANDLE);
     IM_ASSERT(info->PhysicalDevice != VK_NULL_HANDLE);
@@ -1201,6 +1207,14 @@ bool ImGui_ImplVulkan_Init(ImGui_ImplVulkan_InitInfo* info)
 
     ImGui_ImplVulkan_CreateDeviceObjects();
 
+    // Our render function expect RendererUserData to be storing the window render buffer we need
+    // (for the main viewport we won't use ->Window)
+    ImGuiViewport* main_viewport = ImGui::GetMainViewport();
+    main_viewport->RendererUserData = IM_NEW(ImGui_ImplVulkan_ViewportData)();
+
+    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+        ImGui_ImplVulkan_InitPlatformInterface();
+
     return true;
 }
 
@@ -1210,7 +1224,19 @@ void ImGui_ImplVulkan_Shutdown()
     IM_ASSERT(bd != nullptr && "No renderer backend to shutdown, or already shutdown?");
     ImGuiIO& io = ImGui::GetIO();
 
+    // First destroy objects in all viewports
     ImGui_ImplVulkan_DestroyDeviceObjects();
+
+    // Manually delete main viewport render data in-case we haven't initialized for viewports
+    ImGuiViewport* main_viewport = ImGui::GetMainViewport();
+    if (ImGui_ImplVulkan_ViewportData* vd =
+            (ImGui_ImplVulkan_ViewportData*)main_viewport->RendererUserData)
+        IM_DELETE(vd);
+    main_viewport->RendererUserData = nullptr;
+
+    // Clean up windows
+    ImGui_ImplVulkan_ShutdownPlatformInterface();
+
     io.BackendRendererName = nullptr;
     io.BackendRendererUserData = nullptr;
     IM_DELETE(bd);
@@ -1527,6 +1553,8 @@ void ImGui_ImplVulkanH_CreateOrResizeWindow(VkInstance instance,
     (void)instance;
     ImGui_ImplVulkanH_CreateWindowSwapChain(
         physical_device, device, wd, allocator, width, height, min_image_count);
+     ImGui_ImplVulkan_CreatePipeline(device, allocator, VK_NULL_HANDLE,
+     VK_SAMPLE_COUNT_1_BIT, &wd->Pipeline, wd->SurfaceFormat.format);
     ImGui_ImplVulkanH_CreateWindowCommandBuffers(
         physical_device, device, wd, queue_family, allocator);
 }
@@ -1773,6 +1801,32 @@ static void ImGui_ImplVulkan_RenderWindow(ImGuiViewport* viewport, void*)
             check_vk_result(err);
         }
         {
+            // Transition
+            VkImageMemoryBarrier barrier = {};
+            barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+            barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            barrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            barrier.image = fd->Backbuffer;
+            barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            barrier.subresourceRange.levelCount = 1;
+            barrier.subresourceRange.layerCount = 1;
+            barrier.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+            barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+            vkCmdPipelineBarrier(fd->CommandBuffer,
+                								 VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                								 VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                								 0,
+                								 0,
+                								 NULL,
+                								 0,
+                								 NULL,
+                								 1,
+                								 &barrier);
+        }
+        {
             ImVec4 clear_color = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);
             memcpy(&wd->ClearValue.color.float32[0], &clear_color, 4 * sizeof(float));
 
@@ -1802,6 +1856,26 @@ static void ImGui_ImplVulkan_RenderWindow(ImGuiViewport* viewport, void*)
 
     {
         vkCmdEndRenderingKHR(fd->CommandBuffer);
+
+        VkImageMemoryBarrier barrier = {};
+        barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        barrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        barrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+        barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        barrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+        barrier.image = fd->Backbuffer;
+        barrier.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+        vkCmdPipelineBarrier(fd->CommandBuffer,
+            							 VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            							 VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+            							 0,
+            							 0,
+            							 NULL,
+            							 0,
+            							 NULL,
+            							 1,
+            							 &barrier);
+
         {
             VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
             VkSubmitInfo info = {};

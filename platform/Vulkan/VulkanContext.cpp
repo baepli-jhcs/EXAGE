@@ -106,7 +106,7 @@ namespace exage::Graphics
         auto inst = builder.build();
         if (!inst)
         {
-            return ErrorCode::eUnsupportedAPI;
+            return GraphicsError::eUnsupportedAPI;
         }
 
         _instance = inst.value();
@@ -151,7 +151,7 @@ namespace exage::Graphics
         auto phys = selector.select();
         if (!phys)
         {
-            return ErrorCode::eUnsupportedAPI;
+            return GraphicsError::eUnsupportedAPI;
         }
         _physicalDevice = phys.value();
 

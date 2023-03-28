@@ -15,7 +15,7 @@ namespace exage::Graphics
         , _windowAPI(initInfo.window.getAPI())
         , _imCtx(ImGui::CreateContext())
     {
-        IMGUI_CHECKVERSION();
+        ImGui::SetCurrentContext(_imCtx);
 
         ImGuiIO& io = ImGui::GetIO();
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
@@ -61,6 +61,8 @@ namespace exage::Graphics
 
     ImGuiInstance::~ImGuiInstance()
     {
+        ImGui::SetCurrentContext(_imCtx);
+
         switch (_api)
         {
             case API::eVulkan:
@@ -82,13 +84,13 @@ namespace exage::Graphics
             default:
                 break;
         }
-
-        ImGui::DestroyContext(_imCtx);
     }
 
     void ImGuiInstance::begin() noexcept
     {
         ImGui::SetCurrentContext(_imCtx);
+
+        ImGuiIO& io = ImGui::GetIO();
 
         switch (_api)
         {
@@ -118,6 +120,7 @@ namespace exage::Graphics
     void ImGuiInstance::end() noexcept
     {
         ImGui::SetCurrentContext(_imCtx);
+
         ImGui::Render();
     }
 
@@ -146,7 +149,6 @@ namespace exage::Graphics
             {
                 std::function const commandFunction = [this](CommandBuffer& cmd)
                 {
-                    ImGui::SetCurrentContext(_imCtx);
                     vk::CommandBuffer const vkCommand =
                         cmd.as<VulkanCommandBuffer>()->getCommandBuffer();
                     ImGui_ImplVulkan_CreateFontsTexture(vkCommand);
@@ -177,13 +179,14 @@ namespace exage::Graphics
 
     void ImGuiInstance::renderMainWindow(CommandBuffer& commandBuffer) noexcept
     {
+        ImGui::SetCurrentContext(_imCtx);
+
         switch (_api)
         {
             case API::eVulkan:
             {
                 std::function const commandFunction = [this](CommandBuffer& commandBuffer)
                 {
-                    ImGui::SetCurrentContext(_imCtx);
                     vk::CommandBuffer const vkCommand =
                         commandBuffer.as<VulkanCommandBuffer>()->getCommandBuffer();
                     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), vkCommand);
@@ -201,7 +204,8 @@ namespace exage::Graphics
         ImGui::SetCurrentContext(_imCtx);
 
         ImGuiIO const& io = ImGui::GetIO();
-        if ((io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) != 0)
+
+        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
         {
             ImGui::UpdatePlatformWindows();
             ImGui::RenderPlatformWindowsDefault();
@@ -234,8 +238,8 @@ namespace exage::Graphics
         imInit.Queue = context->getVulkanQueue().getVulkanQueue();
         imInit.PipelineCache = nullptr;
         imInit.Allocator = nullptr;
-        imInit.MinImageCount = initInfo.maxImageCount;
-        imInit.ImageCount = initInfo.maxImageCount;
+        imInit.MinImageCount = context->getVulkanQueue().getFramesInFlight();
+        imInit.ImageCount = imInit.MinImageCount;
         imInit.ColorAttachmentFormat = VK_FORMAT_R8G8B8A8_UNORM;
         imInit.CheckVkResultFn = nullptr;
 

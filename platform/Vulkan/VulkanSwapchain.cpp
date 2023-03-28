@@ -160,7 +160,7 @@ namespace exage::Graphics
         if (result.result == vk::Result::eErrorOutOfDateKHR
             || result.result == vk::Result::eSuboptimalKHR)
         {
-            return ErrorCode::eSwapchainOutOfDate;
+            return GraphicsError::eSwapchainOutOfDate;
         }
         checkVulkan(result.result);
         _currentImage = result.value;

@@ -11,11 +11,9 @@ namespace exage::Graphics
     {
         Context& context;
         Window& window;
-
-        uint32_t maxImageCount = 3;
     };
 
-    class ImGuiInstance
+    class EXAGE_EXPORT ImGuiInstance
     {
       public:
         ImGuiInstance(const ImGuiInitInfo& initInfo) noexcept;

@@ -225,10 +225,11 @@ auto main(int argc, char* argv[]) -> int
 
         cmd.end();
 
-        imgui.renderAdditional();
-
         QueueSubmitInfo submitInfo {.commandBuffer = cmd};
         ctx.getQueue().submit(submitInfo);
+
+        imgui.renderAdditional();
+
         QueuePresentInfo presentInfo {.swapchain = swap};
         swapError = ctx.getQueue().present(presentInfo);
     }

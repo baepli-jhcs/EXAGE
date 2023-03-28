@@ -158,7 +158,7 @@ namespace exage::Graphics
 
         if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eSuboptimalKHR)
         {
-            return ErrorCode::eSwapchainOutOfDate;
+            return GraphicsError::eSwapchainOutOfDate;
         }
 
         checkVulkan(result);

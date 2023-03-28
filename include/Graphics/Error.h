@@ -6,11 +6,17 @@
 
 namespace exage::Graphics
 {
-    enum class ErrorCode : uint32_t
+    enum class GraphicsError : uint32_t
     {
         eUnsupportedAPI,
         eSwapchainOutOfDate,
     };
 
-    using Error = std::variant<ErrorCode>;
+    enum class FileError : uint32_t
+    {
+        eFileNotFound,
+        eFileNotReadable,
+    };
+
+    using Error = std::variant<GraphicsError, FileError>;
 }  // namespace exage::Graphics
