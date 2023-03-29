@@ -101,8 +101,8 @@
 #ifdef _MSC_VER
 #    pragma warning(disable : 4127)  // condition expression is constant
 #endif
-#include <Graphics/Texture.h>
-#include <Vulkan/VulkanTexture.h>
+#include "exage/Graphics/Texture.h"
+#include "exage/platform/Vulkan/VulkanTexture.h"
 
 // Reusable buffers used for rendering 1 current in-flight frame, for
 // ImGui_ImplVulkan_RenderDrawData() [Please zero-clear before use!]
@@ -921,7 +921,8 @@ static void ImGui_ImplVulkan_CreatePipeline(VkDevice device,
                                             const VkAllocationCallbacks* allocator,
                                             VkPipelineCache pipelineCache,
                                             VkSampleCountFlagBits MSAASamples,
-                                            VkPipeline* pipeline, VkFormat format)
+                                            VkPipeline* pipeline,
+                                            VkFormat format)
 {
     ImGui_ImplVulkan_Data* bd = ImGui_ImplVulkan_GetBackendData();
     ImGui_ImplVulkan_CreateShaderModules(device, allocator);
@@ -1093,8 +1094,12 @@ bool ImGui_ImplVulkan_CreateDeviceObjects()
         check_vk_result(err);
     }
 
-    ImGui_ImplVulkan_CreatePipeline(
-        v->Device, v->Allocator, v->PipelineCache, v->MSAASamples, &bd->Pipeline, bd->VulkanInitInfo.ColorAttachmentFormat);
+    ImGui_ImplVulkan_CreatePipeline(v->Device,
+                                    v->Allocator,
+                                    v->PipelineCache,
+                                    v->MSAASamples,
+                                    &bd->Pipeline,
+                                    bd->VulkanInitInfo.ColorAttachmentFormat);
 
     return true;
 }
@@ -1553,8 +1558,12 @@ void ImGui_ImplVulkanH_CreateOrResizeWindow(VkInstance instance,
     (void)instance;
     ImGui_ImplVulkanH_CreateWindowSwapChain(
         physical_device, device, wd, allocator, width, height, min_image_count);
-     ImGui_ImplVulkan_CreatePipeline(device, allocator, VK_NULL_HANDLE,
-     VK_SAMPLE_COUNT_1_BIT, &wd->Pipeline, wd->SurfaceFormat.format);
+    ImGui_ImplVulkan_CreatePipeline(device,
+                                    allocator,
+                                    VK_NULL_HANDLE,
+                                    VK_SAMPLE_COUNT_1_BIT,
+                                    &wd->Pipeline,
+                                    wd->SurfaceFormat.format);
     ImGui_ImplVulkanH_CreateWindowCommandBuffers(
         physical_device, device, wd, queue_family, allocator);
 }
@@ -1816,15 +1825,15 @@ static void ImGui_ImplVulkan_RenderWindow(ImGuiViewport* viewport, void*)
             barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
             vkCmdPipelineBarrier(fd->CommandBuffer,
-                								 VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                								 VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                								 0,
-                								 0,
-                								 NULL,
-                								 0,
-                								 NULL,
-                								 1,
-                								 &barrier);
+                                 VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                 VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                 0,
+                                 0,
+                                 NULL,
+                                 0,
+                                 NULL,
+                                 1,
+                                 &barrier);
         }
         {
             ImVec4 clear_color = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);
@@ -1866,15 +1875,15 @@ static void ImGui_ImplVulkan_RenderWindow(ImGuiViewport* viewport, void*)
         barrier.image = fd->Backbuffer;
         barrier.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
         vkCmdPipelineBarrier(fd->CommandBuffer,
-            							 VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-            							 VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-            							 0,
-            							 0,
-            							 NULL,
-            							 0,
-            							 NULL,
-            							 1,
-            							 &barrier);
+                             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                             VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                             0,
+                             0,
+                             NULL,
+                             0,
+                             NULL,
+                             1,
+                             &barrier);
 
         {
             VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;

@@ -1,12 +1,12 @@
 ﻿#include <random>
 
-#include "Core/Core.h"
-#include "Graphics/Context.h"
-#include "Graphics/FrameBuffer.h"
-#include "Graphics/HLPD/ImGuiTools.h"
-#include "Graphics/Queue.h"
-#include "Graphics/Utils/BufferTypes.h"
-#include "Graphics/Utils/QueueCommand.h"
+#include "exage/Core/Core.h"
+#include "exage/Graphics/Context.h"
+#include "exage/Graphics/FrameBuffer.h"
+#include "exage/Graphics/HLPD/ImGuiTools.h"
+#include "exage/Graphics/Queue.h"
+#include "exage/Graphics/Utils/BufferTypes.h"
+#include "exage/Graphics/Utils/QueueCommand.h"
 #include "glm/gtc/random.hpp"
 
 using namespace exage;
@@ -22,13 +22,13 @@ struct ResizeData
     FrameBuffer& frameBuffer;
 };
 
-auto main(int argc, char* argv[]) -> int
+auto main(int  /*argc*/, char*  /*argv*/[]) -> int
 {
     exage::init();
 
-    exage::Monitor monitor = exage::getDefaultMonitor(WindowAPI::eGLFW);
+    exage::Monitor const monitor = exage::getDefaultMonitor(WindowAPI::eGLFW);
 
-    exage::WindowInfo info = {
+    exage::WindowInfo const info = {
         .name = "Main Window",
         .extent = {monitor.extent.x * 3 / 4, monitor.extent.y * 3 / 4},
         .fullScreen = false,
@@ -45,9 +45,9 @@ auto main(int argc, char* argv[]) -> int
                                   .optionalWindow = windowReturn.value().get()};
     tl::expected context(Context::create(createInfo));
 
-    SwapchainCreateInfo swapchainCreateInfo {.window = *windowReturn.value(),
+    SwapchainCreateInfo const swapchainCreateInfo {.window = *windowReturn.value(),
                                              .presentMode = PresentMode::eDoubleBufferVSync};
-    std::unique_ptr swapchain(context.value()->createSwapchain(swapchainCreateInfo));
+    std::unique_ptr const swapchain(context.value()->createSwapchain(swapchainCreateInfo));
 
     QueueCommandRepoCreateInfo queueCommandRepoCreateInfo {.context = *context.value()};
     auto queueCommandRepo = std::make_unique<QueueCommandRepo>(queueCommandRepoCreateInfo);
@@ -56,9 +56,9 @@ auto main(int argc, char* argv[]) -> int
         .extent = {initialExtent.x, initialExtent.y, 1},
         .usage = Texture::UsageFlags::eTransferSource | Texture::UsageFlags::eColorAttachment};
 
-    std::shared_ptr texture = context.value()->createTexture(textureCreateInfo);
+    std::shared_ptr const texture = context.value()->createTexture(textureCreateInfo);
 
-    std::shared_ptr frameBuffer = context.value()->createFrameBuffer(initialExtent);
+    std::shared_ptr const frameBuffer = context.value()->createFrameBuffer(initialExtent);
     frameBuffer->attachColor(texture);
 
     Window& window = *windowReturn.value();
@@ -67,27 +67,27 @@ auto main(int argc, char* argv[]) -> int
     QueueCommandRepo& repo = *queueCommandRepo;
     FrameBuffer& frame = *frameBuffer;
 
-    ImGuiInitInfo imguiInitInfo {.context = ctx, .window = window};
+    ImGuiInitInfo const imguiInitInfo {.context = ctx, .window = window};
     ImGuiInstance imgui(imguiInitInfo);
 
     ResizeData resizeData {
         .ctx = ctx, .swap = swap, .textureCreateInfo = textureCreateInfo, .frameBuffer = frame};
-    ResizeCallback callback = {&resizeData, resizeCallback};
+    ResizeCallback const callback = {&resizeData, resizeCallback};
     window.addResizeCallback(callback);
 
     glm::uvec2 cpuTextureExtent = {500, 500};
-    DynamicFixedBufferCreateInfo textureBufferCreateInfo {
+    DynamicFixedBufferCreateInfo const textureBufferCreateInfo {
         .context = ctx,
         .size = cpuTextureExtent.x * cpuTextureExtent.y * 4,
         .cached = true,
         .useStagingBuffer = false};
     DynamicFixedBuffer cpuTextureBuffer {textureBufferCreateInfo};
 
-    TextureCreateInfo cpuTextureCreateInfo {
+    TextureCreateInfo const cpuTextureCreateInfo {
         .extent = {cpuTextureExtent.x, cpuTextureExtent.y, 1},
         .usage = Texture::UsageFlags::eTransferDestination,
     };
-    std::shared_ptr cpuTexture = ctx.createTexture(cpuTextureCreateInfo);
+    std::shared_ptr const cpuTexture = ctx.createTexture(cpuTextureCreateInfo);
     std::vector<uint8_t> cpuTextureData(cpuTextureExtent.x * cpuTextureExtent.y * 4);
 
     while (!window.shouldClose())
@@ -107,7 +107,7 @@ auto main(int argc, char* argv[]) -> int
             continue;
         }
 
-        std::shared_ptr<Texture> texture = frame.getTexture(0);
+        std::shared_ptr<Texture> const texture = frame.getTexture(0);
         cmd.begin();
 
         cmd.textureBarrier(texture,
@@ -125,7 +125,7 @@ auto main(int argc, char* argv[]) -> int
             cpuTextureData[i * 4 + 3] = 255;
         }
 
-        std::span<std::byte> cpuTextureDataSpan {
+        std::span<std::byte> const cpuTextureDataSpan {
             reinterpret_cast<std::byte*>(cpuTextureData.data()), cpuTextureData.size()};
         cpuTextureBuffer.write(cpuTextureDataSpan, 0);
         cpuTextureBuffer.update(cmd);
@@ -159,9 +159,9 @@ auto main(int argc, char* argv[]) -> int
                            AccessFlags::eTransferWrite,
                            AccessFlags::eShaderRead);
 
-        glm::vec4 clearCol = glm::linearRand(glm::vec4 {0.0f}, glm::vec4 {1.0f});
-        ClearColor clearColor {.clear = true, .color = clearCol};
-        ClearDepthStencil clearDepthStencil {.clear = false};
+        glm::vec4 const clearCol = glm::linearRand(glm::vec4 {0.0F}, glm::vec4 {1.0F});
+        ClearColor const clearColor {.clear = true, .color = clearCol};
+        ClearDepthStencil const clearDepthStencil {.clear = false};
         cmd.beginRendering(frameBuffer, {clearColor}, clearDepthStencil);
 
         imgui.begin();
@@ -173,32 +173,33 @@ auto main(int argc, char* argv[]) -> int
             | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus
             | ImGuiWindowFlags_NoNavFocus;
 
-        static ImGuiDockNodeFlags dockspaceFlags = ImGuiDockNodeFlags_None;
+        static ImGuiDockNodeFlags const dockspaceFlags = ImGuiDockNodeFlags_None;
 
-        if (dockspaceFlags & ImGuiDockNodeFlags_PassthruCentralNode)
+        if ((dockspaceFlags & ImGuiDockNodeFlags_PassthruCentralNode) != 0) {
             windowFlags |= ImGuiWindowFlags_NoBackground;
+}
 
         const ImGuiViewport* viewport = ImGui::GetMainViewport();
         ImGui::SetNextWindowPos(viewport->Pos);
         ImGui::SetNextWindowSize(viewport->Size);
         ImGui::SetNextWindowViewport(viewport->ID);
 
-        ImGuiIO& io = ImGui::GetIO();
-        ImGuiStyle& style = ImGui::GetStyle();
+        ImGuiIO const& io = ImGui::GetIO();
+        ImGuiStyle const& style = ImGui::GetStyle();
 
         ImGui::Begin("DockSpace", &open, windowFlags);
 
-        if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable)
+        if ((io.ConfigFlags & ImGuiConfigFlags_DockingEnable) != 0)
         {
-            ImGuiID dockspaceId = ImGui::GetID("DockSpace");
-            ImGui::DockSpace(dockspaceId, ImVec2(0.0f, 0.0f), dockspaceFlags);
+            ImGuiID const dockspaceId = ImGui::GetID("DockSpace");
+            ImGui::DockSpace(dockspaceId, ImVec2(0.0F, 0.0F), dockspaceFlags);
         }
 
         bool showDemoWindow = true;
         ImGui::ShowDemoWindow(&showDemoWindow);
 
         bool showTextureWindow = true;
-        ImVec2 textureWindowSize = {static_cast<float>(cpuTextureExtent.x),
+        ImVec2 const textureWindowSize = {static_cast<float>(cpuTextureExtent.x),
                                     static_cast<float>(cpuTextureExtent.y)};
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
         ImGui::SetNextWindowContentSize(textureWindowSize);
@@ -239,7 +240,7 @@ auto main(int argc, char* argv[]) -> int
 
 static void resizeCallback(void* data, glm::uvec2 extent)
 {
-    ResizeData* resizeData = static_cast<ResizeData*>(data);
+    auto* resizeData = static_cast<ResizeData*>(data);
     resizeData->swap.resize(extent);
     resizeData->frameBuffer.resize(extent);
 }

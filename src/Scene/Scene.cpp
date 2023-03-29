@@ -1,7 +1,7 @@
-﻿#include "Scene/Scene.h"
+﻿#include "exage/Scene/Scene.h"
 
-#include "Scene/Hierarchy.h"
-#include "Scene/Entity.h"
+#include "exage/Scene/Hierarchy.h"
+#include "exage/Scene/Entity.h"
 
 namespace exage
 {

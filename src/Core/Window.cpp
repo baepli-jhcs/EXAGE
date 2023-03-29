@@ -1,6 +1,6 @@
-﻿#include "Core/Window.h"
+﻿#include "exage/Core/Window.h"
 
-#include "GLFW/GLFWindow.h"
+#include "exage/platform/GLFW/GLFWindow.h"
 
 namespace exage
 {

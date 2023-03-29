@@ -1,6 +1,6 @@
-﻿#include "Scene/Entity.h"
+﻿#include "exage/Scene/Entity.h"
 
-#include "Scene/Scene.h"
+#include "exage/Scene/Scene.h"
 
 namespace exage
 {

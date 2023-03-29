@@ -1,11 +1,11 @@
-﻿#include "Graphics/HLPD/ImGuiTools.h"
+﻿#include "exage/Graphics/HLPD/ImGuiTools.h"
 
-#include <Vulkan/VulkanCommandBuffer.h>
+#include "exage/platform/Vulkan/VulkanCommandBuffer.h"
 
-#include "GLFW/GLFWindow.h"
+#include "exage/platform/GLFW/GLFWindow.h"
 #include "ImGuiPlatform/imgui_impl_glfw.h"
 #include "ImGuiPlatform/imgui_impl_vulkan.h"
-#include "Vulkan/VulkanContext.h"
+#include "exage/platform/Vulkan/VulkanContext.h"
 
 namespace exage::Graphics
 {
@@ -90,7 +90,7 @@ namespace exage::Graphics
     {
         ImGui::SetCurrentContext(_imCtx);
 
-        ImGuiIO& io = ImGui::GetIO();
+        ImGuiIO const& io = ImGui::GetIO();
 
         switch (_api)
         {
@@ -205,7 +205,7 @@ namespace exage::Graphics
 
         ImGuiIO const& io = ImGui::GetIO();
 
-        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+        if ((io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) != 0)
         {
             ImGui::UpdatePlatformWindows();
             ImGui::RenderPlatformWindowsDefault();

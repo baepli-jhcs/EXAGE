@@ -1,4 +1,4 @@
-﻿#include "Core/Core.h"
+﻿#include "exage/Core/Core.h"
 
 #include <GLFW/glfw3.h>
 

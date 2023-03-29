@@ -1,5 +1,5 @@
-﻿#include "Graphics/Context.h"
-#include "Vulkan/VulkanContext.h"
+﻿#include "exage/Graphics/Context.h"
+#include "exage/platform/Vulkan/VulkanContext.h"
 
 namespace exage::Graphics
 {

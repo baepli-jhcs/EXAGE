@@ -10,19 +10,13 @@ set_project("EXAGE")
 set_version("0.1.0")
 set_languages("c++20")
 
-add_rules("plugin.vsxmake.autoupdate")
-
 target("EXAGE")
     set_kind("static")
 
     add_files("src/**.cpp")
     add_headerfiles("src/**.h", {public = false})
-    add_headerfiles("include/**.h")
+    add_headerfiles("include/exage/**.h")
     add_includedirs("include", {public = true})
-
-    add_files("platform/**.cpp")
-    add_headerfiles("platform/**.h")
-    add_includedirs("platform", {public = true})
 
     add_packages("alpaca", "debugbreak", "entt", "fmt", "glfw", "glm", "imgui", "magic_enum", "tl_expected", "unordered_dense", "vk-bootstrap", "vulkan-headers", "vma-hpp", {public = true})
 
@@ -47,6 +41,8 @@ target("EXAGE")
     if is_plat("android") then
         add_defines("EXAGE_ANDROID")
     end
+
+    set_policy("build.optimization.lto", true)
 
 includes("exitor/xmake.lua")
 includes("tests/xmake.lua")
