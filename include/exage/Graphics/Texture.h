@@ -183,7 +183,7 @@ namespace exage::Graphics
         TextureExtent extent = glm::uvec3(1);
         Texture::Format format = Texture::Format::eRGBA8;
         Texture::Type type = Texture::Type::e2D;
-        Texture::Usage usage = Texture::UsageFlags::eColorAttachment;
+        Texture::Usage usage {};
         uint32_t arrayLayers = 1;
         uint32_t mipLevels = 1;
 

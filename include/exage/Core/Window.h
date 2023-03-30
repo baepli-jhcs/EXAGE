@@ -4,6 +4,7 @@
 #include <memory>
 #include <optional>
 #include <string_view>
+#include <variant>
 
 #include "exage/Core/Core.h"
 #include "exage/Input/KeyCode.h"
@@ -110,4 +111,31 @@ namespace exage
         eInvalidAPI,
         eUnsupportedAPI,
     };
+
+    //// revamp of event system
+    //struct CloseEvent
+    //{
+    //};
+
+    //struct KeyEvent
+    //{
+    //    KeyCode key;
+    //    KeyAction action;
+    //};
+
+    //struct ResizeEvent
+    //{
+    //    glm::uvec2 extent;
+    //};
+
+    //using WindowEvent = std::variant<CloseEvent, KeyEvent, ResizeEvent>;
+    //struct EventCallback
+    //{
+    //    void* data;
+    //    void (*callback)(void* data, Window& window, const WindowEvent& event);
+    //};
+
+    //[[nodiscard]] EXAGE_EXPORT auto pollEvent(WindowAPI api) noexcept -> std::optional<WindowEvent>;
+    //[[nodiscard]] EXAGE_EXPORT auto waitEvent(WindowAPI api) noexcept -> std::optional<WindowEvent>;
+    //
 }  // namespace exage

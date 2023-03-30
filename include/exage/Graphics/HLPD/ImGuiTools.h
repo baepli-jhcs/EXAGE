@@ -20,7 +20,8 @@ namespace exage::Graphics
         ~ImGuiInstance();
 
         EXAGE_DELETE_COPY(ImGuiInstance);
-        EXAGE_DEFAULT_MOVE(ImGuiInstance);
+        ImGuiInstance(ImGuiInstance&& old) noexcept;
+        auto operator=(ImGuiInstance&& old) noexcept -> ImGuiInstance&;
 
         void begin() noexcept;
         void end() noexcept;
@@ -33,13 +34,15 @@ namespace exage::Graphics
         [[nodiscard]] auto getContext() const noexcept -> ImGuiContext* { return _imCtx; }
 
       private:
+        void cleanup() noexcept;
+
         void initGLFW(const ImGuiInitInfo& initInfo) noexcept;
         static void initVulkan(const ImGuiInitInfo& initInfo) noexcept;
 
         void buildFonts() noexcept;
-        
+
         std::reference_wrapper<Context> _context;
-        
+
         API _api;
         WindowAPI _windowAPI;
 

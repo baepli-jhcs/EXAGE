@@ -1,10 +1,9 @@
 ﻿#include "exage/Graphics/HLPD/ImGuiTools.h"
 
-#include "exage/platform/Vulkan/VulkanCommandBuffer.h"
-
-#include "exage/platform/GLFW/GLFWindow.h"
 #include "ImGuiPlatform/imgui_impl_glfw.h"
 #include "ImGuiPlatform/imgui_impl_vulkan.h"
+#include "exage/platform/GLFW/GLFWindow.h"
+#include "exage/platform/Vulkan/VulkanCommandBuffer.h"
 #include "exage/platform/Vulkan/VulkanContext.h"
 
 namespace exage::Graphics
@@ -59,8 +58,13 @@ namespace exage::Graphics
         buildFonts();
     }
 
-    ImGuiInstance::~ImGuiInstance()
+    void ImGuiInstance::cleanup() noexcept
     {
+        if (_imCtx == nullptr)
+        {
+            return;
+        }
+
         ImGui::SetCurrentContext(_imCtx);
 
         switch (_api)
@@ -84,6 +88,37 @@ namespace exage::Graphics
             default:
                 break;
         }
+    }
+
+    ImGuiInstance::~ImGuiInstance()
+    {
+        cleanup();
+    }
+
+    ImGuiInstance::ImGuiInstance(ImGuiInstance&& old) noexcept
+        : _context(old._context)
+        , _api(old._api)
+        , _windowAPI(old._windowAPI)
+        , _imCtx(old._imCtx)
+    {
+        old._imCtx = nullptr;
+    }
+
+    auto ImGuiInstance::operator=(ImGuiInstance&& old) noexcept -> ImGuiInstance&
+    {
+        if (this == &old)
+        {
+            return *this;
+        }
+
+        cleanup();
+
+        _context = old._context;
+        _api = old._api;
+        _windowAPI = old._windowAPI;
+        _imCtx = old._imCtx;
+        old._imCtx = nullptr;
+        return *this;
     }
 
     void ImGuiInstance::begin() noexcept
