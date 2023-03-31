@@ -71,13 +71,21 @@ namespace exage
         entity = {};
     }
 
-    static void calculateChildTransform(glm::mat4 parentTransform, Entity entity) noexcept
+    static void calculateChildTransform(Transform3D& parentTransform, Entity entity) noexcept
     {
         auto& childTransform = entity.getComponent<Transform3D>();
-        childTransform.localMatrix = calculateTransformMatrix(childTransform);
-        childTransform.globalMatrix = parentTransform * childTransform.localMatrix;
+        glm::quat childRotation = childTransform.getQuatRotation();
+
+        childTransform.globalRotation = parentTransform.globalRotation * childRotation;
+        childTransform.globalPosition =
+			parentTransform.globalPosition + parentTransform.globalRotation * childTransform.position;
+        childTransform.globalScale = parentTransform.globalScale * childTransform.scale;
+
+        childTransform.matrix = calculateTransformMatrix(childTransform);
+        childTransform.globalMatrix = parentTransform.globalMatrix * childTransform.matrix;
+        
         entity.forEachChild([&](Entity child)
-                            { calculateChildTransform(childTransform.globalMatrix, child); });
+                            { calculateChildTransform(childTransform, child); });
     }
 
     void Scene::updateHierarchy(bool calculateTransforms) noexcept
@@ -104,13 +112,16 @@ namespace exage
             {
                 auto& relationship = view.get<EntityRelationship>(entity);
                 auto& transform = view.get<Transform3D>(entity);
-                transform.localMatrix = calculateTransformMatrix(transform);
-                transform.globalMatrix = transform.localMatrix;
+                transform.globalRotation = transform.getQuatRotation();
+                transform.globalPosition = transform.position;
+                transform.globalScale = transform.scale;
+                transform.matrix = calculateTransformMatrix(transform);
+                transform.globalMatrix = transform.matrix;
 
                 Entity entt = {entity, *this};
 
                 entt.forEachChild([&](Entity child)
-                                  { calculateChildTransform(transform.globalMatrix, child); });
+                                  { calculateChildTransform(transform, child); });
             }
         }
     }

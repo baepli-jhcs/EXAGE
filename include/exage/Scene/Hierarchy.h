@@ -33,8 +33,28 @@ namespace exage
         glm::vec3 position;
         glm::vec3 scale;
         Rotation3D rotation;
+        glm::mat4 matrix;
 
-        glm::mat4 localMatrix;
+        // Not intended to be modified by the user
+        glm::vec3 globalPosition;
+        glm::vec3 globalScale;
+        glm::quat globalRotation;
         glm::mat4 globalMatrix;
+
+        [[nodiscard]] auto getQuatRotation() const noexcept -> glm::quat
+        {
+            if (const glm::quat* quat = std::get_if<const glm::quat>(&rotation); quat != nullptr)
+            {
+                return *quat;
+            }
+            else if (const glm::vec3* vec = std::get_if<const glm::vec3>(&rotation); vec != nullptr)
+            {
+                return glm::quat {*vec};
+            }
+            else
+            {
+                return glm::quat {};
+            }
+        }
     };
 }  // namespace exage
