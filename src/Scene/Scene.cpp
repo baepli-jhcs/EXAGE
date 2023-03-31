@@ -30,7 +30,7 @@ namespace exage
             parentRelationship.childCount++;
         }
 
-        return {_registry.create(), *this};
+        return entity;
     }
 
     void Scene::destroyEntity(Entity& entity) noexcept
