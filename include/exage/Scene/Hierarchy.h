@@ -11,6 +11,21 @@
 
 namespace exage
 {
+    struct EntityRelationship
+    {
+        Entity parent;
+
+        size_t childCount;
+        Entity firstChild;
+
+        Entity nextSibling;
+        Entity previousSibling;
+    };
+
+    struct RootEntity
+    {
+    };  // This is just a tag
+
     using Rotation3D = std::variant<glm::vec3, glm::quat>;
 
     struct Transform3D
@@ -21,16 +36,5 @@ namespace exage
 
         glm::mat4 localMatrix;
         glm::mat4 globalMatrix;
-    };
-
-    struct EntityRelationship
-    {
-        Entity parent;
-
-        size_t childCount;
-        Entity firstChild;
-
-        Entity nextSibling;
-        Entity previousSibling;
     };
 }  // namespace exage

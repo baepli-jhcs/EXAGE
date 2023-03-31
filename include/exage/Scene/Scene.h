@@ -16,6 +16,8 @@ namespace exage
         [[nodiscard]] auto createEntity(Entity parent = {}) noexcept -> Entity;
         void destroyEntity(Entity& entity) noexcept;
 
+        void updateHierarchy(bool calculateTransforms = true) noexcept;
+
         entt::registry& registry() noexcept { return _registry; }
         const entt::registry& registry() const noexcept { return _registry; }
 
