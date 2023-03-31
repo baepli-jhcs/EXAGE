@@ -43,11 +43,11 @@ namespace exage
 
         [[nodiscard]] auto getQuatRotation() const noexcept -> glm::quat
         {
-            if (const glm::quat* quat = std::get_if<const glm::quat>(&rotation); quat != nullptr)
+            if (const glm::quat* quat = std::get_if<glm::quat>(&rotation); quat != nullptr)
             {
                 return *quat;
             }
-            else if (const glm::vec3* vec = std::get_if<const glm::vec3>(&rotation); vec != nullptr)
+            else if (const glm::vec3* vec = std::get_if<glm::vec3>(&rotation); vec != nullptr)
             {
                 return glm::quat {*vec};
             }
