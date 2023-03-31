@@ -13,52 +13,55 @@ namespace exage
         Scene() noexcept = default;
         ~Scene() = default;
 
-        [[nodiscard]] auto createEntity(Entity parent = {}) noexcept -> Entity;
-        void destroyEntity(Entity& entity) noexcept;
+        [[nodiscard]] auto createEntity(Entity parent = entt::null) noexcept -> Entity;
+        void destroyEntity(Entity entity) noexcept;
 
         void updateHierarchy(bool calculateTransforms = true) noexcept;
 
         entt::registry& registry() noexcept { return _registry; }
         const entt::registry& registry() const noexcept { return _registry; }
 
+        bool isValid(Entity entity) const noexcept { return _registry.valid(entity); }
+
+        template<typename T, typename... Args>
+        auto addComponent(Entity entity, Args&&... args) noexcept -> T&
+        {
+            return _registry.emplace<T>(entity, std::forward<Args>(args)...);
+        }
+
+        template <typename T>
+        auto getComponent(Entity entity) noexcept -> T&
+        {
+			return _registry.get<T>(entity);
+		}
+
+        template<typename T>
+        void removeComponent(Entity entity) noexcept
+        {
+			_registry.remove<T>(entity);
+		}
+
+        template<typename T>
+        bool hasComponent(Entity entity) const noexcept
+        {
+            return _registry.all_of<T>(entity);
+        }
+
+        template<typename F>
+        void forEachChild(Entity parent, F&& func) noexcept
+        {
+            auto& relationship = getComponent<EntityRelationship>(parent);
+            auto child = relationship.firstChild;
+            for (size_t i = 0; i < relationship.childCount; i++)
+            {
+                func(child);
+                child = getComponent<EntityRelationship>(child).nextSibling;
+            }
+        }
+
       private:
+        void calculateChildTransform(Transform3D& parentTransform, Entity entity) noexcept;
+
         entt::registry _registry;
     };
-
-    template<typename T, typename... Args>
-    auto Entity::addComponent(Args&&... args) const noexcept -> T&
-    {
-        return _scene->registry().emplace<T>(_handle, std::forward<Args>(args)...);
-    }
-
-    template<typename T>
-    auto Entity::getComponent() const noexcept -> T&
-    {
-        return _scene->registry().get<T>(_handle);
-    }
-
-    template<typename T>
-    void Entity::removeComponent() const noexcept
-    {
-        _scene->registry().remove<T>(_handle);
-    }
-
-    template<typename T>
-    bool Entity::hasComponent() const noexcept
-    {
-        return _scene->registry().all_of<T>(_handle);
-    }
-
-    template<typename F>
-    void Entity::forEachChild(F&& func) const noexcept
-    {
-        auto& relationship = getComponent<EntityRelationship>();
-        auto child = relationship.firstChild;
-
-        for (size_t i = 0; i < relationship.childCount; i++)
-        {
-            func(child);
-            child = child.getComponent<EntityRelationship>().nextSibling;
-        }
-    }
 }  // namespace exage

@@ -8,19 +8,19 @@ namespace exage
 {
     auto Scene::createEntity(Entity parent) noexcept -> Entity
     {
-        Entity const entity {_registry.create(), *this};
-        auto& relationship = entity.addComponent<EntityRelationship>();
+        Entity entity = _registry.create();
+        auto& relationship = addComponent<EntityRelationship>(entity);
 
         relationship.parent = parent;
 
-        if (parent.isValid())
+        if (isValid(parent))
         {
-            auto& parentRelationship = parent.getComponent<EntityRelationship>();
+            auto& parentRelationship = getComponent<EntityRelationship>(parent);
 
-            if (parentRelationship.firstChild.isValid())
+            if (isValid(parentRelationship.firstChild))
             {
                 auto& firstChildRelationship =
-                    parentRelationship.firstChild.getComponent<EntityRelationship>();
+                    getComponent<EntityRelationship>(parentRelationship.firstChild);
 
                 firstChildRelationship.previousSibling = entity;
                 relationship.nextSibling = parentRelationship.firstChild;
@@ -33,13 +33,13 @@ namespace exage
         return entity;
     }
 
-    void Scene::destroyEntity(Entity& entity) noexcept
+    void Scene::destroyEntity(Entity entity) noexcept
     {
-        auto& relationship = entity.getComponent<EntityRelationship>();
+        auto& relationship = getComponent<EntityRelationship>(entity);
 
-        if (relationship.parent.isValid())
+        if (isValid(relationship.parent))
         {
-            auto& parentRelationship = relationship.parent.getComponent<EntityRelationship>();
+            auto& parentRelationship = getComponent<EntityRelationship>(relationship.parent);
             parentRelationship.childCount--;
             if (parentRelationship.firstChild == entity)
             {
@@ -47,17 +47,17 @@ namespace exage
             }
         }
 
-        if (relationship.nextSibling.isValid())
+        if (isValid(relationship.nextSibling))
         {
             auto& nextSiblingRelationship =
-                relationship.nextSibling.getComponent<EntityRelationship>();
+                getComponent<EntityRelationship>(relationship.nextSibling);
             nextSiblingRelationship.previousSibling = relationship.previousSibling;
         }
 
-        if (relationship.previousSibling.isValid())
+        if (isValid(relationship.previousSibling))
         {
             auto& previousSiblingRelationship =
-                relationship.previousSibling.getComponent<EntityRelationship>();
+                getComponent<EntityRelationship>(relationship.previousSibling);
             previousSiblingRelationship.nextSibling = relationship.nextSibling;
         }
 
@@ -67,25 +67,24 @@ namespace exage
             destroyEntity(relationship.firstChild);
         }
 
-        _registry.destroy(entity.getHandle());
-        entity = {};
+        _registry.destroy(entity);
+        entity = entt::null;
     }
 
-    static void calculateChildTransform(Transform3D& parentTransform, Entity entity) noexcept
+    void Scene::calculateChildTransform(Transform3D& parentTransform, Entity entity) noexcept
     {
-        auto& childTransform = entity.getComponent<Transform3D>();
+        auto& childTransform = getComponent<Transform3D>(entity);
         glm::quat childRotation = childTransform.getQuatRotation();
 
         childTransform.globalRotation = parentTransform.globalRotation * childRotation;
-        childTransform.globalPosition =
-			parentTransform.globalPosition + parentTransform.globalRotation * childTransform.position;
+        childTransform.globalPosition = parentTransform.globalPosition
+            + parentTransform.globalRotation * childTransform.position;
         childTransform.globalScale = parentTransform.globalScale * childTransform.scale;
 
         childTransform.matrix = calculateTransformMatrix(childTransform);
         childTransform.globalMatrix = parentTransform.globalMatrix * childTransform.matrix;
-        
-        entity.forEachChild([&](Entity child)
-                            { calculateChildTransform(childTransform, child); });
+
+        forEachChild(entity, [&](Entity child) { calculateChildTransform(childTransform, child); });
     }
 
     void Scene::updateHierarchy(bool calculateTransforms) noexcept
@@ -95,7 +94,7 @@ namespace exage
         {
             auto& relationship = view.get<EntityRelationship>(entity);
 
-            if (!relationship.parent.isValid())
+            if (!isValid(relationship.parent))
             {
                 _registry.emplace_or_replace<RootEntity>(entity);
             }
@@ -118,10 +117,8 @@ namespace exage
                 transform.matrix = calculateTransformMatrix(transform);
                 transform.globalMatrix = transform.matrix;
 
-                Entity entt = {entity, *this};
-
-                entt.forEachChild([&](Entity child)
-                                  { calculateChildTransform(transform, child); });
+                forEachChild(entity,
+                             [&](Entity child) { calculateChildTransform(transform, child); });
             }
         }
     }
