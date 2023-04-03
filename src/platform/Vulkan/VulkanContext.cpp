@@ -4,13 +4,15 @@
 #include <exage/platform/GLFW/GLFWindow.h>
 #include <exage/utils/cast.h>
 
-#include "exage/Core/Window.h"
 #include "VkBootstrap.h"
+#include "exage/Core/Window.h"
 #include "vulkan/vulkan_core.h"
 #include "vulkan/vulkan_enums.hpp"
 #include "vulkan/vulkan_structs.hpp"
 
 #define GLFW_INCLUDE_VULKAN
+#include <iostream>
+
 #include <GLFW/glfw3.h>
 
 #include "exage/platform/Vulkan/VulkanBuffer.h"
@@ -172,6 +174,10 @@ namespace exage::Graphics
             }
         }
 
+#ifdef EXAGE_DEBUG
+        std::cout << "Physical Device: " << _physicalDevice.properties.deviceName << std::endl;
+#endif
+
         vkb::DeviceBuilder deviceBuilder(_physicalDevice);
 
         vk::PhysicalDeviceDescriptorIndexingFeaturesEXT descriptorIndexingFeatures {};
@@ -322,6 +328,103 @@ namespace exage::Graphics
         }
 
         return {surface};
+    }
+
+    static size_t hashResourceDescriptions(
+        const std::vector<ResourceDescription>& resourceDescriptions) noexcept
+    {
+        size_t hash = 0;
+        for (const ResourceDescription& resourceDescription : resourceDescriptions)
+        {
+            hashCombine(hash, resourceDescription.binding, resourceDescription.type);
+        }
+        return hash;
+    }
+
+    auto VulkanContext::getOrCreateDescriptorSetLayout(
+        const std::vector<ResourceDescription>& resourceDescriptions) noexcept
+        -> vk::DescriptorSetLayout
+    {
+        size_t hash = hashResourceDescriptions(resourceDescriptions);
+        const auto it = _descriptorSetLayoutCache.find(hash);
+        if (it != _descriptorSetLayoutCache.end())
+        {
+            return it->second;
+        }
+        std::vector<vk::DescriptorSetLayoutBinding> bindings;
+        bindings.reserve(resourceDescriptions.size());
+        for (const ResourceDescription& resourceDescription : resourceDescriptions)
+        {
+            vk::DescriptorSetLayoutBinding binding {};
+            binding.binding = resourceDescription.binding;
+
+            switch (resourceDescription.type)
+            {
+                case ResourceDescription::Type::eSampledImage:
+                    binding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+                    break;
+                case ResourceDescription::Type::eStorageImage:
+                    binding.descriptorType = vk::DescriptorType::eStorageImage;
+                    break;
+                case ResourceDescription::Type::eStorageBuffer:
+                    binding.descriptorType = vk::DescriptorType::eStorageBuffer;
+                    break;
+            }
+
+            binding.descriptorCount = 1;
+            binding.stageFlags = vk::ShaderStageFlagBits::eAll;
+            binding.pImmutableSamplers = nullptr;
+
+            bindings.push_back(binding);
+        }
+
+        vk::DescriptorSetLayoutCreateInfo layoutInfo {};
+        layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+        layoutInfo.pBindings = bindings.data();
+        layoutInfo.flags = vk::DescriptorSetLayoutCreateFlagBits::ePushDescriptorKHR;
+
+        vk::DescriptorSetLayout layout;
+        checkVulkan(getDevice().createDescriptorSetLayout(&layoutInfo, nullptr, &layout));
+        _descriptorSetLayoutCache[hash] = layout;
+        return layout;
+    }
+
+    static size_t hashPipelineLayoutInfo(const VulkanContext::PipelineLayoutInfo& info) noexcept
+    {
+        size_t seed = 0;
+        hashCombine(
+            seed, info.pushConstantSize, hashResourceDescriptions(info.resourceDescriptions));
+        return seed;
+    }
+
+    auto VulkanContext::getOrCreatePipelineLayout(const PipelineLayoutInfo& info) noexcept
+        -> vk::PipelineLayout
+    {
+        size_t hash = hashPipelineLayoutInfo(info);
+        const auto it = _pipelineLayoutCache.find(hash);
+        if (it != _pipelineLayoutCache.end())
+        {
+            return it->second;
+        }
+
+        vk::DescriptorSetLayout layout = getOrCreateDescriptorSetLayout(info.resourceDescriptions);
+
+        vk::PushConstantRange pushConstantRange {};
+        pushConstantRange.stageFlags = vk::ShaderStageFlagBits::eAll;
+        pushConstantRange.offset = 0;
+        pushConstantRange.size = static_cast<uint32_t>(info.pushConstantSize);
+
+        vk::PipelineLayoutCreateInfo pipelineLayoutInfo {};
+        pipelineLayoutInfo.setLayoutCount = 1;
+        pipelineLayoutInfo.pSetLayouts = &layout;
+        pipelineLayoutInfo.pushConstantRangeCount = 1;
+        pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
+
+        vk::PipelineLayout pipelineLayout;
+        checkVulkan(
+            getDevice().createPipelineLayout(&pipelineLayoutInfo, nullptr, &pipelineLayout));
+        _pipelineLayoutCache[hash] = pipelineLayout;
+        return pipelineLayout;
     }
 
     auto VulkanContext::getDevice() const noexcept -> vk::Device

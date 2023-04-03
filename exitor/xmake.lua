@@ -1,4 +1,4 @@
-target("EXitor")
+﻿target("EXitor")
     set_kind("binary")
     add_deps("EXAGE")
     add_files("src/**.cpp")

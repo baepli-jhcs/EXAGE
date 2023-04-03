@@ -7,6 +7,7 @@
 #include "exage/utils/cast.h"
 #include "exage/utils/classes.h"
 #include "exage/utils/flags.h"
+#include "exage/utils/hash.h"
 #include "exage/utils/variant.h"
 
 namespace exage

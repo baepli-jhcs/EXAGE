@@ -13,9 +13,10 @@
 #include <vulkan-memory-allocator-hpp/vk_mem_alloc.hpp>
 #include <vulkan/vulkan.hpp>
 
+#include "exage/Graphics/Pipeline.h"
 #include "exage/Graphics/Queue.h"
 #include "exage/platform/Vulkan/VulkanQueue.h"
-#include "VulkanUtils.h"
+#include "exage/platform/Vulkan/VulkanUtils.h"
 
 namespace exage::Graphics
 {
@@ -30,6 +31,8 @@ namespace exage::Graphics
 
         EXAGE_DELETE_COPY(VulkanContext);
         EXAGE_DELETE_MOVE(VulkanContext);
+
+        struct PipelineLayoutInfo;
 
         void waitIdle() const noexcept override;
 
@@ -50,6 +53,11 @@ namespace exage::Graphics
         [[nodiscard]] auto getHardwareSupport() const noexcept -> HardwareSupport override;
 
         [[nodiscard]] auto createSurface(Window& window) const noexcept -> vk::SurfaceKHR;
+        [[nodiscard]] auto getOrCreateDescriptorSetLayout(
+            const std::vector<ResourceDescription>& resourceDescriptions) noexcept
+            -> vk::DescriptorSetLayout;
+        [[nodiscard]] auto getOrCreatePipelineLayout(const PipelineLayoutInfo& info) noexcept
+            -> vk::PipelineLayout;
 
         [[nodiscard]] auto getInstance() const noexcept -> vk::Instance;
         [[nodiscard]] auto getPhysicalDevice() const noexcept -> vk::PhysicalDevice;
@@ -62,6 +70,12 @@ namespace exage::Graphics
 
         EXAGE_VULKAN_DERIVED
 
+        struct PipelineLayoutInfo
+        {
+            std::vector<ResourceDescription> resourceDescriptions;
+            uint32_t pushConstantSize;
+        };
+
       private:
         VulkanContext() = default;
         auto init(ContextCreateInfo& createInfo) noexcept -> std::optional<Error>;
@@ -73,5 +87,8 @@ namespace exage::Graphics
         std::optional<VulkanQueue> _queue = std::nullopt;
 
         HardwareSupport _hardwareSupport;
+
+        std::unordered_map<size_t, vk::DescriptorSetLayout> _descriptorSetLayoutCache;
+        std::unordered_map<size_t, vk::PipelineLayout> _pipelineLayoutCache;
     };
 }  // namespace exage::Graphics

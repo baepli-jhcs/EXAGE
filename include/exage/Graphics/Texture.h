@@ -76,6 +76,7 @@ namespace exage::Graphics
             eTransferDestination = 1 << 1,
             eColorAttachment = 1 << 2,
             eDepthStencilAttachment = 1 << 3,
+            eStorage = 1 << 4,
         };
 
         using Usage = Flags<UsageFlags>;
@@ -138,6 +139,7 @@ namespace exage::Graphics
             eTransferSrc,
             eTransferDst,
             ePresent,
+            eStorage,
         };
 
         EXAGE_BASE_API(API, Texture);

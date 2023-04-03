@@ -15,7 +15,7 @@ namespace exage::Graphics
                 {
                     return tl::make_unexpected(value.error());
                 }
-                return std::unique_ptr<Context>(value.value().release());
+                return std::unique_ptr<Context>(value->release());
             }
         }
 

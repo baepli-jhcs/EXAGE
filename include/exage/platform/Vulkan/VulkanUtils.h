@@ -1,4 +1,9 @@
 ﻿#pragma once
+
+#define VK_NO_PROTOTYPES
+#define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
+#define VULKAN_HPP_STORAGE_SHARED
+#define VULKAN_HPP_STORAGE_SHARED_EXPORT
 #include <vulkan/vulkan.hpp>
 
 #include "exage/Graphics/Buffer.h"
@@ -123,8 +128,7 @@ namespace exage::Graphics
     [[nodiscard]] constexpr auto toVulkanImageUsageFlags(Texture::Usage usage) noexcept
         -> vk::ImageUsageFlags
     {
-        vk::ImageUsageFlags flags =
-            vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eStorage;
+        vk::ImageUsageFlags flags = vk::ImageUsageFlagBits::eSampled; // All textures are sampled
 
         if (usage.any(Texture::UsageFlags::eTransferSource))
         {
@@ -145,6 +149,11 @@ namespace exage::Graphics
         {
             flags |= vk::ImageUsageFlagBits::eDepthStencilAttachment;
         }
+
+        if (usage.any(Texture::UsageFlags::eStorage))
+        {
+			flags |= vk::ImageUsageFlagBits::eStorage;
+		}
 
         return flags;
     }
@@ -208,6 +217,8 @@ namespace exage::Graphics
                 return vk::ImageLayout::eTransferDstOptimal;
             case Texture::Layout::ePresent:
                 return vk::ImageLayout::ePresentSrcKHR;
+            case Texture::Layout::eStorage:
+				return vk::ImageLayout::eGeneral;
             default:
                 return vk::ImageLayout::eUndefined;
         }

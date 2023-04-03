@@ -9,12 +9,13 @@ namespace exage::Graphics
         : _context(context)
     {
         vk::DescriptorPoolSize const bufferDescriptorPoolSize {vk::DescriptorType::eStorageBuffer,
-                                                         maxBufferCount};
+                                                               maxBufferCount};
 
-        vk::DescriptorPoolSize const textureSamplerDescriptorPoolSize {
+        vk::DescriptorPoolSize const combinedImageSamplerDescriptorPoolSize {
             vk::DescriptorType::eCombinedImageSampler, maxTextureCount};
 
-        std::array descriptorPoolSizes {bufferDescriptorPoolSize, textureSamplerDescriptorPoolSize};
+        std::array descriptorPoolSizes {bufferDescriptorPoolSize,
+                                        combinedImageSamplerDescriptorPoolSize};
 
         vk::DescriptorPoolCreateInfo descriptorPoolCreateInfo {};
         descriptorPoolCreateInfo.flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet
@@ -25,32 +26,47 @@ namespace exage::Graphics
         checkVulkan(_context.get().getDevice().createDescriptorPool(
             &descriptorPoolCreateInfo, nullptr, &_descriptorPool));
 
-        vk::DescriptorSetLayoutBinding bufferDescriptorSetLayoutBinding {};
-        bufferDescriptorSetLayoutBinding.binding = bufferBinding;
-        bufferDescriptorSetLayoutBinding.descriptorType = vk::DescriptorType::eStorageBuffer;
-        bufferDescriptorSetLayoutBinding.descriptorCount = maxBufferCount;
-        bufferDescriptorSetLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eAll;
-
-        vk::DescriptorSetLayoutBinding textureDescriptorSetLayoutBinding {};
-        textureDescriptorSetLayoutBinding.binding = textureBinding;
-        textureDescriptorSetLayoutBinding.descriptorType =
+        vk::DescriptorSetLayoutBinding combinedImageSamplerSetLayoutBinding {};
+        combinedImageSamplerSetLayoutBinding.binding = sampledTextureBinding;
+        combinedImageSamplerSetLayoutBinding.descriptorType =
             vk::DescriptorType::eCombinedImageSampler;
-        textureDescriptorSetLayoutBinding.descriptorCount = maxTextureCount;
-        textureDescriptorSetLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eAll;
+        combinedImageSamplerSetLayoutBinding.descriptorCount = maxTextureCount;
+        combinedImageSamplerSetLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eAll;
 
-        std::array descriptorSetLayoutBindings {bufferDescriptorSetLayoutBinding,
-                                                textureDescriptorSetLayoutBinding};
+        vk::DescriptorSetLayoutBinding storageBufferDescriptorSetLayoutBinding {};
+        storageBufferDescriptorSetLayoutBinding.binding = storageBufferBinding;
+        storageBufferDescriptorSetLayoutBinding.descriptorType = vk::DescriptorType::eStorageBuffer;
+        storageBufferDescriptorSetLayoutBinding.descriptorCount = maxBufferCount;
+        storageBufferDescriptorSetLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eAll;
+
+        //vk::DescriptorSetLayoutBinding uniformBufferDescriptorSetLayoutBinding {};
+        //uniformBufferDescriptorSetLayoutBinding.binding = uniformBufferBinding;
+        //uniformBufferDescriptorSetLayoutBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
+        //uniformBufferDescriptorSetLayoutBinding.descriptorCount = maxBufferCount;
+        //uniformBufferDescriptorSetLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eAll;
+
+        vk::DescriptorSetLayoutBinding storageImageDescriptorSetLayoutBinding {};
+        storageImageDescriptorSetLayoutBinding.binding = storageTextureBinding;
+        storageImageDescriptorSetLayoutBinding.descriptorType = vk::DescriptorType::eStorageImage;
+        storageImageDescriptorSetLayoutBinding.descriptorCount = maxTextureCount;
+        storageImageDescriptorSetLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eAll;
+
+        std::array descriptorSetLayoutBindings {combinedImageSamplerSetLayoutBinding,
+                                                storageBufferDescriptorSetLayoutBinding,
+                                                //uniformBufferDescriptorSetLayoutBinding,
+                                                storageImageDescriptorSetLayoutBinding};
 
         vk::DescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo {};
         descriptorSetLayoutCreateInfo.setBindings(descriptorSetLayoutBindings);
         descriptorSetLayoutCreateInfo.flags =
             vk::DescriptorSetLayoutCreateFlagBits::eUpdateAfterBindPool;
 
-        std::array<vk::DescriptorBindingFlags, 2> descriptorBindingFlags {};
+        std::array<vk::DescriptorBindingFlags, 3> descriptorBindingFlags {};
         descriptorBindingFlags[0] = vk::DescriptorBindingFlagBits::eUpdateAfterBind
             | vk::DescriptorBindingFlagBits::ePartiallyBound
             | vk::DescriptorBindingFlagBits::eUpdateUnusedWhilePending;
         descriptorBindingFlags[1] = descriptorBindingFlags[0];
+        descriptorBindingFlags[2] = descriptorBindingFlags[0];
 
         vk::DescriptorSetLayoutBindingFlagsCreateInfo descriptorSetLayoutBindingFlagsCreateInfo {};
         descriptorSetLayoutBindingFlagsCreateInfo.setBindingFlags(descriptorBindingFlags);
@@ -68,7 +84,7 @@ namespace exage::Graphics
                                                                       &_descriptorSet));
     }
 
-    VulkanResourceManager::~VulkanResourceManager() 
+    VulkanResourceManager::~VulkanResourceManager()
     {
         _context.get().getDevice().destroyDescriptorPool(_descriptorPool);
         _context.get().getDevice().destroyDescriptorSetLayout(_descriptorSetLayout);
@@ -88,7 +104,7 @@ namespace exage::Graphics
 
         vk::WriteDescriptorSet writeDescriptorSet {};
         writeDescriptorSet.dstSet = _descriptorSet;
-        writeDescriptorSet.dstBinding = bufferBinding;
+        writeDescriptorSet.dstBinding = storageBufferBinding;
         writeDescriptorSet.dstArrayElement = index;
         writeDescriptorSet.descriptorType = vk::DescriptorType::eStorageBuffer;
         writeDescriptorSet.descriptorCount = 1;
@@ -109,13 +125,30 @@ namespace exage::Graphics
 
         vk::WriteDescriptorSet writeDescriptorSet {};
         writeDescriptorSet.dstSet = _descriptorSet;
-        writeDescriptorSet.dstBinding = textureBinding;
+        writeDescriptorSet.dstBinding = sampledTextureBinding;
         writeDescriptorSet.dstArrayElement = index;
         writeDescriptorSet.descriptorType = vk::DescriptorType::eCombinedImageSampler;
         writeDescriptorSet.descriptorCount = 1;
         writeDescriptorSet.pImageInfo = &imageInfo;
 
-        _context.get().getDevice().updateDescriptorSets(1, &writeDescriptorSet, 0, nullptr);
+        vk::WriteDescriptorSet storageImageWriteDescriptorSet {};
+        vk::DescriptorImageInfo storageImageDescriptorImageInfo = imageInfo;
+        bool storageImage = vulkanTexture->getUsage().any(Texture::UsageFlags::eStorage); 
+        if (storageImage)
+        {
+            storageImageDescriptorImageInfo.imageLayout = vk::ImageLayout::eGeneral;
+			storageImageWriteDescriptorSet.dstSet = _descriptorSet;
+			storageImageWriteDescriptorSet.dstBinding = storageTextureBinding;
+			storageImageWriteDescriptorSet.dstArrayElement = index;
+			storageImageWriteDescriptorSet.descriptorType = vk::DescriptorType::eStorageImage;
+			storageImageWriteDescriptorSet.descriptorCount = 1;
+			storageImageWriteDescriptorSet.pImageInfo = &storageImageDescriptorImageInfo;
+        }
+
+        std::array writeDescriptorSets {writeDescriptorSet, storageImageWriteDescriptorSet};
+        uint32_t writeDescriptorSetCount = storageImage ? 2 : 1;
+
+        _context.get().getDevice().updateDescriptorSets(writeDescriptorSetCount, &writeDescriptorSet, 0, nullptr);
 
         return TextureID {index};
     }

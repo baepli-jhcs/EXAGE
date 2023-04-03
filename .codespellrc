@@ -1,4 +1,4 @@
-[codespell]
+﻿[codespell]
 builtin = clear,rare,en-GB_to_en-US,names,informal,code
 check-filenames =
 check-hidden =

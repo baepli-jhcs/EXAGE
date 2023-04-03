@@ -2,6 +2,7 @@
 
 #include "exage/Core/Core.h"
 #include "exage/Graphics/Context.h"
+#include "exage/Graphics/Shader.h"
 #include "exage/Graphics/Texture.h"
 
 namespace exage::Graphics
@@ -36,19 +37,25 @@ namespace exage::Graphics
         InputRate inputRate;
     };
 
+    struct ResourceDescription
+    {
+        enum class Type
+        {
+            eSampledImage,
+            // eUniformBuffer,
+            eStorageBuffer,
+            eStorageImage,
+        };
+
+        uint32_t binding;
+        Type type;
+    };
+
     class EXAGE_EXPORT Pipeline
     {
       public:
         Pipeline() noexcept = default;
         virtual ~Pipeline() = default;
-
-        enum class CompareOperation;
-        enum class CullMode;
-        enum class FrontFace;
-        enum class PolygonMode;
-        struct DepthStencilState;
-        struct RasterState;
-        struct RenderInfo;
 
         EXAGE_DEFAULT_COPY(Pipeline);
         EXAGE_DEFAULT_MOVE(Pipeline);
@@ -126,6 +133,14 @@ namespace exage::Graphics
             float lineWidth = 1.f;
         };
 
+        struct ShaderInfo
+        {
+            std::shared_ptr<Shader> vertexShader;
+            std::shared_ptr<Shader> tessellationControlShader;
+            std::shared_ptr<Shader> tessellationEvaluationShader;
+            std::shared_ptr<Shader> fragmentShader;
+        };
+
         struct RenderInfo
         {
             std::vector<Texture::Format> colorFormats;
@@ -133,4 +148,13 @@ namespace exage::Graphics
         };
     };
 
+    struct PipelineCreateInfo
+    {
+        std::vector<VertexDescription> vertexDescriptions;
+		std::vector<ResourceDescription> resourceDescriptions;
+	    Pipeline::ShaderInfo shaderInfo;
+		Pipeline::RenderInfo renderInfo;
+		Pipeline::RasterState rasterState;
+		Pipeline::DepthStencilState depthStencilState;
+	};
 }  // namespace exage::Graphics

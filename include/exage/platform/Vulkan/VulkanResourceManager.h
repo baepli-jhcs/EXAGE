@@ -54,8 +54,9 @@ namespace exage::Graphics
         constexpr static uint32_t maxBufferCount = 1048576;
         constexpr static uint32_t maxTextureCount = 1048576;
 
-        constexpr static uint32_t bufferBinding = 0;
-        constexpr static uint32_t textureBinding = 1;
+        constexpr static uint32_t sampledTextureBinding = 0;
+        constexpr static uint32_t storageBufferBinding = 1;
+        constexpr static uint32_t storageTextureBinding = 2;
 
         VulkanResourceManager(VulkanContext& context) noexcept;
         ~VulkanResourceManager() override;

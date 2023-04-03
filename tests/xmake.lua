@@ -1,4 +1,4 @@
-add_requires("catch2")
+﻿add_requires("catch2")
 
 target("EXAGE_test")
     set_kind("binary")

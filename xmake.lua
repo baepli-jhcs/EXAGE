@@ -1,4 +1,4 @@
-add_rules("mode.debug", "mode.release", "mode.releasedbg")
+﻿add_rules("mode.debug", "mode.release", "mode.releasedbg")
 
 add_requires("debugbreak", "entt v3.11.1", "fmt", "glfw", "glm", "magic_enum", "unordered_dense v3.0.0", "vk-bootstrap", "vulkan-headers")
 add_requires("vcpkg::alpaca", {alias = "alpaca"})
