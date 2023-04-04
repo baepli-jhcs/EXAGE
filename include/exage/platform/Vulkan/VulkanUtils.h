@@ -8,6 +8,7 @@
 
 #include "exage/Graphics/Buffer.h"
 #include "exage/Graphics/Commands.h"
+#include "exage/Graphics/Pipeline.h"
 #include "exage/Graphics/Texture.h"
 #include "fmt/format.h"
 
@@ -128,7 +129,7 @@ namespace exage::Graphics
     [[nodiscard]] constexpr auto toVulkanImageUsageFlags(Texture::Usage usage) noexcept
         -> vk::ImageUsageFlags
     {
-        vk::ImageUsageFlags flags = vk::ImageUsageFlagBits::eSampled; // All textures are sampled
+        vk::ImageUsageFlags flags = vk::ImageUsageFlagBits::eSampled;  // All textures are sampled
 
         if (usage.any(Texture::UsageFlags::eTransferSource))
         {
@@ -152,8 +153,8 @@ namespace exage::Graphics
 
         if (usage.any(Texture::UsageFlags::eStorage))
         {
-			flags |= vk::ImageUsageFlagBits::eStorage;
-		}
+            flags |= vk::ImageUsageFlagBits::eStorage;
+        }
 
         return flags;
     }
@@ -218,7 +219,7 @@ namespace exage::Graphics
             case Texture::Layout::ePresent:
                 return vk::ImageLayout::ePresentSrcKHR;
             case Texture::Layout::eStorage:
-				return vk::ImageLayout::eGeneral;
+                return vk::ImageLayout::eGeneral;
             default:
                 return vk::ImageLayout::eUndefined;
         }
@@ -406,7 +407,6 @@ namespace exage::Graphics
 
     [[nodiscard]] constexpr auto toVmaMemoryUsage(Buffer::AllocationType type) -> vma::MemoryUsage
     {
-
         switch (type)
         {
             case Buffer::AllocationType::eHost:
@@ -415,7 +415,6 @@ namespace exage::Graphics
                 return vma::MemoryUsage::eAutoPreferDevice;
             case Buffer::AllocationType::eHostVisible:
                 return vma::MemoryUsage::eAuto;
-                
         }
 
         return vma::MemoryUsage::eAuto;
@@ -441,4 +440,247 @@ namespace exage::Graphics
 
         return flags;
     }
+
+    [[nodiscard]] constexpr auto toVulkanVertexInputRate(VertexDescription::InputRate rate)
+        -> vk::VertexInputRate
+    {
+        switch (rate)
+        {
+            case VertexDescription::InputRate::eVertex:
+                return vk::VertexInputRate::eVertex;
+            case VertexDescription::InputRate::eInstance:
+                return vk::VertexInputRate::eInstance;
+        }
+        return vk::VertexInputRate::eVertex;
+    }
+
+    [[nodiscard]] constexpr auto toVulkanPolygonMode(Pipeline::PolygonMode mode) -> vk::PolygonMode
+    {
+        switch (mode)
+        {
+            case Pipeline::PolygonMode::eFill:
+                return vk::PolygonMode::eFill;
+            case Pipeline::PolygonMode::eLine:
+                return vk::PolygonMode::eLine;
+            case Pipeline::PolygonMode::ePoint:
+                return vk::PolygonMode::ePoint;
+        }
+        return vk::PolygonMode::eFill;
+    }
+
+    [[nodiscard]] constexpr auto toVulkanCullModeFlags(Pipeline::CullMode mode) -> vk::CullModeFlags
+    {
+        switch (mode)
+        {
+            case Pipeline::CullMode::eNone:
+                return vk::CullModeFlagBits::eNone;
+            case Pipeline::CullMode::eFront:
+                return vk::CullModeFlagBits::eFront;
+            case Pipeline::CullMode::eBack:
+                return vk::CullModeFlagBits::eBack;
+        }
+        return vk::CullModeFlagBits::eNone;
+    }
+
+    [[nodiscard]] constexpr auto toVulkanFormat(uint32_t components, VertexDescription::Type type)
+        -> vk::Format
+    {
+        switch (components)
+        {
+            case 1:
+                switch (type)
+                {
+                    case VertexDescription::Type::eFloat:
+                        return vk::Format::eR32Sfloat;
+                    case VertexDescription::Type::eU32:
+                        return vk::Format::eR32Uint;
+                    case VertexDescription::Type::eI8:
+                        return vk::Format::eR8Sint;
+                    case VertexDescription::Type::eI32:
+                        return vk::Format::eR32Sint;
+                }
+                return vk::Format::eR32Uint;
+                break;
+            case 2:
+                switch (type)
+                {
+                    case VertexDescription::Type::eFloat:
+                        return vk::Format::eR32G32Sfloat;
+                    case VertexDescription::Type::eU32:
+                        return vk::Format::eR32G32Uint;
+                    case VertexDescription::Type::eI8:
+                        return vk::Format::eR8G8Sint;
+                    case VertexDescription::Type::eI32:
+                        return vk::Format::eR32G32Sint;
+                }
+                return vk::Format::eR32G32Uint;
+                break;
+            case 3:
+                switch (type)
+                {
+                    case VertexDescription::Type::eFloat:
+                        return vk::Format::eR32G32B32Sfloat;
+                        return vk::Format::eR16G16B16Uint;
+                    case VertexDescription::Type::eU32:
+                        return vk::Format::eR32G32B32Uint;
+                    case VertexDescription::Type::eI8:
+                        return vk::Format::eR8G8B8Sint;
+                    case VertexDescription::Type::eI32:
+                        return vk::Format::eR32G32B32Sint;
+                }
+                return vk::Format::eR32G32B32Uint;
+                break;
+            case 4:
+                switch (type)
+                {
+                    case VertexDescription::Type::eFloat:
+                        return vk::Format::eR32G32B32A32Sfloat;
+                    case VertexDescription::Type::eU32:
+                        return vk::Format::eR32G32B32A32Uint;
+                    case VertexDescription::Type::eI8:
+                        return vk::Format::eR8G8B8A8Sint;
+                    case VertexDescription::Type::eI32:
+                        return vk::Format::eR32G32B32A32Sint;
+                }
+                return vk::Format::eR32G32B32A32Uint;
+                break;
+        }
+
+        return vk::Format::eUndefined;
+    }
+
+    [[nodiscard]] constexpr auto toVulkanFrontFace(Pipeline::FrontFace face) -> vk::FrontFace
+    {
+        switch (face)
+        {
+            case Pipeline::FrontFace::eClockwise:
+                return vk::FrontFace::eClockwise;
+            case Pipeline::FrontFace::eCounterClockwise:
+                return vk::FrontFace::eCounterClockwise;
+        }
+        return vk::FrontFace::eClockwise;
+    }
+
+    [[nodiscard]] constexpr auto toVulkanCompareOp(Pipeline::CompareOperation op) -> vk::CompareOp
+    {
+        switch (op)
+        {
+            case Pipeline::CompareOperation::eLess:
+                return vk::CompareOp::eLess;
+            case Pipeline::CompareOperation::eEqual:
+                return vk::CompareOp::eEqual;
+            case Pipeline::CompareOperation::eLessOrEqual:
+                return vk::CompareOp::eLessOrEqual;
+            case Pipeline::CompareOperation::eGreater:
+                return vk::CompareOp::eGreater;
+            case Pipeline::CompareOperation::eNotEqual:
+                return vk::CompareOp::eNotEqual;
+            case Pipeline::CompareOperation::eGreaterOrEqual:
+                return vk::CompareOp::eGreaterOrEqual;
+        }
+        return vk::CompareOp::eAlways;
+    }
+
+    [[nodiscard]] constexpr auto toVulkanStencilOp(Pipeline::DepthStencilState::StencilOperation op)
+        -> vk::StencilOp
+    {
+        switch (op)
+        {
+            case Pipeline::DepthStencilState::StencilOperation::eKeep:
+                return vk::StencilOp::eKeep;
+            case Pipeline::DepthStencilState::StencilOperation::eZero:
+                return vk::StencilOp::eZero;
+            case Pipeline::DepthStencilState::StencilOperation::eReplace:
+                return vk::StencilOp::eReplace;
+            case Pipeline::DepthStencilState::StencilOperation::eIncrementClamp:
+                return vk::StencilOp::eIncrementAndClamp;
+            case Pipeline::DepthStencilState::StencilOperation::eDecrementClamp:
+                return vk::StencilOp::eDecrementAndClamp;
+            case Pipeline::DepthStencilState::StencilOperation::eInvert:
+                return vk::StencilOp::eInvert;
+            case Pipeline::DepthStencilState::StencilOperation::eIncrementWrap:
+                return vk::StencilOp::eIncrementAndWrap;
+            case Pipeline::DepthStencilState::StencilOperation::eDecrementWrap:
+                return vk::StencilOp::eDecrementAndWrap;
+        }
+        return vk::StencilOp::eKeep;
+    }
+
+    [[nodiscard]] constexpr auto toVulkanStencilOpState(Pipeline::DepthStencilState::StencilOperationState opState) -> vk::StencilOpState
+    {
+        vk::StencilOpState state {};
+        state.failOp = toVulkanStencilOp(opState.failOp);
+        state.passOp = toVulkanStencilOp(opState.passOp);
+        state.depthFailOp = toVulkanStencilOp(opState.depthFailOp);
+        state.compareOp = toVulkanCompareOp(opState.compareOp);
+        state.compareMask = opState.mask;
+        state.reference = opState.reference;
+        state.writeMask = opState.mask;
+        return state;
+    }
+
+    [[nodiscard]] constexpr auto toVulkanBlendFactor(Pipeline::ColorBlendAttachment::BlendFactor factor) -> vk::BlendFactor
+    {
+        switch (factor)
+        {
+            case Pipeline::ColorBlendAttachment::BlendFactor::eZero:
+				return vk::BlendFactor::eZero;
+            case Pipeline::ColorBlendAttachment::BlendFactor::eOne:
+				return vk::BlendFactor::eOne;
+            case Pipeline::ColorBlendAttachment::BlendFactor::eSrcColor:
+				return vk::BlendFactor::eSrcColor;
+            case Pipeline::ColorBlendAttachment::BlendFactor::eOneMinusSrcColor:
+				return vk::BlendFactor::eOneMinusSrcColor;
+            case Pipeline::ColorBlendAttachment::BlendFactor::eDstColor:
+				return vk::BlendFactor::eDstColor;
+            case Pipeline::ColorBlendAttachment::BlendFactor::eOneMinusDstColor:
+				return vk::BlendFactor::eOneMinusDstColor;
+            case Pipeline::ColorBlendAttachment::BlendFactor::eSrcAlpha:
+				return vk::BlendFactor::eSrcAlpha;
+            case Pipeline::ColorBlendAttachment::BlendFactor::eOneMinusSrcAlpha:
+				return vk::BlendFactor::eOneMinusSrcAlpha;
+            case Pipeline::ColorBlendAttachment::BlendFactor::eDstAlpha:
+				return vk::BlendFactor::eDstAlpha;
+            case Pipeline::ColorBlendAttachment::BlendFactor::eOneMinusDstAlpha:
+				return vk::BlendFactor::eOneMinusDstAlpha;
+            case Pipeline::ColorBlendAttachment::BlendFactor::eConstantColor:
+				return vk::BlendFactor::eConstantColor;
+            case Pipeline::ColorBlendAttachment::BlendFactor::eOneMinusConstantColor:
+				return vk::BlendFactor::eOneMinusConstantColor;
+            case Pipeline::ColorBlendAttachment::BlendFactor::eConstantAlpha:
+				return vk::BlendFactor::eConstantAlpha;
+            case Pipeline::ColorBlendAttachment::BlendFactor::eOneMinusConstantAlpha:
+				return vk::BlendFactor::eOneMinusConstantAlpha;
+            case Pipeline::ColorBlendAttachment::BlendFactor::eSrcAlphaSaturate:
+				return vk::BlendFactor::eSrcAlphaSaturate;
+            case Pipeline::ColorBlendAttachment::BlendFactor::eSrc1Color:
+				return vk::BlendFactor::eSrc1Color;
+            case Pipeline::ColorBlendAttachment::BlendFactor::eOneMinusSrc1Color:
+				return vk::BlendFactor::eOneMinusSrc1Color;
+            case Pipeline::ColorBlendAttachment::BlendFactor::eSrc1Alpha:
+				return vk::BlendFactor::eSrc1Alpha;
+            case Pipeline::ColorBlendAttachment::BlendFactor::eOneMinusSrc1Alpha:
+				return vk::BlendFactor::eOneMinusSrc1Alpha;
+		}
+		return vk::BlendFactor::eZero;
+	}
+
+    [[nodiscard]] constexpr auto toVulkanBlendOp(Pipeline::ColorBlendAttachment::BlendOperation op) -> vk::BlendOp
+    {
+        switch (op)
+        {
+            case Pipeline::ColorBlendAttachment::BlendOperation::eAdd:
+				return vk::BlendOp::eAdd;
+            case Pipeline::ColorBlendAttachment::BlendOperation::eSubtract:
+				return vk::BlendOp::eSubtract;
+            case Pipeline::ColorBlendAttachment::BlendOperation::eReverseSubtract:
+				return vk::BlendOp::eReverseSubtract;
+            case Pipeline::ColorBlendAttachment::BlendOperation::eMin:
+				return vk::BlendOp::eMin;
+            case Pipeline::ColorBlendAttachment::BlendOperation::eMax:
+				return vk::BlendOp::eMax;
+		}
+		return vk::BlendOp::eAdd;
+	}
+
 }  // namespace exage::Graphics

@@ -18,7 +18,10 @@
 #include "exage/platform/Vulkan/VulkanBuffer.h"
 #include "exage/platform/Vulkan/VulkanCommandBuffer.h"
 #include "exage/platform/Vulkan/VulkanFrameBuffer.h"
+#include "exage/platform/Vulkan/VulkanPipeline.h"
 #include "exage/platform/Vulkan/VulkanQueue.h"
+#include "exage/platform/Vulkan/VulkanResourceManager.h"
+#include "exage/platform/Vulkan/VulkanShader.h"
 #include "exage/platform/Vulkan/VulkanSwapchain.h"
 #include "exage/platform/Vulkan/VulkanTexture.h"
 
@@ -138,6 +141,9 @@ namespace exage::Graphics
 
         auto surface = createSurface(*window);
 
+        vk::PhysicalDeviceFeatures requiredFeatures {};
+        requiredFeatures.independentBlend = VK_TRUE;
+
         vkb::PhysicalDeviceSelector selector(_instance);
         selector.set_minimum_version(1, 2);
         selector.set_surface(surface);
@@ -149,6 +155,7 @@ namespace exage::Graphics
                                           VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME});
         selector.add_desired_extensions({VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
                                          VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME});
+        selector.set_required_features(requiredFeatures);
 
         auto phys = selector.select();
         if (!phys)
@@ -209,7 +216,11 @@ namespace exage::Graphics
         dynamicRenderingFeatures.dynamicRendering = VK_TRUE;
         descriptorIndexingFeatures.setPNext(&dynamicRenderingFeatures);
 
-        deviceBuilder.add_pNext(&descriptorIndexingFeatures);
+        vk::PhysicalDeviceFeatures2 physicalDeviceFeatures {};
+        physicalDeviceFeatures.features = requiredFeatures;
+        physicalDeviceFeatures.setPNext(&descriptorIndexingFeatures);
+
+        deviceBuilder.add_pNext(&physicalDeviceFeatures);
         auto device = deviceBuilder.build();
         debugAssume(device.has_value(), "Failed to create device");
         _device = device.value();
@@ -248,6 +259,16 @@ namespace exage::Graphics
 
     VulkanContext::~VulkanContext()
     {
+        for (auto& pipelineLayout : _pipelineLayoutCache)
+        {
+            getDevice().destroyPipelineLayout(pipelineLayout.second);
+        }
+
+        for (auto& descriptorSetLayout : _descriptorSetLayoutCache)
+        {
+            getDevice().destroyDescriptorSetLayout(descriptorSetLayout.second);
+        }
+
         _queue = std::nullopt;
 
         if (_allocator)
@@ -300,6 +321,23 @@ namespace exage::Graphics
         return std::make_shared<VulkanBuffer>(*this, createInfo);
     }
 
+    auto VulkanContext::createShader(const ShaderCreateInfo& createInfo) noexcept
+        -> std::shared_ptr<Shader>
+    {
+        return std::make_shared<VulkanShader>(*this, createInfo);
+    }
+
+    auto VulkanContext::createPipeline(const PipelineCreateInfo& createInfo) noexcept
+        -> std::shared_ptr<Pipeline>
+    {
+        return std::make_shared<VulkanPipeline>(*this, createInfo);
+    }
+
+    auto VulkanContext::createResourceManager() noexcept -> std::unique_ptr<ResourceManager>
+    {
+        return std::make_unique<VulkanResourceManager>(*this);
+    }
+
     auto VulkanContext::getHardwareSupport() const noexcept -> HardwareSupport
     {
         return _hardwareSupport;
@@ -322,10 +360,7 @@ namespace exage::Graphics
                 break;
         }
 
-        if (surface == nullptr)
-        {
-            debugAssume(/*condition=*/false, "Surface creation failed");
-        }
+        debugAssume(surface != nullptr, "Surface creation failed");
 
         return {surface};
     }

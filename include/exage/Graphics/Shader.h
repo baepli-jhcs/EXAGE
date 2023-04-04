@@ -39,12 +39,16 @@ namespace exage::Graphics
         }
     };
 
+    EXAGE_EXPORT auto compileShaderToIR(const std::filesystem::path& path,
+                           Shader::Stage stage,
+                           bool cache = true,
+                           bool forceRecompile = false) noexcept
+        -> tl::expected<std::vector<uint32_t>, Error>;
+
     struct ShaderCreateInfo
     {
-        std::filesystem::path path;
+        std::vector<uint32_t> irCode;
         Shader::Stage stage;
-        bool cache = true;
-        bool forceRecompile = false;
-        std::filesystem::path cachePath;
+        std::filesystem::path compileDirectory;
     };
 }  // namespace exage::Graphics

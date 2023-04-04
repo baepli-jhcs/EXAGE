@@ -2,7 +2,7 @@
 
 #include "exage/Core/Core.h"
 #include "exage/Core/Window.h"
-#include "Error.h"
+#include "exage/Graphics/Error.h"
 #include "exage/utils/classes.h"
 
 namespace exage::Graphics
@@ -10,6 +10,8 @@ namespace exage::Graphics
     struct SwapchainCreateInfo;
     struct TextureCreateInfo;
     struct BufferCreateInfo;
+    struct ShaderCreateInfo;
+    struct PipelineCreateInfo;
 
     enum class API
     {
@@ -31,6 +33,9 @@ namespace exage::Graphics
     class Swapchain;
     class Texture;
     class Buffer;
+    class Shader;
+    class Pipeline;
+    class ResourceManager;
 
     struct HardwareSupport
     {
@@ -63,6 +68,12 @@ namespace exage::Graphics
             -> std::shared_ptr<FrameBuffer> = 0;
         [[nodiscard]] virtual auto createBuffer(const BufferCreateInfo& createInfo) noexcept
             -> std::shared_ptr<Buffer> = 0;
+        [[nodiscard]] virtual auto createShader(const ShaderCreateInfo& createInfo) noexcept
+            -> std::shared_ptr<Shader> = 0;
+        [[nodiscard]] virtual auto createPipeline(const PipelineCreateInfo& createInfo) noexcept
+            -> std::shared_ptr<Pipeline> = 0;
+        [[nodiscard]] virtual auto createResourceManager() noexcept
+            -> std::unique_ptr<ResourceManager> = 0;
 
         [[nodiscard]] virtual auto getHardwareSupport() const noexcept -> HardwareSupport = 0;
 

@@ -18,5 +18,13 @@ namespace exage::Graphics
         eFileNotReadable,
     };
 
-    using Error = std::variant<GraphicsError, FileError>;
+    namespace Errors
+    {
+        struct ShaderCompileFailed
+        {
+            std::string message;
+        };
+    }
+
+    using Error = std::variant<GraphicsError, FileError, Errors::ShaderCompileFailed>;
 }  // namespace exage::Graphics

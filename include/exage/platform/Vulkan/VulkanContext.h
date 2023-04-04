@@ -49,6 +49,12 @@ namespace exage::Graphics
             -> std::shared_ptr<FrameBuffer> override;
         [[nodiscard]] auto createBuffer(const BufferCreateInfo& createInfo) noexcept
             -> std::shared_ptr<Buffer> override;
+        [[nodiscard]] auto createShader(const ShaderCreateInfo& createInfo) noexcept
+            -> std::shared_ptr<Shader> override;
+		[[nodiscard]] auto createPipeline(const PipelineCreateInfo& createInfo) noexcept
+			-> std::shared_ptr<Pipeline> override;
+        [[nodiscard]] auto createResourceManager() noexcept
+			-> std::unique_ptr<ResourceManager> override;
 
         [[nodiscard]] auto getHardwareSupport() const noexcept -> HardwareSupport override;
 

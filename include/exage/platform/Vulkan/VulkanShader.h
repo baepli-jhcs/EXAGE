@@ -8,9 +8,7 @@ namespace exage::Graphics
     class EXAGE_EXPORT VulkanShader final : public Shader
     {
       public:
-        [[nodiscard]] static auto create(VulkanContext& context,
-                                         const ShaderCreateInfo& createInfo) noexcept
-            -> tl::expected<VulkanShader, Error>;
+        VulkanShader(VulkanContext& context, const ShaderCreateInfo& createInfo) noexcept;
         ~VulkanShader() override;
 
         EXAGE_DELETE_COPY(VulkanShader);
@@ -25,17 +23,6 @@ namespace exage::Graphics
         EXAGE_VULKAN_DERIVED;
 
       private:
-        VulkanShader(VulkanContext& context, Shader::Stage stage) noexcept
-            : _context(context)
-            , Shader(stage)
-        {
-        }
-        [[nodiscard]] auto init(const ShaderCreateInfo& createInfo) noexcept
-            -> std::optional<Error>;
-
-        [[nodiscard]] auto cacheCompile(const ShaderCreateInfo& createInfo) noexcept
-            -> tl::expected<std::vector<uint8_t>, Error>;
-
         std::reference_wrapper<VulkanContext> _context;
         vk::ShaderModule _shaderModule {};
     };

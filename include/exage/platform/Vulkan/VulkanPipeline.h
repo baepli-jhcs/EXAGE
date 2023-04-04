@@ -5,22 +5,25 @@
 
 namespace exage::Graphics
 {
-	class EXAGE_EXPORT VulkanPipeline final : public Pipeline
-	{
-	  public:
-		VulkanPipeline(VulkanContext& context, const PipelineCreateInfo& createInfo) noexcept;
-		virtual ~VulkanPipeline() = default;
+    class EXAGE_EXPORT VulkanPipeline final : public Pipeline
+    {
+      public:
+        VulkanPipeline(VulkanContext& context, const PipelineCreateInfo& createInfo) noexcept;
+        virtual ~VulkanPipeline();
 
-		EXAGE_DELETE_COPY(VulkanPipeline);
-		EXAGE_DEFAULT_MOVE(VulkanPipeline);
+        EXAGE_DELETE_COPY(VulkanPipeline);
 
-		[[nodiscard]] auto getPipeline() const noexcept -> vk::Pipeline { return _pipeline; }
+        VulkanPipeline(VulkanPipeline&& old) noexcept;
+        auto operator=(VulkanPipeline&& old) noexcept -> VulkanPipeline&;
 
-		EXAGE_VULKAN_DERIVED
+        [[nodiscard]] auto getPipeline() const noexcept -> vk::Pipeline { return _pipeline; }
 
-	  private:
-		std::reference_wrapper<VulkanContext> _context;
+        EXAGE_VULKAN_DERIVED
 
-		vk::Pipeline _pipeline;
-	};
+      private:
+        std::reference_wrapper<VulkanContext> _context;
+
+        vk::PipelineLayout _pipelineLayout;
+        vk::Pipeline _pipeline;
+    };
 }  // namespace exage::Graphics

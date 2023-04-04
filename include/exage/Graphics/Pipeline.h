@@ -11,16 +11,10 @@ namespace exage::Graphics
     {
         enum class Type
         {
-            eF32,
-            eF64,
-            eI8,
-            eI16,
-            eI32,
-            eI64,
-            eU8,
-            eU16,
+            eFloat,
             eU32,
-            eBool,
+            eI8,
+            eI32,
         };
 
         enum class InputRate
@@ -119,16 +113,65 @@ namespace exage::Graphics
             bool depthTest = true;
             bool writeDepth = true;
             CompareOperation depthCompare;
-            bool stencilTest = true;
+            bool stencilTest = false;
             StencilOperationState stencilFront;
             StencilOperationState stencilBack;
         };
 
+        struct ColorBlendAttachment
+        {
+            enum class BlendFactor
+            {
+                eZero,
+                eOne,
+                eSrcColor,
+                eOneMinusSrcColor,
+                eDstColor,
+                eOneMinusDstColor,
+                eSrcAlpha,
+                eOneMinusSrcAlpha,
+                eDstAlpha,
+                eOneMinusDstAlpha,
+                eConstantColor,
+                eOneMinusConstantColor,
+                eConstantAlpha,
+                eOneMinusConstantAlpha,
+                eSrcAlphaSaturate,
+                eSrc1Color,
+                eOneMinusSrc1Color,
+                eSrc1Alpha,
+                eOneMinusSrc1Alpha
+            };
+
+            bool blend = false;
+            BlendFactor srcColorBlendFactor = BlendFactor::eOne;
+            BlendFactor dstColorBlendFactor = BlendFactor::eOne;
+            BlendFactor srcAlphaBlendFactor = BlendFactor::eOne;
+            BlendFactor dstAlphaBlendFactor = BlendFactor::eOne;
+
+            enum class BlendOperation
+            {
+                eAdd,
+                eSubtract,
+                eReverseSubtract,
+                eMin,
+                eMax
+            };
+            BlendOperation colorBlendOp = BlendOperation::eAdd;
+            BlendOperation alphaBlendOp = BlendOperation::eAdd;
+        };
+
+        struct ColorBlendState
+        {
+            std::vector<ColorBlendAttachment> attachments;
+            glm::vec4 blendConstants = glm::vec4(0.f);
+        };
+
         struct RasterState
         {
-            PolygonMode polygonMode;
-            CullMode cullMode;
-            FrontFace frontFace;
+            PolygonMode polygonMode = PolygonMode::eFill;
+            CullMode cullMode = CullMode::eBack;
+            FrontFace frontFace = FrontFace::eCounterClockwise;
 
             float lineWidth = 1.f;
         };
@@ -151,10 +194,12 @@ namespace exage::Graphics
     struct PipelineCreateInfo
     {
         std::vector<VertexDescription> vertexDescriptions;
-		std::vector<ResourceDescription> resourceDescriptions;
-	    Pipeline::ShaderInfo shaderInfo;
-		Pipeline::RenderInfo renderInfo;
-		Pipeline::RasterState rasterState;
-		Pipeline::DepthStencilState depthStencilState;
-	};
+        std::vector<ResourceDescription> resourceDescriptions;
+        Pipeline::ShaderInfo shaderInfo;
+        Pipeline::ColorBlendState colorBlendState;
+        Pipeline::RenderInfo renderInfo;
+        Pipeline::RasterState rasterState;
+        Pipeline::DepthStencilState depthStencilState;
+        uint32_t pushConstantSize;
+    };
 }  // namespace exage::Graphics
