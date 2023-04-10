@@ -38,17 +38,8 @@ namespace exage
         Monitor exclusiveMonitor;
     };
 
-    struct ResizeCallback
-    {
-        void* data;
-        void (*callback)(void* data, glm::uvec2 extent);
-    };
-
-    struct KeyCallback
-    {
-        void* data;
-        void (*callback)(void* data, KeyCode key, KeyAction action);
-    };
+    using ResizeCallback = std::function<void(glm::uvec2 extent)>;
+    using KeyCallback = std::function<void(KeyCode key, KeyAction action)>;
 
     class EXAGE_EXPORT Window
     {
@@ -61,11 +52,8 @@ namespace exage
         virtual void update() noexcept = 0;
         virtual void close() noexcept = 0;
 
-        virtual void addResizeCallback(const ResizeCallback& callback) noexcept = 0;
-        virtual void removeResizeCallback(const ResizeCallback& callback) noexcept = 0;
-
-        virtual void addKeyCallback(const KeyCallback& callback) noexcept = 0;
-        virtual void removeKeyCallback(const KeyCallback& callback) noexcept = 0;
+        virtual void setResizeCallback(ResizeCallback callback) noexcept = 0;
+        virtual void setKeyCallback(KeyCallback callback) noexcept = 0;
 
         [[nodiscard]] virtual auto getName() const noexcept -> std::string_view = 0;
 

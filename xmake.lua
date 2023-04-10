@@ -1,6 +1,6 @@
 ﻿add_rules("mode.debug", "mode.release", "mode.releasedbg")
 
-add_requires("debugbreak", "entt v3.11.1", "fmt", "glfw", "glm", "magic_enum", "shaderc v2022.2", "unordered_dense v3.0.0", "vk-bootstrap", "vulkan-headers")
+add_requires("cereal 1.3.2", "debugbreak", "entt v3.11.1", "fmt", "glfw", "glm", "magic_enum", "shaderc v2022.2", "unordered_dense v3.0.0", "vk-bootstrap", "vulkan-headers")
 add_requires("vcpkg::alpaca", {alias = "alpaca"})
 add_requires("imgui v1.89.3-docking", {alias = "imgui", configs = {shared = true}})
 add_requires("vcpkg::tl-expected", {alias = "tl_expected"})
@@ -18,7 +18,7 @@ target("EXAGE")
     add_headerfiles("include/exage/**.h")
     add_includedirs("include", {public = true})
 
-    add_packages("alpaca", "debugbreak", "entt", "fmt", "glfw", "glm", "imgui", "magic_enum", "shaderc", "tl_expected", "unordered_dense", "vk-bootstrap", "vulkan-headers", "vma-hpp", {public = true})
+    add_packages("alpaca", "cereal", "debugbreak", "entt", "fmt", "glfw", "glm", "imgui", "magic_enum", "shaderc", "tl_expected", "unordered_dense", "vk-bootstrap", "vulkan-headers", "vma-hpp", {public = true})
 
     if is_mode("debug") or is_mode("releasedbg") then
         add_defines("EXAGE_DEBUG")

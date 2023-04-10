@@ -47,6 +47,8 @@ namespace exage::Graphics
             -> std::shared_ptr<Texture> override;
         [[nodiscard]] auto createFrameBuffer(glm::uvec2 extent) noexcept
             -> std::shared_ptr<FrameBuffer> override;
+        [[nodiscard]] auto createFrameBuffer(const FrameBufferCreateInfo& createInfo) noexcept
+            -> std::shared_ptr<FrameBuffer> override;
         [[nodiscard]] auto createBuffer(const BufferCreateInfo& createInfo) noexcept
             -> std::shared_ptr<Buffer> override;
         [[nodiscard]] auto createShader(const ShaderCreateInfo& createInfo) noexcept

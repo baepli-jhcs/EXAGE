@@ -8,6 +8,26 @@
 
 namespace exage::Graphics
 {
+    struct FrameBufferCreateInfo
+    {
+        glm::uvec2 extent;
+
+        struct ColorAttachmentInfo
+        {
+            Texture::Format format;
+            Texture::Usage usage = Texture::UsageFlags::eColorAttachment;
+        };
+
+        struct DepthAttachmentInfo
+        {
+            Texture::Format format;
+			Texture::Usage usage = Texture::UsageFlags::eDepthStencilAttachment;
+		};
+        
+        std::vector<ColorAttachmentInfo> colorAttachments;
+        std::optional<DepthAttachmentInfo> depthAttachment;
+    };
+
     class EXAGE_EXPORT FrameBuffer
     {
       public:

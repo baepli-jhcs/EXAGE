@@ -9,6 +9,7 @@ namespace exage::Graphics
 {
     struct SwapchainCreateInfo;
     struct TextureCreateInfo;
+    struct FrameBufferCreateInfo;
     struct BufferCreateInfo;
     struct ShaderCreateInfo;
     struct PipelineCreateInfo;
@@ -65,6 +66,8 @@ namespace exage::Graphics
         [[nodiscard]] virtual auto createTexture(const TextureCreateInfo& createInfo) noexcept
             -> std::shared_ptr<Texture> = 0;
         [[nodiscard]] virtual auto createFrameBuffer(glm::uvec2 extent) noexcept
+            -> std::shared_ptr<FrameBuffer> = 0;
+        [[nodiscard]] virtual auto createFrameBuffer(const FrameBufferCreateInfo& createInfo) noexcept
             -> std::shared_ptr<FrameBuffer> = 0;
         [[nodiscard]] virtual auto createBuffer(const BufferCreateInfo& createInfo) noexcept
             -> std::shared_ptr<Buffer> = 0;

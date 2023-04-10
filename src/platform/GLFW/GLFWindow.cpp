@@ -261,8 +261,11 @@ namespace exage
         {
             glfwWindowHint(GLFW_REFRESH_RATE, info.exclusiveRefreshRate);
 
-            _window = glfwCreateWindow(
-                static_cast<int>(_extent.x), static_cast<int>(_extent.y), _name.c_str(), exclusiveMonitor(), nullptr);
+            _window = glfwCreateWindow(static_cast<int>(_extent.x),
+                                       static_cast<int>(_extent.y),
+                                       _name.c_str(),
+                                       exclusiveMonitor(),
+                                       nullptr);
         }
         else
         {
@@ -275,8 +278,11 @@ namespace exage
                 glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
             }
 
-            _window =
-                glfwCreateWindow(static_cast<int>(_extent.x), static_cast<int>(_extent.y), _name.c_str(), nullptr, nullptr);
+            _window = glfwCreateWindow(static_cast<int>(_extent.x),
+                                       static_cast<int>(_extent.y),
+                                       _name.c_str(),
+                                       nullptr,
+                                       nullptr);
         }
 
         glfwSetWindowUserPointer(_window, this);
@@ -300,28 +306,14 @@ namespace exage
         glfwSetWindowShouldClose(_window, GLFW_TRUE);
     }
 
-    void GLFWindow::addResizeCallback(const ResizeCallback& callback) noexcept
+    void GLFWindow::setResizeCallback(ResizeCallback callback) noexcept
     {
-        _resizeCallbacks.push_back(callback);
+        _resizeCallback = std::move(callback);
     }
 
-    void GLFWindow::removeResizeCallback(const ResizeCallback& callback) noexcept
+    void GLFWindow::setKeyCallback(KeyCallback callback) noexcept
     {
-        std::erase_if(_resizeCallbacks,
-                      [&](const ResizeCallback& cab)
-                      { return cab.callback == callback.callback && cab.data == callback.data; });
-    }
-
-    void GLFWindow::addKeyCallback(const KeyCallback& callback) noexcept
-    {
-        _keyCallbacks.push_back(callback);
-    }
-
-    void GLFWindow::removeKeyCallback(const KeyCallback& callback) noexcept
-    {
-        std::erase_if(_keyCallbacks,
-                      [&](const KeyCallback& cab)
-                      { return cab.callback == callback.callback && cab.data == callback.data; });
+        _keyCallback = std::move(callback);
     }
 
     void GLFWindow::resizeCallback(GLFWwindow* window, int width, int height)
@@ -335,10 +327,7 @@ namespace exage
 
         win->_extent = {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
 
-        for (const ResizeCallback& callback : win->_resizeCallbacks)
-        {
-            callback.callback(callback.data, win->_extent);
-        }
+        win->_resizeCallback(win->_extent);
     }
 
     void GLFWindow::keyCallback(
@@ -365,11 +354,7 @@ namespace exage
         }
 
         auto keyCode = toKeyCode(key);
-
-        for (const KeyCallback& callback : win->_keyCallbacks)
-        {
-            callback.callback(callback.data, keyCode, keyAction);
-        }
+        win->_keyCallback(keyCode, keyAction);
     }
 
     auto GLFWindow::exclusiveMonitor() const noexcept -> GLFWmonitor*

@@ -9,6 +9,38 @@ namespace exage::Graphics
         , _context(context)
     {
     }
+    VulkanFrameBuffer::VulkanFrameBuffer(VulkanContext& context,
+                                         const FrameBufferCreateInfo& createInfo) noexcept
+        : VulkanFrameBuffer(context, createInfo.extent)
+    {
+        TextureCreateInfo colorCreateInfo {};
+        colorCreateInfo.extent = glm::uvec3 {createInfo.extent, 1};
+        colorCreateInfo.type = Texture::Type::e2D;
+        colorCreateInfo.mipLevels = 1;
+        colorCreateInfo.arrayLayers = 1;
+        colorCreateInfo.samplerCreateInfo.anisotropy = Sampler::Anisotropy::eDisabled;
+        colorCreateInfo.samplerCreateInfo.filter = Sampler::Filter::eNearest;
+        colorCreateInfo.samplerCreateInfo.mipmapMode = Sampler::MipmapMode::eLinear;
+
+        for (auto& color : createInfo.colorAttachments)
+        {
+            colorCreateInfo.format = color.format;
+            colorCreateInfo.usage = color.usage;
+            auto texture = context.createTexture(colorCreateInfo);
+            attachColor(texture);
+        }
+
+        if (createInfo.depthAttachment)
+        {
+            TextureCreateInfo depthCreateInfo {};
+            depthCreateInfo.extent = glm::uvec3 {createInfo.extent, 1};
+            depthCreateInfo.type = Texture::Type::e2D;
+            depthCreateInfo.format = createInfo.depthAttachment->format;
+            depthCreateInfo.usage = createInfo.depthAttachment->usage;
+            auto texture = context.createTexture(depthCreateInfo);
+            attachOrReplaceDepthStencil(texture);
+        }
+    }
     auto VulkanFrameBuffer::getTexture(size_t index) const noexcept -> std::shared_ptr<Texture>
     {
         if (index >= _textures.size())
@@ -25,7 +57,7 @@ namespace exage::Graphics
 
     void VulkanFrameBuffer::resize(glm::uvec2 extent) noexcept
     {
-        for (auto & texture : _textures)
+        for (auto& texture : _textures)
         {
             TextureCreateInfo createInfo = texture->getTextureCreateInfo();
             createInfo.extent = glm::uvec3 {extent.x, extent.y, 1};
@@ -45,7 +77,7 @@ namespace exage::Graphics
     }
 
     void VulkanFrameBuffer::attachColor(std::shared_ptr<Texture> texture) noexcept
-        
+
     {
         debugAssume(texture->getExtent() == glm::uvec3 {_extent.x, _extent.y, 1},
                     "Mismatched framebuffer/texture extent");

@@ -21,11 +21,8 @@ namespace exage
         void update() noexcept override;
         void close() noexcept override;
 
-        void addResizeCallback(const ResizeCallback& callback) noexcept override;
-        void removeResizeCallback(const ResizeCallback& callback) noexcept override;
-
-        void addKeyCallback(const KeyCallback& callback) noexcept override;
-        void removeKeyCallback(const KeyCallback& callback) noexcept override;
+        void setResizeCallback(ResizeCallback callback) noexcept override;
+        void setKeyCallback(KeyCallback callback) noexcept override;
 
         [[nodiscard]] auto getName() const noexcept -> std::string_view override { return _name; }
 
@@ -86,7 +83,7 @@ namespace exage
         uint32_t _exclusiveRefreshRate;
         Monitor _exclusiveMonitor;
 
-        std::vector<ResizeCallback> _resizeCallbacks;
-        std::vector<KeyCallback> _keyCallbacks;
+        ResizeCallback _resizeCallback;
+        KeyCallback _keyCallback;
     };
 }  // namespace exage

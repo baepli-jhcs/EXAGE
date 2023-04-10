@@ -9,6 +9,7 @@ namespace exage::Graphics
     {
       public:
         VulkanFrameBuffer(VulkanContext& context, glm::uvec2 extent) noexcept;
+        VulkanFrameBuffer(VulkanContext& context, const FrameBufferCreateInfo& createInfo) noexcept;
         ~VulkanFrameBuffer() override = default;
 
         EXAGE_DELETE_COPY(VulkanFrameBuffer);

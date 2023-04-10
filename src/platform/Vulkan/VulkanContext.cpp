@@ -315,6 +315,12 @@ namespace exage::Graphics
         return std::make_shared<VulkanFrameBuffer>(*this, extent);
     }
 
+    auto VulkanContext::createFrameBuffer(const FrameBufferCreateInfo& createInfo) noexcept
+        -> std::shared_ptr<FrameBuffer>
+    {
+        return std::make_shared<VulkanFrameBuffer>(*this, createInfo);
+    }
+
     auto VulkanContext::createBuffer(const BufferCreateInfo& createInfo) noexcept
         -> std::shared_ptr<Buffer>
     {
