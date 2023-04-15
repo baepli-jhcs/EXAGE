@@ -37,6 +37,7 @@ namespace exage::Graphics
             depthCreateInfo.type = Texture::Type::e2D;
             depthCreateInfo.format = createInfo.depthAttachment->format;
             depthCreateInfo.usage = createInfo.depthAttachment->usage;
+            
             auto texture = context.createTexture(depthCreateInfo);
             attachOrReplaceDepthStencil(texture);
         }
