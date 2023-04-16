@@ -7,6 +7,8 @@
 
 namespace exage::Graphics
 {
+    using namespace Commands;
+
     VulkanCommandBuffer::VulkanCommandBuffer(VulkanContext& context) noexcept
         : _context(context)
     {
@@ -42,15 +44,14 @@ namespace exage::Graphics
     }
 
     VulkanCommandBuffer::VulkanCommandBuffer(VulkanCommandBuffer&& old) noexcept
-        : _context(old._context), _commandBuffer(old._commandBuffer), _commandPool(old._commandPool), _commands(std::move(old._commands)), _commandsMutex(std::move(old._commandsMutex)), _dataDependencies(std::move(old._dataDependencies)), _dataDependenciesMutex(std::move(old._dataDependenciesMutex))
+        : _context(old._context)
+        , _commandBuffer(old._commandBuffer)
+        , _commandPool(old._commandPool)
+        , _commands(std::move(old._commands))
+        , _commandsMutex(std::move(old._commandsMutex))
+        , _dataDependencies(std::move(old._dataDependencies))
+        , _dataDependenciesMutex(std::move(old._dataDependenciesMutex))
     {
-        
-        
-        
-        
-        
-        
-
         old._commandBuffer = nullptr;
         old._commandPool = nullptr;
     }
@@ -123,7 +124,7 @@ namespace exage::Graphics
                                    uint32_t firstVertex,
                                    uint32_t firstInstance) noexcept
     {
-        DrawCommand drawCommand{};
+        DrawCommand drawCommand {};
         drawCommand.vertexCount = vertexCount;
         drawCommand.instanceCount = instanceCount;
         drawCommand.firstVertex = firstVertex;
@@ -139,7 +140,7 @@ namespace exage::Graphics
                                           uint32_t vertexOffset,
                                           uint32_t firstInstance) noexcept
     {
-        DrawIndexedCommand drawIndexedCommand{};
+        DrawIndexedCommand drawIndexedCommand {};
         drawIndexedCommand.indexCount = indexCount;
         drawIndexedCommand.instanceCount = instanceCount;
         drawIndexedCommand.firstIndex = firstIndex;
@@ -218,7 +219,7 @@ namespace exage::Graphics
 
     void VulkanCommandBuffer::setViewport(glm::uvec2 offset, glm::uvec2 extent) noexcept
     {
-        SetViewportCommand setViewportCommand{};
+        SetViewportCommand setViewportCommand {};
         setViewportCommand.offset = offset;
         setViewportCommand.extent = extent;
 
@@ -228,7 +229,7 @@ namespace exage::Graphics
 
     void VulkanCommandBuffer::setScissor(glm::uvec2 offset, glm::uvec2 extent) noexcept
     {
-        SetScissorCommand setScissorCommand{};
+        SetScissorCommand setScissorCommand {};
         setScissorCommand.offset = offset;
         setScissorCommand.extent = extent;
 
@@ -474,9 +475,9 @@ namespace exage::Graphics
                 {
                     vk::Viewport viewport {};
                     viewport.x = cmd.offset.x;
-                    viewport.y = cmd.offset.y;
+                    viewport.y = cmd.offset.y + cmd.extent.y;
                     viewport.width = cmd.extent.x;
-                    viewport.height = cmd.extent.y;
+                    viewport.height = -cmd.extent.y;
                     viewport.maxDepth = 1.0;
                     viewport.minDepth = 0.0;
 
@@ -549,7 +550,8 @@ namespace exage::Graphics
                     renderingInfo.colorAttachmentCount = static_cast<uint32_t>(info.size());
                     renderingInfo.pColorAttachments = info.data();
 
-                    std::shared_ptr<Texture> const depthTexture = frameBuffer.getDepthStencilTexture();
+                    std::shared_ptr<Texture> const depthTexture =
+                        frameBuffer.getDepthStencilTexture();
                     if (depthTexture)
                     {
                         auto& vulkanTexture = *depthTexture->as<VulkanTexture>();
@@ -570,7 +572,7 @@ namespace exage::Graphics
 
                     _commandBuffer.beginRendering(renderingInfo);
                 },
-                [this](const EndRenderingCommand&  /*cmd*/) { _commandBuffer.endRendering(); },
+                [this](const EndRenderingCommand& /*cmd*/) { _commandBuffer.endRendering(); },
                 [this](const CopyBufferCommand& cmd)
                 {
                     auto& srcBuffer = *cmd.srcBuffer->as<VulkanBuffer>();

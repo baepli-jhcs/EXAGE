@@ -254,6 +254,35 @@ namespace exage::Graphics
 
         _queue = VulkanQueue {*this, queueCreateInfo};
 
+        {
+            auto depthFormatFirstPick = vk::Format::eD24UnormS8Uint;
+            auto depthFormatSecondPick = vk::Format::eD32SfloatS8Uint;
+
+            vk::FormatProperties formatProperties;
+
+            vk::PhysicalDevice physicalDevice = _physicalDevice.physical_device;
+
+            formatProperties = physicalDevice.getFormatProperties(depthFormatFirstPick);
+            if (formatProperties.optimalTilingFeatures &
+                vk::FormatFeatureFlagBits::eDepthStencilAttachment)
+            {
+				_hardwareSupport.depthFormat = Format::eDepth24Stencil8;
+			}
+            else
+            {
+				formatProperties = physicalDevice.getFormatProperties(depthFormatSecondPick);
+                if (formatProperties.optimalTilingFeatures &
+                    vk::FormatFeatureFlagBits::eDepthStencilAttachment)
+                {
+					_hardwareSupport.depthFormat = Format::eDepth32Stencil8;
+				}
+                else
+                {
+					debugAssume(false, "Failed to find a suitable depth format");
+				}
+			}
+        }
+
         return std::nullopt;
     }
 

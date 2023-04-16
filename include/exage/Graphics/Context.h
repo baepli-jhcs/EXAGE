@@ -38,12 +38,15 @@ namespace exage::Graphics
     class Pipeline;
     class ResourceManager;
 
+    enum class Format : uint32_t;
+
     struct HardwareSupport
     {
         bool bindlessTexture = false;
         bool bindlessBuffer = false;
 
         bool bufferAddress = false;  // as in VK_EXT_buffer_device_address
+        Format depthFormat;
     };
 
     class EXAGE_EXPORT Context
@@ -67,8 +70,8 @@ namespace exage::Graphics
             -> std::shared_ptr<Texture> = 0;
         [[nodiscard]] virtual auto createFrameBuffer(glm::uvec2 extent) noexcept
             -> std::shared_ptr<FrameBuffer> = 0;
-        [[nodiscard]] virtual auto createFrameBuffer(const FrameBufferCreateInfo& createInfo) noexcept
-            -> std::shared_ptr<FrameBuffer> = 0;
+        [[nodiscard]] virtual auto createFrameBuffer(
+            const FrameBufferCreateInfo& createInfo) noexcept -> std::shared_ptr<FrameBuffer> = 0;
         [[nodiscard]] virtual auto createBuffer(const BufferCreateInfo& createInfo) noexcept
             -> std::shared_ptr<Buffer> = 0;
         [[nodiscard]] virtual auto createShader(const ShaderCreateInfo& createInfo) noexcept

@@ -46,7 +46,7 @@ namespace exage::Graphics
         std::reference_wrapper<VulkanContext> _context;
 
         vk::SurfaceKHR _surface = nullptr;
-        Texture::Format _format = Texture::Format::eRGBA8;
+        Format _format = Format::eRGBA8;
         Texture::Layout _layout = Texture::Layout::eUndefined;
         vk::Format _vkFormat = vk::Format::eR8G8B8A8Unorm;
         PresentMode _presentMode;

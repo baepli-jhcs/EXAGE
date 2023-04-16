@@ -16,8 +16,8 @@ namespace exage::Graphics
         createSwapchain();
     }
 
-    constexpr auto DESIRED_FORMAT = toVulkanFormat(Texture::Format::eRGBA8);
-    constexpr auto FALLBACK_FORMAT = toVulkanFormat(Texture::Format::eBGRA8);
+    constexpr auto DESIRED_FORMAT = toVulkanFormat(Format::eRGBA8);
+    constexpr auto FALLBACK_FORMAT = toVulkanFormat(Format::eBGRA8);
 
     void VulkanSwapchain::createSurface(Window& window) noexcept
     {
@@ -51,11 +51,11 @@ namespace exage::Graphics
 
         if (static_cast<vk::Format>(_swapchain.image_format) == DESIRED_FORMAT)
         {
-            _format = Texture::Format::eRGBA8;
+            _format = Format::eRGBA8;
         }
         else if (static_cast<vk::Format>(_swapchain.image_format) == FALLBACK_FORMAT)
         {
-            _format = Texture::Format::eBGRA8;
+            _format = Format::eBGRA8;
         }
 
         auto images = _swapchain.get_images();

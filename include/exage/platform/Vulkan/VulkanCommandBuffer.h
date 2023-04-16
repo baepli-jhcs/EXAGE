@@ -106,13 +106,13 @@ namespace exage::Graphics
         EXAGE_VULKAN_DERIVED
 
       private:
-        void processCommand(const GPUCommand& command) noexcept;
+        void processCommand(const Commands::GPUCommand& command) noexcept;
 
         std::reference_wrapper<VulkanContext> _context;
         vk::CommandPool _commandPool;
         vk::CommandBuffer _commandBuffer;
 
-        std::vector<GPUCommand> _commands {};
+        std::vector<Commands::GPUCommand> _commands {};
         std::vector<DataDependency> _dataDependencies {};
         std::unique_ptr<std::mutex> _commandsMutex = std::make_unique<std::mutex>();
         std::unique_ptr<std::mutex> _dataDependenciesMutex = std::make_unique<std::mutex>();

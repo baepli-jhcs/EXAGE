@@ -39,51 +39,51 @@ namespace exage::Graphics
         }
     }
 
-    [[nodiscard]] constexpr auto toVulkanFormat(Texture::Format format) noexcept -> vk::Format
+    [[nodiscard]] constexpr auto toVulkanFormat(Format format) noexcept -> vk::Format
     {
         switch (format)
         {
-            case Texture::Format::eR8:
+            case Format::eR8:
                 return vk::Format::eR8Unorm;
-            case Texture::Format::eR16:
+            case Format::eR16:
                 return vk::Format::eR16Unorm;
-            case Texture::Format::eRG8:
+            case Format::eRG8:
                 return vk::Format::eR8G8Unorm;
-            case Texture::Format::eRG16:
+            case Format::eRG16:
                 return vk::Format::eR16G16Unorm;
-            case Texture::Format::eRGB8:
+            case Format::eRGB8:
                 return vk::Format::eR8G8B8Unorm;
-            case Texture::Format::eRGB16:
+            case Format::eRGB16:
                 return vk::Format::eR16G16B16Unorm;
-            case Texture::Format::eRGBA8:
+            case Format::eRGBA8:
                 return vk::Format::eR8G8B8A8Unorm;
-            case Texture::Format::eRGBA16:
+            case Format::eRGBA16:
                 return vk::Format::eR16G16B16A16Unorm;
 
-            case Texture::Format::eR16f:
+            case Format::eR16f:
                 return vk::Format::eR16Sfloat;
-            case Texture::Format::eRG16f:
+            case Format::eRG16f:
                 return vk::Format::eR16G16Sfloat;
-            case Texture::Format::eRGB16f:
+            case Format::eRGB16f:
                 return vk::Format::eR16G16B16Sfloat;
-            case Texture::Format::eRGBA16f:
+            case Format::eRGBA16f:
                 return vk::Format::eR16G16B16A16Sfloat;
 
-            case Texture::Format::eR32f:
+            case Format::eR32f:
                 return vk::Format::eR32Sfloat;
-            case Texture::Format::eRG32f:
+            case Format::eRG32f:
                 return vk::Format::eR32G32Sfloat;
-            case Texture::Format::eRGB32f:
+            case Format::eRGB32f:
                 return vk::Format::eR32G32B32Sfloat;
-            case Texture::Format::eRGBA32f:
+            case Format::eRGBA32f:
                 return vk::Format::eR32G32B32A32Sfloat;
 
-            case Texture::Format::eDepth24Stencil8:
+            case Format::eDepth24Stencil8:
                 return vk::Format::eD24UnormS8Uint;
-            case Texture::Format::eDepth32Stencil8:
+            case Format::eDepth32Stencil8:
                 return vk::Format::eD32SfloatS8Uint;
 
-            case Texture::Format::eBGRA8:
+            case Format::eBGRA8:
                 return vk::Format::eB8G8R8A8Unorm;
 
             default:

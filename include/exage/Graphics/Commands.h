@@ -8,6 +8,7 @@
 #include "exage/Graphics/Context.h"
 #include "exage/Graphics/FrameBuffer.h"
 #include "exage/Graphics/Texture.h"
+#include "exage/Graphics/Utils/RAII.h"
 
 namespace exage::Graphics
 {
@@ -59,78 +60,6 @@ namespace exage::Graphics
     using Access = Flags<AccessFlags>;
     EXAGE_ENABLE_FLAGS(Access);
 
-    struct DrawCommand
-    {
-        uint32_t vertexCount;
-        uint32_t instanceCount;
-        uint32_t firstVertex;
-        uint32_t firstInstance;
-    };
-
-    struct DrawIndexedCommand
-    {
-        uint32_t indexCount;
-        uint32_t instanceCount;
-        uint32_t firstIndex;
-        int32_t vertexOffset;
-        uint32_t firstInstance;
-    };
-
-    struct TextureBarrierCommand
-    {
-        std::shared_ptr<Texture> texture;
-        Texture::Layout newLayout;
-        Texture::Layout oldLayout;
-        PipelineStage srcStage;
-        PipelineStage dstStage;
-        Access srcAccess;
-        Access dstAccess;
-    };
-
-    struct BufferBarrierCommand
-    {
-        std::shared_ptr<Buffer> buffer;
-        PipelineStage srcStage;
-        PipelineStage dstStage;
-        Access srcAccess;
-        Access dstAccess;
-    };
-
-    struct BlitCommand
-    {
-        std::shared_ptr<Texture> srcTexture;
-        std::shared_ptr<Texture> dstTexture;
-        glm::uvec3 srcOffset;
-        glm::uvec3 dstOffset;
-        uint32_t srcMipLevel;
-        uint32_t dstMipLevel;
-        uint32_t srcFirstLayer;
-        uint32_t dstFirstLayer;
-        uint32_t layerCount;
-        glm::uvec3 extent;
-    };
-
-    struct SetViewportCommand
-    {
-        glm::uvec2 offset;
-        glm::uvec2 extent;
-    };
-
-    struct SetScissorCommand
-    {
-        glm::uvec2 offset;
-        glm::uvec2 extent;
-    };
-
-    struct ClearTextureCommand
-    {
-        std::shared_ptr<Texture> texture;
-        glm::vec4 color;
-        uint32_t mipLevel;
-        uint32_t firstLayer;
-        uint32_t layerCount;
-    };
-
     struct ClearColor
     {
         bool clear;
@@ -144,72 +73,148 @@ namespace exage::Graphics
         uint32_t stencil;
     };
 
-    struct BeginRenderingCommand
+    namespace Commands
     {
-        std::shared_ptr<FrameBuffer> frameBuffer;
-        std::vector<ClearColor> clearColors;
-        ClearDepthStencil clearDepth;
-    };
+        struct DrawCommand
+        {
+            uint32_t vertexCount;
+            uint32_t instanceCount;
+            uint32_t firstVertex;
+            uint32_t firstInstance;
+        };
 
-    struct EndRenderingCommand
-    {
-    };
+        struct DrawIndexedCommand
+        {
+            uint32_t indexCount;
+            uint32_t instanceCount;
+            uint32_t firstIndex;
+            int32_t vertexOffset;
+            uint32_t firstInstance;
+        };
 
-    struct UserDefinedCommand
-    {
-        std::function<void(CommandBuffer&)> commandFunction;
-    };
+        struct TextureBarrierCommand
+        {
+            std::shared_ptr<Texture> texture;
+            Texture::Layout newLayout;
+            Texture::Layout oldLayout;
+            PipelineStage srcStage;
+            PipelineStage dstStage;
+            Access srcAccess;
+            Access dstAccess;
+        };
 
-    struct CopyBufferCommand
-    {
-        std::shared_ptr<Buffer> srcBuffer;
-        std::shared_ptr<Buffer> dstBuffer;
-        size_t srcOffset;
-        size_t dstOffset;
-        size_t size;
-    };
+        struct BufferBarrierCommand
+        {
+            std::shared_ptr<Buffer> buffer;
+            PipelineStage srcStage;
+            PipelineStage dstStage;
+            Access srcAccess;
+            Access dstAccess;
+        };
 
-    struct CopyBufferToTextureCommand
-    {
-        std::shared_ptr<Buffer> srcBuffer;
-        std::shared_ptr<Texture> dstTexture;
-        size_t srcOffset;
-        glm::uvec3 dstOffset;
-        uint32_t dstMipLevel;
-        uint32_t dstFirstLayer;
-        uint32_t layerCount;
-        glm::uvec3 extent;
-    };
+        struct BlitCommand
+        {
+            std::shared_ptr<Texture> srcTexture;
+            std::shared_ptr<Texture> dstTexture;
+            glm::uvec3 srcOffset;
+            glm::uvec3 dstOffset;
+            uint32_t srcMipLevel;
+            uint32_t dstMipLevel;
+            uint32_t srcFirstLayer;
+            uint32_t dstFirstLayer;
+            uint32_t layerCount;
+            glm::uvec3 extent;
+        };
 
-    struct CopyTextureToBufferCommand
-    {
-        std::shared_ptr<Texture> srcTexture;
-        std::shared_ptr<Buffer> dstBuffer;
-        glm::uvec3 srcOffset;
-        uint32_t srcMipLevel;
-        uint32_t srcFirstLayer;
-        uint32_t layerCount;
-        glm::uvec3 extent;
-        size_t dstOffset;
-    };
+        struct SetViewportCommand
+        {
+            glm::uvec2 offset;
+            glm::uvec2 extent;
+        };
 
-    using GPUCommand = std::variant<DrawCommand,
-                                    DrawIndexedCommand,
-                                    TextureBarrierCommand,
-                                    BufferBarrierCommand,
-                                    BlitCommand,
-                                    UserDefinedCommand,
-                                    SetViewportCommand,
-                                    SetScissorCommand,
-                                    ClearTextureCommand,
-                                    BeginRenderingCommand,
-                                    EndRenderingCommand,
-                                    CopyBufferCommand,
-                                    CopyBufferToTextureCommand,
-                                    CopyTextureToBufferCommand>;
+        struct SetScissorCommand
+        {
+            glm::uvec2 offset;
+            glm::uvec2 extent;
+        };
 
-    using DataDependency =
-        std::variant<std::shared_ptr<Texture>,
-                     std::shared_ptr<Buffer>,
-                     std::shared_ptr<FrameBuffer>>;  // Only required for user defined commands
+        struct ClearTextureCommand
+        {
+            std::shared_ptr<Texture> texture;
+            glm::vec4 color;
+            uint32_t mipLevel;
+            uint32_t firstLayer;
+            uint32_t layerCount;
+        };
+
+        struct BeginRenderingCommand
+        {
+            std::shared_ptr<FrameBuffer> frameBuffer;
+            std::vector<ClearColor> clearColors;
+            ClearDepthStencil clearDepth;
+        };
+
+        struct EndRenderingCommand
+        {
+        };
+
+        struct UserDefinedCommand
+        {
+            std::function<void(CommandBuffer&)> commandFunction;
+        };
+
+        struct CopyBufferCommand
+        {
+            std::shared_ptr<Buffer> srcBuffer;
+            std::shared_ptr<Buffer> dstBuffer;
+            size_t srcOffset;
+            size_t dstOffset;
+            size_t size;
+        };
+
+        struct CopyBufferToTextureCommand
+        {
+            std::shared_ptr<Buffer> srcBuffer;
+            std::shared_ptr<Texture> dstTexture;
+            size_t srcOffset;
+            glm::uvec3 dstOffset;
+            uint32_t dstMipLevel;
+            uint32_t dstFirstLayer;
+            uint32_t layerCount;
+            glm::uvec3 extent;
+        };
+
+        struct CopyTextureToBufferCommand
+        {
+            std::shared_ptr<Texture> srcTexture;
+            std::shared_ptr<Buffer> dstBuffer;
+            glm::uvec3 srcOffset;
+            uint32_t srcMipLevel;
+            uint32_t srcFirstLayer;
+            uint32_t layerCount;
+            glm::uvec3 extent;
+            size_t dstOffset;
+        };
+
+        using GPUCommand = std::variant<DrawCommand,
+                                        DrawIndexedCommand,
+                                        TextureBarrierCommand,
+                                        BufferBarrierCommand,
+                                        BlitCommand,
+                                        UserDefinedCommand,
+                                        SetViewportCommand,
+                                        SetScissorCommand,
+                                        ClearTextureCommand,
+                                        BeginRenderingCommand,
+                                        EndRenderingCommand,
+                                        CopyBufferCommand,
+                                        CopyBufferToTextureCommand,
+                                        CopyTextureToBufferCommand>;
+    }  // namespace Commands
+
+    using DataDependency = std::variant<std::shared_ptr<Texture>,
+                                        std::shared_ptr<Buffer>,
+                                        std::shared_ptr<FrameBuffer>,
+                                        std::shared_ptr<RAII::BufferID>,
+                                        std::shared_ptr<RAII::TextureID>>;
 }  // namespace exage::Graphics

@@ -17,7 +17,7 @@ namespace exage::Renderer
         frameBufferCreateInfo.extent = _extent;
         frameBufferCreateInfo.colorAttachments.resize(1);
         frameBufferCreateInfo.colorAttachments[0] = {
-            Graphics::Texture::Format::eRGBA8,
+            Graphics::Format::eRGBA8,
             Graphics::Texture::UsageFlags::eColorAttachment
                 | Graphics::Texture::UsageFlags::eTransferSource};
 

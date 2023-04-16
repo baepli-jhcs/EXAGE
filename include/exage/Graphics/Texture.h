@@ -7,6 +7,29 @@
 
 namespace exage::Graphics
 {
+    enum class Format : uint32_t
+    {
+        eR8,
+        eR16,
+        eRG8,
+        eRG16,
+        eRGB8,
+        eRGB16,
+        eRGBA8,
+        eRGBA16,
+        eR16f,
+        eRG16f,
+        eRGB16f,
+        eRGBA16f,
+        eR32f,
+        eRG32f,
+        eRGB32f,
+        eRGBA32f,
+        eDepth24Stencil8,
+        eDepth32Stencil8,
+        eBGRA8,
+    };
+
     struct SamplerCreateInfo;
     
     struct EXAGE_EXPORT Sampler
@@ -66,7 +89,6 @@ namespace exage::Graphics
     class EXAGE_EXPORT Texture
     {
       public:
-        enum class Format : uint32_t;
         enum class Type : uint32_t;
         enum class Layout : uint32_t;
 
@@ -98,29 +120,6 @@ namespace exage::Graphics
 
         [[nodiscard]] virtual auto getSampler() noexcept -> Sampler& = 0;
         [[nodiscard]] virtual auto getSampler() const noexcept -> const Sampler& = 0;
-
-        enum class Format : uint32_t
-        {
-            eR8,
-            eR16,
-            eRG8,
-            eRG16,
-            eRGB8,
-            eRGB16,
-            eRGBA8,
-            eRGBA16,
-            eR16f,
-            eRG16f,
-            eRGB16f,
-            eRGBA16f,
-            eR32f,
-            eRG32f,
-            eRGB32f,
-            eRGBA32f,
-            eDepth24Stencil8,
-            eDepth32Stencil8,
-            eBGRA8,
-        };
 
         enum class Type : uint32_t
         {
@@ -183,7 +182,7 @@ namespace exage::Graphics
     struct TextureCreateInfo
     {
         TextureExtent extent = glm::uvec3(1);
-        Texture::Format format = Texture::Format::eRGBA8;
+        Format format = Format::eRGBA8;
         Texture::Type type = Texture::Type::e2D;
         Texture::Usage usage {};
         uint32_t arrayLayers = 1;

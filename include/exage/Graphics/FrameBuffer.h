@@ -14,13 +14,13 @@ namespace exage::Graphics
 
         struct ColorAttachmentInfo
         {
-            Texture::Format format;
+            Format format;
             Texture::Usage usage = Texture::UsageFlags::eColorAttachment;
         };
 
         struct DepthAttachmentInfo
         {
-            Texture::Format format;
+            Format format;
 			Texture::Usage usage = Texture::UsageFlags::eDepthStencilAttachment;
 		};
         
