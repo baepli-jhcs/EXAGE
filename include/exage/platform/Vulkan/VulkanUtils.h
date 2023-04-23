@@ -405,30 +405,17 @@ namespace exage::Graphics
         return flags;
     }
 
-    [[nodiscard]] constexpr auto toVmaMemoryUsage(Buffer::AllocationType type) -> vma::MemoryUsage
-    {
-        switch (type)
-        {
-            case Buffer::AllocationType::eHost:
-                return vma::MemoryUsage::eAutoPreferHost;
-            case Buffer::AllocationType::eDevice:
-                return vma::MemoryUsage::eAutoPreferDevice;
-            case Buffer::AllocationType::eHostVisible:
-                return vma::MemoryUsage::eAuto;
-        }
-
-        return vma::MemoryUsage::eAuto;
-    }
-
-    [[nodiscard]] constexpr auto toVmaAllocationCreateFlags(Buffer::MemoryUsage usage)
+    [[nodiscard]] constexpr auto toVmaAllocationCreateFlags(Buffer::AllocationFlags usage)
         -> vma::AllocationCreateFlags
     {
         vma::AllocationCreateFlags flags {};
 
-        if (usage.any(Buffer::MemoryUsageFlags::eMapped))
+        bool ifOptimal = usage.any(Buffer::AllocationFlagBits::eMappedIfOptimal);
+        bool mapped = usage.any(Buffer::AllocationFlagBits::eMapped);
+
+        if (mapped || ifOptimal)
         {
-            flags |= vma::AllocationCreateFlagBits::eMapped;
-            if (usage.any(Buffer::MemoryUsageFlags::eCached))
+            if (usage.any(Buffer::AllocationFlagBits::eCached))
             {
                 flags |= vma::AllocationCreateFlagBits::eHostAccessRandom;
             }
@@ -436,6 +423,13 @@ namespace exage::Graphics
             {
                 flags |= vma::AllocationCreateFlagBits::eHostAccessSequentialWrite;
             }
+            
+            flags |= vma::AllocationCreateFlagBits::eMapped;
+        }
+
+        if (ifOptimal)
+        {
+            flags |= vma::AllocationCreateFlagBits::eHostAccessAllowTransferInstead;
         }
 
         return flags;

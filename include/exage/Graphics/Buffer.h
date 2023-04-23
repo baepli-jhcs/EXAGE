@@ -10,20 +10,14 @@ namespace exage::Graphics
     class EXAGE_EXPORT Buffer
     {
       public:
-        enum class AllocationType : uint32_t
-        {
-            eHost,
-            eHostVisible,
-            eDevice,
-        };
-
-        enum class MemoryUsageFlags : uint32_t
+        enum class AllocationFlagBits : uint32_t
         {
             eMapped = 1 << 0,
             eCached = 1 << 1,
+            eMappedIfOptimal = 1 << 2,
         };
 
-        using MemoryUsage = Flags<MemoryUsageFlags>;
+        using AllocationFlags = Flags<AllocationFlagBits>;
 
         virtual ~Buffer() = default;
 
@@ -34,23 +28,21 @@ namespace exage::Graphics
         virtual void read(std::span<std::byte> data, size_t offset) const noexcept = 0;
 
         [[nodiscard]] auto getSize() const noexcept -> size_t { return _size; }
-        [[nodiscard]] auto getAllocationType() const noexcept -> AllocationType
-        {
-            return _allocationType;
-        }
-        [[nodiscard]] auto getMemoryUsage() const noexcept -> MemoryUsage { return _memoryUsage; }
+        [[nodiscard]] auto getAllocationFlags() const noexcept -> AllocationFlags { return _allocationFlags; }
+        
+        [[nodiscard]] auto isMapped() const noexcept -> bool { return _isMapped; }
 
         EXAGE_BASE_API(API, Buffer);
 
       protected:
         size_t _size;
-        AllocationType _allocationType;
-        MemoryUsage _memoryUsage;
+        AllocationFlags _allocationFlags;
 
-        Buffer(uint64_t size, AllocationType allocationType, MemoryUsage memoryUsage) noexcept
+        bool _isMapped = false;
+
+        Buffer(uint64_t size, AllocationFlags allocationFlags) noexcept
             : _size(size)
-            , _allocationType(allocationType)
-            , _memoryUsage(memoryUsage)
+            , _allocationFlags(allocationFlags)
         {
         }
     };
@@ -58,7 +50,6 @@ namespace exage::Graphics
     struct BufferCreateInfo
     {
         size_t size;
-        Buffer::AllocationType allocationType;
-        Buffer::MemoryUsage memoryUsage;
+        Buffer::AllocationFlags allocationFlags;
     };
 }  // namespace exage::Graphics

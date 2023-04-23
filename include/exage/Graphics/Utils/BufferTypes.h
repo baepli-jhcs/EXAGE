@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "exage/Graphics/Buffer.h"
+#include "exage/Graphics/Commands.h"
 
 namespace exage::Graphics
 {
@@ -9,7 +10,6 @@ namespace exage::Graphics
         Context& context;
         size_t size;
         bool cached = true;
-        bool useStagingBuffer = true;
     };
 
     class EXAGE_EXPORT DynamicFixedBuffer
@@ -27,6 +27,11 @@ namespace exage::Graphics
         void readBack(CommandBuffer& commandBuffer) noexcept;
         void update(CommandBuffer& commandBuffer) noexcept;
 
+        [[nodiscard]] auto hasStagingBuffer() const noexcept -> bool
+        {
+            return _deviceBuffer != nullptr;
+        }
+
         [[nodiscard]] auto currentHost() const noexcept -> std::shared_ptr<Buffer>;
         [[nodiscard]] auto deviceBuffer() const noexcept -> std::shared_ptr<Buffer>;
 
@@ -37,42 +42,38 @@ namespace exage::Graphics
 
         std::vector<std::byte> _data;
         std::vector<bool> _dirty;
+
+        bool shouldWrite = false;
     };
 
-    //struct ResizableBufferCreateInfo
-    //{
-    //    Context& context;
-    //    size_t size;
-    //    bool cached = true;
-    //    bool useStagingBuffer = true;
-    //};
-    //
+    struct ResizableBufferCreateInfo: public BufferCreateInfo
+    {
+        Context& context;
+    };
+    
 
-    //class EXAGE_EXPORT ResizableBuffer
-    //{
-    //  public:
-    //    explicit ResizableBuffer(const ResizableBufferCreateInfo& createInfo);
-    //    ~ResizableBuffer() = default;
+    class EXAGE_EXPORT ResizableBuffer
+    {
+      public:
+        explicit ResizableBuffer(const ResizableBufferCreateInfo& createInfo);
+        ~ResizableBuffer() = default;
 
-    //    EXAGE_DELETE_COPY(ResizableBuffer);
-    //    EXAGE_DEFAULT_MOVE(ResizableBuffer);
+        EXAGE_DEFAULT_COPY(ResizableBuffer);
+        EXAGE_DEFAULT_MOVE(ResizableBuffer);
 
-    //    void write(std::span<const std::byte> data, size_t offset) noexcept;
-    //    void read(std::span<std::byte> data, size_t offset) const noexcept {}
+        void resize(CommandBuffer& commandBuffer,
+                    size_t newSize,
+                    Access access,
+                    PipelineStage pipelineStage) noexcept;
 
-    //    void readBack(CommandBuffer& commandBuffer) noexcept;
-    //    void update(CommandBuffer& commandBuffer) noexcept;
+        [[nodiscard]] auto get() const noexcept -> std::shared_ptr<Buffer> { return _buffer; }
+        [[nodiscard]] auto size() const noexcept -> size_t { return _buffer->getSize(); }
 
-    //    [[nodiscard]] auto currentHost() const noexcept -> std::shared_ptr<Buffer>;
-    //    [[nodiscard]] auto deviceBuffer() const noexcept -> std::shared_ptr<Buffer>;
 
-    //  private:
-    //    std::reference_wrapper<Queue> _queue;
-    //    std::vector<std::shared_ptr<Buffer>> _hostBuffers;
-    //    std::shared_ptr<Buffer> _deviceBuffer;
-
-    //    std::vector<std::byte> _data;
-    //    std::vector<bool> _dirty;
-    //};
+      private:
+        std::reference_wrapper<Context> _context;
+        size_t _size;
+        std::shared_ptr<Buffer> _buffer;
+    };
 
 }  // namespace exage::Graphics

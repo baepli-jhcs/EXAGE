@@ -7,15 +7,14 @@ namespace exage::Graphics
     DynamicFixedBuffer::DynamicFixedBuffer(const DynamicFixedBufferCreateInfo& createInfo)
         : _queue(createInfo.context.getQueue())
     {
-        Buffer::MemoryUsage memoryUsage = Buffer::MemoryUsageFlags::eMapped;
+        Buffer::AllocationFlags allocationFlags = Buffer::AllocationFlagBits::eMappedIfOptimal;
         if (createInfo.cached)
         {
-            memoryUsage |= Buffer::MemoryUsageFlags::eCached;
+            allocationFlags |= Buffer::AllocationFlagBits::eCached;
         }
 
         BufferCreateInfo const hostBuffer {.size = createInfo.size,
-                                     .allocationType = Buffer::AllocationType::eHostVisible,
-                                     .memoryUsage = memoryUsage};
+                                           .allocationFlags = allocationFlags};
 
         size_t const framesInFlight = _queue.get().getFramesInFlight();
         for (size_t i = 0; i < framesInFlight; i++)
@@ -24,11 +23,10 @@ namespace exage::Graphics
             _hostBuffers.emplace_back(std::move(buffer));
         }
 
-        if (createInfo.useStagingBuffer)
+        if (!_hostBuffers[0]->isMapped())
         {
             BufferCreateInfo const deviceBuffer {.size = createInfo.size,
-                                           .allocationType = Buffer::AllocationType::eDevice,
-                                           .memoryUsage = {}};
+                                                 .allocationFlags = Buffer::AllocationFlags {}};
             _deviceBuffer = createInfo.context.createBuffer(deviceBuffer);
         }
 
@@ -39,20 +37,22 @@ namespace exage::Graphics
     void DynamicFixedBuffer::write(std::span<const std::byte> data, size_t offset) noexcept
     {
         std::memcpy(_data.data() + offset, data.data(), data.size());
-        for (auto && i : _dirty)
+        for (auto&& i : _dirty)
         {
             i = true;
         }
+
+        shouldWrite = true;
     }
-    void DynamicFixedBuffer::readBack(CommandBuffer& commandBuffer) noexcept 
+    void DynamicFixedBuffer::readBack(CommandBuffer& commandBuffer) noexcept
     {
         if (_deviceBuffer)
         {
-            commandBuffer.copyBuffer(_deviceBuffer, _hostBuffers[_queue.get().currentFrame()], 0, 0, _data.size());
+            commandBuffer.copyBuffer(
+                _deviceBuffer, _hostBuffers[_queue.get().currentFrame()], 0, 0, _data.size());
         }
     }
 
-    
     void DynamicFixedBuffer::update(CommandBuffer& commandBuffer) noexcept
     {
         if (!_dirty[_queue.get().currentFrame()])
@@ -63,20 +63,53 @@ namespace exage::Graphics
         _hostBuffers[_queue.get().currentFrame()]->write(_data, 0);
         _dirty[_queue.get().currentFrame()] = false;
 
-        if (_deviceBuffer)
+        if (!shouldWrite && _deviceBuffer)
         {
             commandBuffer.copyBuffer(
                 _hostBuffers[_queue.get().currentFrame()], _deviceBuffer, 0, 0, _data.size());
+
+            shouldWrite = false;
         }
     }
-    
+
     auto DynamicFixedBuffer::currentHost() const noexcept -> std::shared_ptr<Buffer>
     {
         return _hostBuffers[_queue.get().currentFrame()];
     }
-    
+
     auto DynamicFixedBuffer::deviceBuffer() const noexcept -> std::shared_ptr<Buffer>
     {
         return _deviceBuffer;
+    }
+
+    ResizableBuffer::ResizableBuffer(const ResizableBufferCreateInfo& createInfo)
+        : _context(createInfo.context)
+        , _size(createInfo.size)
+    {
+        _buffer = _context.get().createBuffer(createInfo);
+    }
+
+    void ResizableBuffer::resize(CommandBuffer& commandBuffer,
+                                 size_t newSize,
+                                 Access access,
+                                 PipelineStage pipelineStage) noexcept
+    {
+        _size = newSize;
+        if (newSize <= _buffer->getSize())
+        {
+            return;
+        }
+
+        BufferCreateInfo createInfo {
+            .size = newSize,
+            .allocationFlags = _buffer->getAllocationFlags(),
+        };
+
+        std::shared_ptr newBuffer = _context.get().createBuffer(createInfo);
+
+        commandBuffer.copyBuffer(_buffer, newBuffer, 0, 0, _buffer->getSize());
+        commandBuffer.bufferBarrier(newBuffer, PipelineStage {}, pipelineStage, Access {}, access);
+
+        _buffer = std::move(newBuffer);
     }
 }  // namespace exage::Graphics

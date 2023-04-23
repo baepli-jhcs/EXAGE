@@ -16,6 +16,8 @@ namespace exage::Renderer
     {
         std::string path;
         std::vector<std::byte> data;
+        Graphics::Format format;
+        Graphics::Texture::Type type;
         std::shared_ptr<Graphics::Texture> texture;
         std::shared_ptr<Graphics::RAII::TextureID> textureID;
 
@@ -23,16 +25,11 @@ namespace exage::Renderer
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(path, data);
-        }
-
-        // Deserialization
-        template<class Archive>
-        void load(Archive& archive)
-        {
-            archive(path, data);
+            archive(path, data, format, type);
         }
     };
+
+    constexpr std::string_view TEXTURE_EXTENSION = ".extex";
 
     struct AlbedoInfo
     {
@@ -47,13 +44,6 @@ namespace exage::Renderer
         {
             archive(useTexture, color, texturePath);
         }
-
-        // Deserialization
-        template<class Archive>
-        void load(Archive& archive)
-        {
-            archive(useTexture, color, texturePath);
-        }
     };
 
     struct NormalInfo
@@ -65,13 +55,6 @@ namespace exage::Renderer
         // Serialization
         template<class Archive>
         void serialize(Archive& archive)
-        {
-            archive(useTexture, texturePath);
-        }
-
-        // Deserialization
-        template<class Archive>
-        void load(Archive& archive)
         {
             archive(useTexture, texturePath);
         }
@@ -91,12 +74,6 @@ namespace exage::Renderer
             archive(useTexture, value, texturePath);
         }
 
-        // Deserialization
-        template<class Archive>
-        void load(Archive& archive)
-        {
-            archive(useTexture, value, texturePath);
-        }
     };
 
     struct RoughnessInfo
@@ -109,13 +86,6 @@ namespace exage::Renderer
         // Serialization
         template<class Archive>
         void serialize(Archive& archive)
-        {
-            archive(useTexture, value, texturePath);
-        }
-
-        // Deserialization
-        template<class Archive>
-        void load(Archive& archive)
         {
             archive(useTexture, value, texturePath);
         }
@@ -133,13 +103,6 @@ namespace exage::Renderer
         {
             archive(useTexture, texturePath);
         }
-
-        // Deserialization
-        template<class Archive>
-        void load(Archive& archive)
-        {
-            archive(useTexture, texturePath);
-        }
     };
 
     struct EmissiveInfo
@@ -152,13 +115,6 @@ namespace exage::Renderer
         // Serialization
         template<class Archive>
         void serialize(Archive& archive)
-        {
-            archive(useTexture, color, texturePath);
-        }
-
-        // Deserialization
-        template<class Archive>
-        void load(Archive& archive)
         {
             archive(useTexture, color, texturePath);
         }
@@ -181,12 +137,7 @@ namespace exage::Renderer
         {
             archive(path, albedo, normal, metallic, roughness, occlusion, emissive);
         }
-
-        // Deserialization
-        template<class Archive>
-        void load(Archive& archive)
-        {
-            archive(path, albedo, normal, metallic, roughness, occlusion, emissive);
-        }
     };
+
+    constexpr std::string_view MATERIAL_EXTENSION = ".exmat";
 }  // namespace exage::Renderer

@@ -183,7 +183,7 @@ namespace exage::Graphics
         imageInfo.flags = flags;
 
         vma::AllocationCreateInfo allocInfo;
-        allocInfo.usage = vma::MemoryUsage::eGpuOnly;
+        allocInfo.usage = vma::MemoryUsage::eAuto;
 
         vk::Result result = _context.get().getAllocator().createImage(
             &imageInfo, &allocInfo, &_image, &_allocation, nullptr);

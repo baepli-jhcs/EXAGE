@@ -3,7 +3,7 @@
 namespace exage::Graphics
 {
     VulkanBuffer::VulkanBuffer(VulkanContext& context, const BufferCreateInfo& createInfo) noexcept
-        : Buffer(createInfo.size, createInfo.allocationType, createInfo.memoryUsage)
+        : Buffer(createInfo.size, createInfo.allocationFlags)
         , _context(context)
     {
         const vma::Allocator allocator = _context.get().getAllocator();
@@ -19,15 +19,22 @@ namespace exage::Graphics
         bufferInfo.sharingMode = vk::SharingMode::eExclusive;
 
         vma::AllocationCreateInfo allocInfo;
-        allocInfo.usage = toVmaMemoryUsage(_allocationType);
-        allocInfo.flags = toVmaAllocationCreateFlags(_memoryUsage);
+        allocInfo.usage = vma::MemoryUsage::eAuto;
+        allocInfo.flags = toVmaAllocationCreateFlags(_allocationFlags);
 
         checkVulkan(
             allocator.createBuffer(&bufferInfo, &allocInfo, &_buffer, &_allocation, nullptr));
 
-        if (_memoryUsage.any(MemoryUsageFlags::eMapped))
+        if (_allocationFlags.any(AllocationFlagBits::eMapped)
+            || _allocationFlags.any(AllocationFlagBits::eMappedIfOptimal))
         {
             vma::AllocationInfo const info = allocator.getAllocationInfo(_allocation);
+
+            if (info.memoryType & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
+            {
+                _isMapped = true;
+            }
+            
             _mappedData = info.pMappedData;
         }
     }
@@ -76,7 +83,7 @@ namespace exage::Graphics
     void VulkanBuffer::write(std::span<const std::byte> data, size_t offset) noexcept
     {
         debugAssume(offset + data.size() <= _size, "Buffer overflow");
-        debugAssume(_memoryUsage.any(MemoryUsageFlags::eMapped), "Buffer is not mapped");
+        debugAssume(_isMapped == true, "Buffer is not mapped");
 
         std::memcpy(static_cast<std::byte*>(_mappedData) + offset, data.data(), data.size());
         _context.get().getAllocator().flushAllocation(_allocation, offset, data.size());
@@ -85,7 +92,7 @@ namespace exage::Graphics
     void VulkanBuffer::read(std::span<std::byte> data, size_t offset) const noexcept
     {
         debugAssume(offset + data.size() <= _size, "Buffer overflow");
-        debugAssume(_memoryUsage.any(MemoryUsageFlags::eMapped), "Buffer is not mapped");
+        debugAssume(_isMapped, "Buffer is not mapped");
 
         _context.get().getAllocator().invalidateAllocation(_allocation, offset, data.size());
         std::memcpy(data.data(), static_cast<std::byte*>(_mappedData) + offset, data.size());

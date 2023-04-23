@@ -17,20 +17,6 @@ namespace exage::Renderer
 
         size_t vertexOffset;
         size_t indexOffset;
-
-        // Serialization
-        template<class Archive>
-        void serialize(Archive& archive)
-        {
-            archive(vertexCount, indexCount, vertexOffset, indexOffset);
-        }
-
-        // Deserialization
-        template<class Archive>
-        void load(Archive& archive)
-        {
-            archive(vertexCount, indexCount, vertexOffset, indexOffset);
-        }
     };
 
     struct MeshVertex
@@ -47,18 +33,11 @@ namespace exage::Renderer
         {
             archive(position, normal, uv, tangent, bitangent);
         }
-
-        // Deserialization
-        template<class Archive>
-        void load(Archive& archive)
-        {
-            archive(position, normal, uv, tangent, bitangent);
-        }
     };
 
     struct MeshLOD
     {
-        MeshDetails details;
+        MeshDetails details {};
         std::vector<MeshVertex> vertices;
         std::vector<uint32_t> indices;
 
@@ -66,14 +45,7 @@ namespace exage::Renderer
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(details, vertices, indices);
-        }
-
-        // Deserialization
-        template<class Archive>
-        void load(Archive& archive)
-        {
-            archive(details, vertices, indices);
+            archive(vertices, indices);
         }
     };
 
@@ -87,12 +59,7 @@ namespace exage::Renderer
         {
             archive(min, max);
         }
-        // Deserialization
-        template<class Archive>
-        void load(Archive& archive)
-        {
-            archive(min, max);
-        }
+
     };
 
     struct Mesh
@@ -112,12 +79,7 @@ namespace exage::Renderer
         {
             archive(path, lods, materialPath, aabb);
         }
-
-        // Deserialization
-        template<class Archive>
-        void load(Archive& archive)
-        {
-            archive(path, lods, materialPath, aabb);
-        }
     };
+
+    constexpr std::string_view MESH_EXTENSION = ".exmesh";
 }  // namespace exage::Renderer

@@ -3,6 +3,8 @@
 #include <functional>
 #include <variant>
 
+#include <entt/core/any.hpp>
+
 #include "exage/Core/Core.h"
 #include "exage/Graphics/Buffer.h"
 #include "exage/Graphics/Context.h"
@@ -212,9 +214,5 @@ namespace exage::Graphics
                                         CopyTextureToBufferCommand>;
     }  // namespace Commands
 
-    using DataDependency = std::variant<std::shared_ptr<Texture>,
-                                        std::shared_ptr<Buffer>,
-                                        std::shared_ptr<FrameBuffer>,
-                                        std::shared_ptr<RAII::BufferID>,
-                                        std::shared_ptr<RAII::TextureID>>;
+    using DataDependency = entt::basic_any<sizeof(std::shared_ptr<Buffer>)>;
 }  // namespace exage::Graphics

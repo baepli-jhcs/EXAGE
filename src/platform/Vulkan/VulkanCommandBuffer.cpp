@@ -28,6 +28,9 @@ namespace exage::Graphics
         result = _context.get().getDevice().allocateCommandBuffers(&commandBufferAllocateInfo,
                                                                    &_commandBuffer);
         checkVulkan(result);
+
+        _commands.reserve(128);
+        _dataDependencies.reserve(64);
     }
 
     VulkanCommandBuffer::~VulkanCommandBuffer()
