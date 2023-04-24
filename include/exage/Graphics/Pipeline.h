@@ -201,5 +201,7 @@ namespace exage::Graphics
         Pipeline::RasterState rasterState;
         Pipeline::DepthStencilState depthStencilState;
         uint32_t pushConstantSize;
+
+        std::shared_ptr<ResourceManager> resourceManager; // If provided, a resource manager will allow for bindless resources
     };
 }  // namespace exage::Graphics

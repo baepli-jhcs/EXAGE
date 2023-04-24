@@ -59,7 +59,6 @@ namespace exage::Renderer
         {
             archive(min, max);
         }
-
     };
 
     struct Mesh
@@ -79,6 +78,12 @@ namespace exage::Renderer
         {
             archive(path, lods, materialPath, aabb);
         }
+    };
+
+    struct MeshComponent
+    {
+        std::filesystem::path meshPath;
+        Mesh* mesh;
     };
 
     constexpr std::string_view MESH_EXTENSION = ".exmesh";

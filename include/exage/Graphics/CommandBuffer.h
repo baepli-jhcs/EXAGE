@@ -5,8 +5,8 @@
 #include <thread>
 
 #include "Commands.h"
-#include "exage/Core/Core.h"
 #include "Error.h"
+#include "exage/Core/Core.h"
 #include "exage/Graphics/Context.h"
 
 namespace exage::Graphics
@@ -42,7 +42,7 @@ namespace exage::Graphics
                                     PipelineStage dstStage,
                                     Access srcAccess,
                                     Access dstAccess) noexcept = 0;
-        
+
         virtual void bufferBarrier(std::shared_ptr<Buffer> buffer,
                                    PipelineStage srcStage,
                                    PipelineStage dstStage,
@@ -97,6 +97,21 @@ namespace exage::Graphics
                                          uint32_t layerCount,
                                          glm::uvec3 extent,
                                          size_t dstOffset) noexcept = 0;
+
+        virtual void bindPipeline(std::shared_ptr<Pipeline> pipeline) noexcept = 0;
+
+        virtual void setPushConstant(size_t size, std::byte* data) noexcept = 0;
+
+        virtual void bindVertexBuffer(std::shared_ptr<Buffer> buffer,
+                                      uint64_t offset,
+                                      uint32_t binding) noexcept = 0;
+
+        virtual void bindIndexBuffer(std::shared_ptr<Buffer> buffer, uint64_t offset) noexcept = 0;
+
+        virtual void bindSampledTexture(std::shared_ptr<Texture> texture, uint32_t binding) noexcept = 0;
+        virtual void bindStorageTexture(std::shared_ptr<Texture> texture, uint32_t binding) noexcept = 0;
+
+        virtual void bindStorageBuffer(std::shared_ptr<Buffer> buffer, uint32_t binding) noexcept = 0;
 
         virtual void userDefined(std::function<void(CommandBuffer&)> commandFunction) noexcept = 0;
 

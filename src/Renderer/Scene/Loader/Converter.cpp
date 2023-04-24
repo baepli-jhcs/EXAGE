@@ -223,11 +223,6 @@ namespace exage::Renderer
 
             MaterialLoadOptions loadOptions;
             loadOptions.path = savePath;
-            loadOptions.commandBuffer = options.commandBuffer;
-            loadOptions.resourceManager = options.resourceManager;
-            loadOptions.layout = options.layout;
-            loadOptions.access = options.access;
-            loadOptions.pipelineStage = options.pipelineStage;
 
             tl::expected materialReturn = loadMaterial(loadOptions);
 
@@ -320,14 +315,12 @@ namespace exage::Renderer
 
             if (options.cache)
             {
-                return options.cache->getMesh(savePath);
+                return *options.cache->getMesh(savePath);
             }
 
             MeshLoadOptions loadOptions;
             loadOptions.path = savePath;
             loadOptions.commandBuffer = options.commandBuffer;
-            loadOptions.resourceManager = options.resourceManager;
-            loadOptions.layout = options.layout;
             loadOptions.access = options.access;
             loadOptions.pipelineStage = options.pipelineStage;
 

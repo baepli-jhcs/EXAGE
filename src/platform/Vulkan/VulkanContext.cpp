@@ -263,24 +263,24 @@ namespace exage::Graphics
             vk::PhysicalDevice physicalDevice = _physicalDevice.physical_device;
 
             formatProperties = physicalDevice.getFormatProperties(depthFormatFirstPick);
-            if (formatProperties.optimalTilingFeatures &
-                vk::FormatFeatureFlagBits::eDepthStencilAttachment)
+            if (formatProperties.optimalTilingFeatures
+                & vk::FormatFeatureFlagBits::eDepthStencilAttachment)
             {
-				_hardwareSupport.depthFormat = Format::eDepth24Stencil8;
-			}
+                _hardwareSupport.depthFormat = Format::eDepth24Stencil8;
+            }
             else
             {
-				formatProperties = physicalDevice.getFormatProperties(depthFormatSecondPick);
-                if (formatProperties.optimalTilingFeatures &
-                    vk::FormatFeatureFlagBits::eDepthStencilAttachment)
+                formatProperties = physicalDevice.getFormatProperties(depthFormatSecondPick);
+                if (formatProperties.optimalTilingFeatures
+                    & vk::FormatFeatureFlagBits::eDepthStencilAttachment)
                 {
-					_hardwareSupport.depthFormat = Format::eDepth32Stencil8;
-				}
+                    _hardwareSupport.depthFormat = Format::eDepth32Stencil8;
+                }
                 else
                 {
-					debugAssume(false, "Failed to find a suitable depth format");
-				}
-			}
+                    debugAssume(false, "Failed to find a suitable depth format");
+                }
+            }
         }
 
         return std::nullopt;
@@ -462,8 +462,10 @@ namespace exage::Graphics
     static size_t hashPipelineLayoutInfo(const VulkanContext::PipelineLayoutInfo& info) noexcept
     {
         size_t seed = 0;
-        hashCombine(
-            seed, info.pushConstantSize, hashResourceDescriptions(info.resourceDescriptions));
+        hashCombine(seed,
+                    info.pushConstantSize,
+                    hashResourceDescriptions(info.resourceDescriptions),
+                    info.resourceManager);
         return seed;
     }
 
@@ -477,7 +479,16 @@ namespace exage::Graphics
             return it->second;
         }
 
-        vk::DescriptorSetLayout layout = getOrCreateDescriptorSetLayout(info.resourceDescriptions);
+        vk::DescriptorSetLayout layout = nullptr;
+
+        if (info.resourceManager)
+        {
+            layout = info.resourceManager->getDescriptorSetLayout();
+        }
+        else
+        {
+            layout = getOrCreateDescriptorSetLayout(info.resourceDescriptions);
+        }
 
         vk::PushConstantRange pushConstantRange {};
         pushConstantRange.stageFlags = vk::ShaderStageFlagBits::eAll;

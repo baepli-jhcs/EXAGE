@@ -2,6 +2,7 @@
 
 #include "exage/platform/Vulkan/VulkanBuffer.h"
 #include "exage/platform/Vulkan/VulkanFrameBuffer.h"
+#include "exage/platform/Vulkan/VulkanPipeline.h"
 #include "exage/platform/Vulkan/VulkanQueue.h"
 #include "exage/platform/Vulkan/VulkanTexture.h"
 
@@ -355,6 +356,25 @@ namespace exage::Graphics
         _commands.emplace_back(copyTextureToBufferCommand);
     }
 
+    void VulkanCommandBuffer::bindPipeline(std::shared_ptr<Pipeline> pipeline) noexcept
+    {
+        BindPipelineCommand bindPipelineCommand;
+        bindPipelineCommand.pipeline = pipeline;
+
+        std::lock_guard<std::mutex> const lock(*_commandsMutex);
+        _commands.emplace_back(bindPipelineCommand);
+    }
+
+    void VulkanCommandBuffer::setPushConstant(size_t size, std::byte* data) noexcept
+    {
+        SetPushConstantCommand setPushConstantCommand;
+        setPushConstantCommand.size = size;
+        std::memcpy(setPushConstantCommand.data, data, size);
+
+        std::lock_guard<std::mutex> const lock(*_commandsMutex);
+        _commands.emplace_back(setPushConstantCommand);
+    }
+
     void VulkanCommandBuffer::userDefined(
         std::function<void(CommandBuffer&)> commandFunction) noexcept
     {
@@ -638,6 +658,33 @@ namespace exage::Graphics
                                                      vk::ImageLayout::eTransferSrcOptimal,
                                                      dstBuffer.getBuffer(),
                                                      copy);
+                },
+                [this](const BindPipelineCommand& cmd)
+                {
+                    auto& pipeline = *cmd.pipeline->as<VulkanPipeline>();
+                    _commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics,
+                                                pipeline.getPipeline());
+
+                    if (pipeline.getResourceManager() != nullptr)
+                    {
+                        _commandBuffer.bindDescriptorSets(
+                            vk::PipelineBindPoint::eGraphics,
+                            pipeline.getPipelineLayout(),
+                            0,
+                            pipeline.getResourceManager()->getDescriptorSet(),
+                            {});
+                    }
+
+                    _currentPipeline = &pipeline;
+                },
+                [this](const SetPushConstantCommand& cmd) 
+                {
+                    _commandBuffer.pushConstants(_currentPipeline->getPipelineLayout(),
+                                                 vk::ShaderStageFlagBits::eAll,
+                                                 0,
+                                                 cmd.size,
+                                                 cmd.data);
+
                 },
 
             },

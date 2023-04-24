@@ -77,7 +77,7 @@ namespace exage::Graphics
                         uint64_t srcOffset,
                         uint64_t dstOffset,
                         uint64_t size) noexcept override;
-        
+
         void copyBufferToTexture(std::shared_ptr<Buffer> srcBuffer,
                                  std::shared_ptr<Texture> dstTexture,
                                  uint64_t srcOffset,
@@ -95,6 +95,23 @@ namespace exage::Graphics
                                  uint32_t layerCount,
                                  glm::uvec3 extent,
                                  size_t dstOffset) noexcept override;
+
+        void bindPipeline(std::shared_ptr<Pipeline> pipeline) noexcept override;
+
+        void setPushConstant(size_t size, std::byte* data) noexcept override;
+
+        void bindVertexBuffer(std::shared_ptr<Buffer> buffer,
+                              uint64_t offset,
+                              uint32_t binding) noexcept override;
+
+        void bindIndexBuffer(std::shared_ptr<Buffer> buffer, uint64_t offset) noexcept override;
+
+        void bindSampledTexture(std::shared_ptr<Texture> texture,
+                                uint32_t binding) noexcept override;
+        void bindStorageTexture(std::shared_ptr<Texture> texture,
+                                uint32_t binding) noexcept override;
+
+        void bindStorageBuffer(std::shared_ptr<Buffer> buffer, uint32_t binding) noexcept override;
 
         void userDefined(std::function<void(CommandBuffer&)> commandFunction) noexcept override;
 
@@ -116,5 +133,7 @@ namespace exage::Graphics
         std::vector<DataDependency> _dataDependencies {};
         std::unique_ptr<std::mutex> _commandsMutex = std::make_unique<std::mutex>();
         std::unique_ptr<std::mutex> _dataDependenciesMutex = std::make_unique<std::mutex>();
+
+        VulkanPipeline* _currentPipeline = nullptr;
     };
 }  // namespace exage::Graphics

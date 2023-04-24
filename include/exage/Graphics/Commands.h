@@ -198,6 +198,17 @@ namespace exage::Graphics
             size_t dstOffset;
         };
 
+        struct BindPipelineCommand
+        {
+            std::shared_ptr<Pipeline> pipeline;
+        };
+
+        struct SetPushConstantCommand
+        {
+            size_t size;
+            std::byte data[128];
+        };
+
         using GPUCommand = std::variant<DrawCommand,
                                         DrawIndexedCommand,
                                         TextureBarrierCommand,
@@ -211,7 +222,9 @@ namespace exage::Graphics
                                         EndRenderingCommand,
                                         CopyBufferCommand,
                                         CopyBufferToTextureCommand,
-                                        CopyTextureToBufferCommand>;
+                                        CopyTextureToBufferCommand,
+                                        BindPipelineCommand,
+                                        SetPushConstantCommand>;
     }  // namespace Commands
 
     using DataDependency = entt::basic_any<sizeof(std::shared_ptr<Buffer>)>;

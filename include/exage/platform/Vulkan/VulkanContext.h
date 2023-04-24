@@ -82,6 +82,7 @@ namespace exage::Graphics
         {
             std::vector<ResourceDescription> resourceDescriptions;
             uint32_t pushConstantSize;
+            VulkanResourceManager* resourceManager;
         };
 
       private:

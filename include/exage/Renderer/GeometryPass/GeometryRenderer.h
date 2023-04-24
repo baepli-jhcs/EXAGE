@@ -11,6 +11,7 @@ namespace exage::Renderer
     struct ForwardRendererCreateInfo
     {
         Graphics::Context& context;
+        Graphics::ResourceManager* resourceManager;
         glm::uvec2 extent;
     };
 
@@ -34,6 +35,7 @@ namespace exage::Renderer
 
       private:
         std::reference_wrapper<Graphics::Context> _context;
+        Graphics::ResourceManager* _resourceManager;
         glm::uvec2 _extent;
 
         std::shared_ptr<Graphics::FrameBuffer> _frameBuffer;
