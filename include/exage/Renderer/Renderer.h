@@ -4,14 +4,16 @@
 
 #include "exage/Core/Core.h"
 #include "exage/Graphics/Context.h"
+#include "exage/Graphics/ResourceManager.h"
+#include "exage/Renderer/GeometryPass/GeometryRenderer.h"
 #include "exage/Scene/Scene.h"
-#include "exage/Renderer/ForwardPass/ForwardRenderer.h"
 
 namespace exage::Renderer
 {
     struct RendererCreateInfo
     {
         Graphics::Context& context;
+        Graphics::ResourceManager* resourceManager;
         glm::uvec2 extent;
     };
 

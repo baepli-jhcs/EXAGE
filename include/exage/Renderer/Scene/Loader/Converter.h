@@ -2,53 +2,41 @@
 
 #include <filesystem>
 #include <optional>
+#include <vector>
 
 #include "exage/Core/Core.h"
 #include "exage/Graphics/CommandBuffer.h"
 #include "exage/Renderer/Scene/AssetCache.h"
+#include "exage/Renderer/Scene/Loader/Errors.h"
 #include "exage/Renderer/Scene/Material.h"
 #include "exage/Renderer/Scene/Mesh.h"
-#include "exage/Renderer/Scene/Loader/Errors.h"
+#include "exage/Scene/Hierarchy.h"
 #include "exage/Scene/Scene.h"
+#include "tl/expected.hpp"
 
 namespace exage::Renderer
 {
-    struct AssetImportOptions
+    struct AssetImportResult
     {
-        std::filesystem::path assetPath;
-        std::filesystem::path saveDirectory;
-        bool overwriteExisting = false;
+        std::vector<std::unique_ptr<Texture>> textures;
+        std::vector<std::unique_ptr<Material>> materials;
+        std::vector<std::unique_ptr<Mesh>> meshes;
 
-        Scene* scene = nullptr;
-        AssetCache* cache = nullptr;
-        Entity parent = entt::null;
+        struct Node
+        {
+            Transform3D transform;
+            Mesh* mesh = nullptr;
+            Node* parent = nullptr;
+            std::vector<std::unique_ptr<Node>> children;
+        };
 
-        Graphics::Context* context = nullptr;
-        Graphics::CommandBuffer* commandBuffer = nullptr;
-        Graphics::ResourceManager* resourceManager = nullptr;
-        Graphics::Texture::Layout layout = Graphics::Texture::Layout::eShaderReadOnly;
-        Graphics::Access access = Graphics::AccessFlags::eShaderRead;
-        Graphics::PipelineStage pipelineStage = Graphics::PipelineStageFlags::eFragmentShader;
+        std::vector<std::unique_ptr<Node>> rootNodes;
     };
 
-    [[nodiscard]] EXAGE_EXPORT auto importAsset(const AssetImportOptions& options) noexcept
-        -> std::optional<AssetImportError>;
+    [[nodiscard]] EXAGE_EXPORT auto importAsset(const std::filesystem::path& assetPath) noexcept
+        -> tl::expected<AssetImportResult, AssetImportError>;
 
-    struct TextureImportOptions
-    {
-        std::filesystem::path texturePath;
-        std::filesystem::path savePath;
-        bool overwriteExisting = false;
-
-        Graphics::Context* context = nullptr;
-        Graphics::CommandBuffer* commandBuffer = nullptr;
-        Graphics::ResourceManager* resourceManager = nullptr;
-        Graphics::Texture::Layout layout = Graphics::Texture::Layout::eShaderReadOnly;
-        Graphics::Access access = Graphics::AccessFlags::eShaderRead;
-        Graphics::PipelineStage pipelineStage = Graphics::PipelineStageFlags::eFragmentShader;
-    };
-
-    [[nodiscard]] EXAGE_EXPORT auto importTexture(const TextureImportOptions& options) noexcept
-        -> std::shared_ptr<Texture>;
+    [[nodiscard]] EXAGE_EXPORT auto importTexture(const std::filesystem::path& texturePath) noexcept
+        -> tl::expected<Texture, TextureImportError>;
 
 }  // namespace exage::Renderer

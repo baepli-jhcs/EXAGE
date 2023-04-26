@@ -9,7 +9,7 @@ namespace exage::Renderer
     Renderer::Renderer(const RendererCreateInfo& createInfo) noexcept
         : _context(createInfo.context)
         , _extent(createInfo.extent)
-        , _forwardRenderer({createInfo.context, createInfo.extent})
+        , _forwardRenderer({createInfo.context, createInfo.resourceManager, createInfo.extent})
     {
         auto& context = _context.get();
 
