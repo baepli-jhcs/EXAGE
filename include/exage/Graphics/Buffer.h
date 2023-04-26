@@ -10,14 +10,12 @@ namespace exage::Graphics
     class EXAGE_EXPORT Buffer
     {
       public:
-        enum class AllocationFlagBits : uint32_t
+        enum class MapMode
         {
-            eMapped = 1 << 0,
-            eCached = 1 << 1,
-            eMappedIfOptimal = 1 << 2,
+            eUnmapped,
+            eMapped,
+            eIfOptimal,
         };
-
-        using AllocationFlags = Flags<AllocationFlagBits>;
 
         virtual ~Buffer() = default;
 
@@ -28,21 +26,27 @@ namespace exage::Graphics
         virtual void read(std::span<std::byte> data, size_t offset) const noexcept = 0;
 
         [[nodiscard]] auto getSize() const noexcept -> size_t { return _size; }
-        [[nodiscard]] auto getAllocationFlags() const noexcept -> AllocationFlags { return _allocationFlags; }
-        
+        [[nodiscard]] auto getMapMode() const noexcept -> MapMode
+        {
+            return _mapMode;
+        }
+        [[nodiscard]] auto isCached() const noexcept -> bool { return _cached; }
+
         [[nodiscard]] auto isMapped() const noexcept -> bool { return _isMapped; }
 
         EXAGE_BASE_API(API, Buffer);
 
       protected:
         size_t _size;
-        AllocationFlags _allocationFlags;
+        MapMode _mapMode;
+        bool _cached = false;
 
         bool _isMapped = false;
 
-        Buffer(uint64_t size, AllocationFlags allocationFlags) noexcept
+        Buffer(uint64_t size, MapMode mapMode, bool cached) noexcept
             : _size(size)
-            , _allocationFlags(allocationFlags)
+            , _mapMode(mapMode)
+            , _cached(cached)
         {
         }
     };
@@ -50,6 +54,7 @@ namespace exage::Graphics
     struct BufferCreateInfo
     {
         size_t size;
-        Buffer::AllocationFlags allocationFlags;
+        Buffer::MapMode mapMode;
+        bool cached = false;
     };
 }  // namespace exage::Graphics

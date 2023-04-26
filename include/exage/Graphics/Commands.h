@@ -80,17 +80,17 @@ namespace exage::Graphics
         struct DrawCommand
         {
             uint32_t vertexCount;
-            uint32_t instanceCount;
             uint32_t firstVertex;
+            uint32_t instanceCount;
             uint32_t firstInstance;
         };
 
         struct DrawIndexedCommand
         {
             uint32_t indexCount;
-            uint32_t instanceCount;
             uint32_t firstIndex;
             int32_t vertexOffset;
+            uint32_t instanceCount;
             uint32_t firstInstance;
         };
 

@@ -7,14 +7,10 @@ namespace exage::Graphics
     DynamicFixedBuffer::DynamicFixedBuffer(const DynamicFixedBufferCreateInfo& createInfo)
         : _queue(createInfo.context.getQueue())
     {
-        Buffer::AllocationFlags allocationFlags = Buffer::AllocationFlagBits::eMappedIfOptimal;
-        if (createInfo.cached)
-        {
-            allocationFlags |= Buffer::AllocationFlagBits::eCached;
-        }
+        auto allocationFlags = Buffer::MapMode::eIfOptimal;
 
-        BufferCreateInfo const hostBuffer {.size = createInfo.size,
-                                           .allocationFlags = allocationFlags};
+        BufferCreateInfo const hostBuffer {
+            .size = createInfo.size, .mapMode = allocationFlags, .cached = createInfo.cached};
 
         size_t const framesInFlight = _queue.get().getFramesInFlight();
         for (size_t i = 0; i < framesInFlight; i++)
@@ -26,7 +22,8 @@ namespace exage::Graphics
         if (!_hostBuffers[0]->isMapped())
         {
             BufferCreateInfo const deviceBuffer {.size = createInfo.size,
-                                                 .allocationFlags = Buffer::AllocationFlags {}};
+                                                 .mapMode = Buffer::MapMode::eMapped,
+                                                 .cached = createInfo.cached};
             _deviceBuffer = createInfo.context.createBuffer(deviceBuffer);
         }
 
@@ -101,9 +98,7 @@ namespace exage::Graphics
         }
 
         BufferCreateInfo createInfo {
-            .size = newSize,
-            .allocationFlags = _buffer->getAllocationFlags(),
-        };
+            .size = newSize, .mapMode = _buffer->getMapMode(), .cached = _buffer->isCached()};
 
         std::shared_ptr newBuffer = _context.get().createBuffer(createInfo);
 

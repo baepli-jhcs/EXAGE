@@ -26,14 +26,14 @@ namespace exage::Graphics
         virtual void insertDataDependency(DataDependency dependency) noexcept = 0;
 
         virtual void draw(uint32_t vertexCount,
-                          uint32_t instanceCount,
                           uint32_t firstVertex,
+                          uint32_t instanceCount,
                           uint32_t firstInstance) noexcept = 0;
 
         virtual void drawIndexed(uint32_t indexCount,
-                                 uint32_t instanceCount,
                                  uint32_t firstIndex,
                                  uint32_t vertexOffset,
+                                 uint32_t instanceCount,
                                  uint32_t firstInstance) noexcept = 0;
 
         virtual void textureBarrier(std::shared_ptr<Texture> texture,

@@ -3,7 +3,7 @@
 namespace exage::Graphics
 {
     VulkanBuffer::VulkanBuffer(VulkanContext& context, const BufferCreateInfo& createInfo) noexcept
-        : Buffer(createInfo.size, createInfo.allocationFlags)
+        : Buffer(createInfo.size, createInfo.mapMode, createInfo.cached)
         , _context(context)
     {
         const vma::Allocator allocator = _context.get().getAllocator();
@@ -20,22 +20,20 @@ namespace exage::Graphics
 
         vma::AllocationCreateInfo allocInfo;
         allocInfo.usage = vma::MemoryUsage::eAuto;
-        allocInfo.flags = toVmaAllocationCreateFlags(_allocationFlags);
+        allocInfo.flags = toVmaAllocationCreateFlags(_mapMode, _cached);
 
         checkVulkan(
             allocator.createBuffer(&bufferInfo, &allocInfo, &_buffer, &_allocation, nullptr));
 
-        if (_allocationFlags.any(AllocationFlagBits::eMapped)
-            || _allocationFlags.any(AllocationFlagBits::eMappedIfOptimal))
+        if (_mapMode != MapMode::eUnmapped)
         {
             vma::AllocationInfo const info = allocator.getAllocationInfo(_allocation);
 
             if (info.memoryType & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
             {
                 _isMapped = true;
+                _mappedData = info.pMappedData;
             }
-            
-            _mappedData = info.pMappedData;
         }
     }
 

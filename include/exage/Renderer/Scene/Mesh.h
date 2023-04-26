@@ -10,15 +10,6 @@
 
 namespace exage::Renderer
 {
-    struct MeshDetails
-    {
-        uint32_t vertexCount;
-        uint32_t indexCount;
-
-        size_t vertexOffset;
-        size_t indexOffset;
-    };
-
     struct MeshVertex
     {
         glm::vec3 position {};
@@ -37,7 +28,6 @@ namespace exage::Renderer
 
     struct MeshLOD
     {
-        MeshDetails details {};
         std::vector<MeshVertex> vertices;
         std::vector<uint32_t> indices;
 
@@ -68,7 +58,7 @@ namespace exage::Renderer
         std::vector<MeshLOD> lods;
 
         std::string materialPath;
-        Material material;
+        Material* material = nullptr;
 
         AABB aabb;
 
@@ -80,10 +70,31 @@ namespace exage::Renderer
         }
     };
 
+    struct GPUMeshDetails
+    {
+        uint32_t vertexCount;
+        uint32_t indexCount;
+
+        size_t vertexOffset;
+        size_t indexOffset;
+    };
+
+    struct GPUMesh
+    {
+        std::string path;
+        
+        std::vector<GPUMeshDetails> lods;
+
+        std::string materialPath;
+        GPUMaterial material;
+
+        AABB aabb;
+    };
+
     struct MeshComponent
     {
         std::filesystem::path meshPath;
-        Mesh* mesh;
+        GPUMesh mesh;
     };
 
     constexpr std::string_view MESH_EXTENSION = ".exmesh";

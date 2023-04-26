@@ -24,14 +24,14 @@ namespace exage::Graphics
         void insertDataDependency(DataDependency dependency) noexcept override;
 
         void draw(uint32_t vertexCount,
-                  uint32_t instanceCount,
                   uint32_t firstVertex,
+                  uint32_t instanceCount,
                   uint32_t firstInstance) noexcept override;
 
         void drawIndexed(uint32_t indexCount,
-                         uint32_t instanceCount,
                          uint32_t firstIndex,
                          uint32_t vertexOffset,
+                         uint32_t instanceCount,
                          uint32_t firstInstance) noexcept override;
 
         void textureBarrier(std::shared_ptr<Texture> texture,

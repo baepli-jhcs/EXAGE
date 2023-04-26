@@ -405,17 +405,17 @@ namespace exage::Graphics
         return flags;
     }
 
-    [[nodiscard]] constexpr auto toVmaAllocationCreateFlags(Buffer::AllocationFlags usage)
+    [[nodiscard]] constexpr auto toVmaAllocationCreateFlags(Buffer::MapMode mapMode, bool cached)
         -> vma::AllocationCreateFlags
     {
         vma::AllocationCreateFlags flags {};
 
-        bool ifOptimal = usage.any(Buffer::AllocationFlagBits::eMappedIfOptimal);
-        bool mapped = usage.any(Buffer::AllocationFlagBits::eMapped);
+        bool ifOptimal = mapMode == Buffer::MapMode::eIfOptimal;
+        bool mapped = mapMode == Buffer::MapMode::eMapped;
 
         if (mapped || ifOptimal)
         {
-            if (usage.any(Buffer::AllocationFlagBits::eCached))
+            if (cached)
             {
                 flags |= vma::AllocationCreateFlagBits::eHostAccessRandom;
             }
@@ -423,7 +423,7 @@ namespace exage::Graphics
             {
                 flags |= vma::AllocationCreateFlagBits::eHostAccessSequentialWrite;
             }
-            
+
             flags |= vma::AllocationCreateFlagBits::eMapped;
         }
 
@@ -600,7 +600,8 @@ namespace exage::Graphics
         return vk::StencilOp::eKeep;
     }
 
-    [[nodiscard]] constexpr auto toVulkanStencilOpState(Pipeline::DepthStencilState::StencilOperationState opState) -> vk::StencilOpState
+    [[nodiscard]] constexpr auto toVulkanStencilOpState(
+        Pipeline::DepthStencilState::StencilOperationState opState) -> vk::StencilOpState
     {
         vk::StencilOpState state {};
         state.failOp = toVulkanStencilOp(opState.failOp);
@@ -613,68 +614,70 @@ namespace exage::Graphics
         return state;
     }
 
-    [[nodiscard]] constexpr auto toVulkanBlendFactor(Pipeline::ColorBlendAttachment::BlendFactor factor) -> vk::BlendFactor
+    [[nodiscard]] constexpr auto toVulkanBlendFactor(
+        Pipeline::ColorBlendAttachment::BlendFactor factor) -> vk::BlendFactor
     {
         switch (factor)
         {
             case Pipeline::ColorBlendAttachment::BlendFactor::eZero:
-				return vk::BlendFactor::eZero;
+                return vk::BlendFactor::eZero;
             case Pipeline::ColorBlendAttachment::BlendFactor::eOne:
-				return vk::BlendFactor::eOne;
+                return vk::BlendFactor::eOne;
             case Pipeline::ColorBlendAttachment::BlendFactor::eSrcColor:
-				return vk::BlendFactor::eSrcColor;
+                return vk::BlendFactor::eSrcColor;
             case Pipeline::ColorBlendAttachment::BlendFactor::eOneMinusSrcColor:
-				return vk::BlendFactor::eOneMinusSrcColor;
+                return vk::BlendFactor::eOneMinusSrcColor;
             case Pipeline::ColorBlendAttachment::BlendFactor::eDstColor:
-				return vk::BlendFactor::eDstColor;
+                return vk::BlendFactor::eDstColor;
             case Pipeline::ColorBlendAttachment::BlendFactor::eOneMinusDstColor:
-				return vk::BlendFactor::eOneMinusDstColor;
+                return vk::BlendFactor::eOneMinusDstColor;
             case Pipeline::ColorBlendAttachment::BlendFactor::eSrcAlpha:
-				return vk::BlendFactor::eSrcAlpha;
+                return vk::BlendFactor::eSrcAlpha;
             case Pipeline::ColorBlendAttachment::BlendFactor::eOneMinusSrcAlpha:
-				return vk::BlendFactor::eOneMinusSrcAlpha;
+                return vk::BlendFactor::eOneMinusSrcAlpha;
             case Pipeline::ColorBlendAttachment::BlendFactor::eDstAlpha:
-				return vk::BlendFactor::eDstAlpha;
+                return vk::BlendFactor::eDstAlpha;
             case Pipeline::ColorBlendAttachment::BlendFactor::eOneMinusDstAlpha:
-				return vk::BlendFactor::eOneMinusDstAlpha;
+                return vk::BlendFactor::eOneMinusDstAlpha;
             case Pipeline::ColorBlendAttachment::BlendFactor::eConstantColor:
-				return vk::BlendFactor::eConstantColor;
+                return vk::BlendFactor::eConstantColor;
             case Pipeline::ColorBlendAttachment::BlendFactor::eOneMinusConstantColor:
-				return vk::BlendFactor::eOneMinusConstantColor;
+                return vk::BlendFactor::eOneMinusConstantColor;
             case Pipeline::ColorBlendAttachment::BlendFactor::eConstantAlpha:
-				return vk::BlendFactor::eConstantAlpha;
+                return vk::BlendFactor::eConstantAlpha;
             case Pipeline::ColorBlendAttachment::BlendFactor::eOneMinusConstantAlpha:
-				return vk::BlendFactor::eOneMinusConstantAlpha;
+                return vk::BlendFactor::eOneMinusConstantAlpha;
             case Pipeline::ColorBlendAttachment::BlendFactor::eSrcAlphaSaturate:
-				return vk::BlendFactor::eSrcAlphaSaturate;
+                return vk::BlendFactor::eSrcAlphaSaturate;
             case Pipeline::ColorBlendAttachment::BlendFactor::eSrc1Color:
-				return vk::BlendFactor::eSrc1Color;
+                return vk::BlendFactor::eSrc1Color;
             case Pipeline::ColorBlendAttachment::BlendFactor::eOneMinusSrc1Color:
-				return vk::BlendFactor::eOneMinusSrc1Color;
+                return vk::BlendFactor::eOneMinusSrc1Color;
             case Pipeline::ColorBlendAttachment::BlendFactor::eSrc1Alpha:
-				return vk::BlendFactor::eSrc1Alpha;
+                return vk::BlendFactor::eSrc1Alpha;
             case Pipeline::ColorBlendAttachment::BlendFactor::eOneMinusSrc1Alpha:
-				return vk::BlendFactor::eOneMinusSrc1Alpha;
-		}
-		return vk::BlendFactor::eZero;
-	}
+                return vk::BlendFactor::eOneMinusSrc1Alpha;
+        }
+        return vk::BlendFactor::eZero;
+    }
 
-    [[nodiscard]] constexpr auto toVulkanBlendOp(Pipeline::ColorBlendAttachment::BlendOperation op) -> vk::BlendOp
+    [[nodiscard]] constexpr auto toVulkanBlendOp(Pipeline::ColorBlendAttachment::BlendOperation op)
+        -> vk::BlendOp
     {
         switch (op)
         {
             case Pipeline::ColorBlendAttachment::BlendOperation::eAdd:
-				return vk::BlendOp::eAdd;
+                return vk::BlendOp::eAdd;
             case Pipeline::ColorBlendAttachment::BlendOperation::eSubtract:
-				return vk::BlendOp::eSubtract;
+                return vk::BlendOp::eSubtract;
             case Pipeline::ColorBlendAttachment::BlendOperation::eReverseSubtract:
-				return vk::BlendOp::eReverseSubtract;
+                return vk::BlendOp::eReverseSubtract;
             case Pipeline::ColorBlendAttachment::BlendOperation::eMin:
-				return vk::BlendOp::eMin;
+                return vk::BlendOp::eMin;
             case Pipeline::ColorBlendAttachment::BlendOperation::eMax:
-				return vk::BlendOp::eMax;
-		}
-		return vk::BlendOp::eAdd;
-	}
+                return vk::BlendOp::eMax;
+        }
+        return vk::BlendOp::eAdd;
+    }
 
 }  // namespace exage::Graphics
