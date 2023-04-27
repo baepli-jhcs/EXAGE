@@ -4,11 +4,13 @@
 #define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 #define VULKAN_HPP_STORAGE_SHARED
 #define VULKAN_HPP_STORAGE_SHARED_EXPORT
+#include <vulkan-memory-allocator-hpp/vk_mem_alloc.hpp>
 #include <vulkan/vulkan.hpp>
 
 #include "exage/Graphics/Buffer.h"
 #include "exage/Graphics/Commands.h"
 #include "exage/Graphics/Pipeline.h"
+#include "exage/Graphics/Swapchain.h"
 #include "exage/Graphics/Texture.h"
 #include "fmt/format.h"
 
@@ -494,7 +496,6 @@ namespace exage::Graphics
                         return vk::Format::eR32Sint;
                 }
                 return vk::Format::eR32Uint;
-                break;
             case 2:
                 switch (type)
                 {
@@ -508,7 +509,6 @@ namespace exage::Graphics
                         return vk::Format::eR32G32Sint;
                 }
                 return vk::Format::eR32G32Uint;
-                break;
             case 3:
                 switch (type)
                 {
@@ -523,7 +523,6 @@ namespace exage::Graphics
                         return vk::Format::eR32G32B32Sint;
                 }
                 return vk::Format::eR32G32B32Uint;
-                break;
             case 4:
                 switch (type)
                 {
@@ -537,7 +536,6 @@ namespace exage::Graphics
                         return vk::Format::eR32G32B32A32Sint;
                 }
                 return vk::Format::eR32G32B32A32Uint;
-                break;
         }
 
         return vk::Format::eUndefined;
@@ -678,6 +676,52 @@ namespace exage::Graphics
                 return vk::BlendOp::eMax;
         }
         return vk::BlendOp::eAdd;
+    }
+
+    [[nodiscard]] constexpr auto toExageFormat(vk::Format format) noexcept -> std::optional<Format>
+    {
+        switch (format)
+        {
+            case vk ::Format ::eR8Unorm:
+                return Format ::eR8;
+            case vk ::Format ::eR16Unorm:
+                return Format ::eR16;
+            case vk ::Format ::eR8G8Unorm:
+                return Format ::eRG8;
+            case vk ::Format ::eR16G16Unorm:
+                return Format ::eRG16;
+            case vk ::Format ::eR8G8B8Unorm:
+                return Format ::eRGB8;
+            case vk ::Format ::eR16G16B16Unorm:
+                return Format ::eRGB16;
+            case vk ::Format ::eR8G8B8A8Unorm:
+                return Format ::eRGBA8;
+            case vk ::Format ::eR16G16B16A16Unorm:
+                return Format ::eRGBA16;
+            case vk ::Format ::eR16Sfloat:
+                return Format ::eR16f;
+            case vk ::Format ::eR16G16Sfloat:
+                return Format ::eRG16f;
+            case vk ::Format ::eR16G16B16Sfloat:
+                return Format ::eRGB16f;
+            case vk ::Format ::eR16G16B16A16Sfloat:
+                return Format ::eRGBA16f;
+            case vk ::Format ::eR32Sfloat:
+                return Format ::eR32f;
+            case vk ::Format ::eR32G32Sfloat:
+                return Format ::eRG32f;
+            case vk ::Format ::eR32G32B32Sfloat:
+                return Format ::eRGB32f;
+            case vk ::Format ::eR32G32B32A32Sfloat:
+                return Format ::eRGBA32f;
+            case vk ::Format ::eD24UnormS8Uint:
+                return Format ::eDepth24Stencil8;
+            case vk ::Format ::eD32SfloatS8Uint:
+                return Format ::eDepth32Stencil8;
+            case vk ::Format ::eB8G8R8A8Unorm:
+                return Format ::eBGRA8;
+        };
+        return std ::nullopt;
     }
 
 }  // namespace exage::Graphics

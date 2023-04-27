@@ -7,6 +7,8 @@
 
 namespace exage::Graphics
 {
+    class VulkanPipeline;
+
     class EXAGE_EXPORT VulkanCommandBuffer final : public CommandBuffer
     {
       public:

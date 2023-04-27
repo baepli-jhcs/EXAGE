@@ -82,19 +82,20 @@ namespace exage::Renderer
     struct GPUMesh
     {
         std::string path;
-        
+
         std::vector<GPUMeshDetails> lods;
 
         std::string materialPath;
         GPUMaterial material;
 
         AABB aabb;
-    };
 
-    struct MeshComponent
-    {
-        std::filesystem::path meshPath;
-        GPUMesh mesh;
+        // Serialization
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(path, materialPath, aabb);
+        }
     };
 
     constexpr std::string_view MESH_EXTENSION = ".exmesh";

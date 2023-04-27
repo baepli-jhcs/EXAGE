@@ -1,4 +1,5 @@
-﻿#include <fstream>
+﻿#include <cstddef>
+#include <fstream>
 #include <memory>
 #include <unordered_map>
 #include <vector>
@@ -6,17 +7,26 @@
 #include "exage/Renderer/Scene/Loader/Converter.h"
 
 #include <assimp/Importer.hpp>
+#include <assimp/matrix4x4.h>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 #include <cereal/archives/binary.hpp>
 #include <cereal/cereal.hpp>
+#include <ktx.h>
 
-#include "assimp/matrix4x4.h"
+#include "exage/Renderer/Scene/Material.h"
+#include "exage/Renderer/Scene/Mesh.h"
+
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb/stb_image.h>
+#include <tl/expected.hpp>
+
 #include "exage/Graphics/Texture.h"
 #include "exage/Renderer/Scene/Loader/Errors.h"
 #include "exage/Renderer/Scene/Loader/Loader.h"
 #include "exage/Scene/Hierarchy.h"
-#include "tl/expected.hpp"
+#include "exage/platform/Vulkan/VulkanUtils.h"
+#include "ktxvulkan.h"
 
 namespace exage::Renderer
 {
@@ -24,8 +34,8 @@ namespace exage::Renderer
     {
         [[nodiscard]] auto processMaterial(
             const aiMaterial& material,
-            std::unordered_map<std::filesystem::path, std::unique_ptr<Texture>>&
-                textureCache) noexcept -> tl::expected<Material, AssetImportError>;
+            std::unordered_map<std::string, std::unique_ptr<Texture>>& textureCache) noexcept
+            -> tl::expected<Material, AssetImportError>;
 
         [[nodiscard]] auto processMesh(
             const aiMesh& mesh, const std::unordered_map<size_t, Material*>& materialCache) noexcept
@@ -42,7 +52,7 @@ namespace exage::Renderer
             std::vector<std::unique_ptr<Material>> materials;
             materials.reserve(scene.mNumMaterials);
 
-            std::unordered_map<std::filesystem::path, std::unique_ptr<Texture>> textureCache;
+            std::unordered_map<std::string, std::unique_ptr<Texture>> textureCache;
             std::unordered_map<size_t, Material*> materialCache;
 
             for (size_t i = 0; i < scene.mNumMaterials; ++i)
@@ -111,8 +121,8 @@ namespace exage::Renderer
 
         [[nodiscard]] auto processMaterial(
             const aiMaterial& material,
-            std::unordered_map<std::filesystem::path, std::unique_ptr<Texture>>&
-                textureCache) noexcept -> tl::expected<Material, AssetImportError>
+            std::unordered_map<std::string, std::unique_ptr<Texture>>& textureCache) noexcept
+            -> tl::expected<Material, AssetImportError>
         {
             aiString aiAlbedoPath;
             material.GetTexture(aiTextureType_BASE_COLOR, 0, &aiAlbedoPath);
@@ -169,9 +179,10 @@ namespace exage::Renderer
             {
                 if (textureInfo.useTexture)
                 {
-                    if (textureCache.contains(texturePath))
+                    auto textureString = texturePath.string();
+                    if (textureCache.contains(textureString))
                     {
-                        textureInfo.texture = textureCache[texturePath].get();
+                        textureInfo.texture = textureCache[textureString].get();
                     }
 
                     else
@@ -182,8 +193,8 @@ namespace exage::Renderer
                         {
                             auto texturePtr =
                                 std::make_unique<Texture>(std::move(textureReturn.value()));
-                            textureCache[texturePath] = std::move(texturePtr);
-                            textureInfo.texture = textureCache[texturePath].get();
+                            textureCache[textureString] = std::move(texturePtr);
+                            textureInfo.texture = textureCache[textureString].get();
                         }
                         else
                         {
@@ -319,8 +330,7 @@ namespace exage::Renderer
                     nodeResult.parent = parent;
                     nodeResult.transform = transform;
 
-                    auto meshIt = meshCache.find(node.mMeshes[i]);
-                    nodeResult.mesh = meshIt->second;
+                    nodeResult.meshIndex = node.mMeshes[i];
 
                     nodes.push_back(
                         std::make_unique<AssetImportResult::Node>(std::move(nodeResult)));
@@ -389,9 +399,215 @@ namespace exage::Renderer
         // Load using stb_image or ktx depending on file extension
         if (texturePath.extension() == ".ktx")
         {
+            ktxTexture* ktxTexture = nullptr;
+            ktxResult result = ktxTexture_CreateFromNamedFile(
+                texturePath.string().c_str(), KTX_TEXTURE_CREATE_LOAD_IMAGE_DATA_BIT, &ktxTexture);
+
+            if (result != KTX_SUCCESS)
+            {
+                return tl::make_unexpected(FileFormatError {});
+            }
+
+            Texture texture;
+            texture.extent = glm::uvec3(ktxTexture->baseWidth, ktxTexture->baseHeight, 1);
+            texture.data = std::vector<std::byte>(ktxTexture_GetDataSize(ktxTexture));
+
+            auto vkFormat = static_cast<vk::Format>(ktxTexture_GetVkFormat(ktxTexture));
+            std::optional<Graphics::Format> format = Graphics::toExageFormat(vkFormat);
+            if (!format)
+            {
+                std::cout << "Unsupported format: " << vk::to_string(vkFormat) << std::endl;
+                return tl::make_unexpected(FileFormatError {});
+            }
+            texture.format = *format;
+
+            std::memcpy(texture.data.data(), ktxTexture_GetData(ktxTexture), texture.data.size());
+
+            ktxTexture_Destroy(ktxTexture);
+
+            return texture;
         }
-        else
+
+        int width = 0;
+        int height = 0;
+        int channels = 0;
+        stbi_uc* pixels = stbi_load(texturePath.string().c_str(), &width, &height, &channels, 0);
+
+        if (pixels == nullptr)
         {
+            return tl::make_unexpected(FileFormatError {});
         }
+
+        Texture texture;
+        texture.extent = glm::uvec3(width, height, 1);
+        texture.data = std::vector<std::byte>(static_cast<size_t>(width) * height * channels);
+
+        switch (channels)
+        {
+            case 1:
+                texture.format = Graphics::Format::eR8;
+                break;
+            case 2:
+                texture.format = Graphics::Format::eRG8;
+                break;
+            case 3:
+                texture.format = Graphics::Format::eRGB8;
+                break;
+            case 4:
+                texture.format = Graphics::Format::eRGBA8;
+                break;
+
+            default:
+                std::cout << "Unsupported number of channels: " << channels << std::endl;
+                return tl::make_unexpected(FileFormatError {});
+        }
+
+        std::memcpy(texture.data.data(), pixels, texture.data.size());
+
+        stbi_image_free(pixels);
+
+        return texture;
     }
+
+    auto saveAssets(const AssetImportResult& assets,
+                    const std::filesystem::path& saveDirectory,
+                    const std::filesystem::path& prefix) noexcept -> std::optional<DirectoryError>
+    {
+        const auto texturesDirectory = saveDirectory / "textures";
+        const auto materialsDirectory = saveDirectory / "materials";
+        const auto meshesDirectory = saveDirectory / "meshes";
+
+        const auto saveTexturesDir = prefix / texturesDirectory;
+        const auto saveMaterialsDir = prefix / materialsDirectory;
+        const auto saveMeshesDir = prefix / meshesDirectory;
+
+        std::filesystem::create_directories(saveTexturesDir);
+        std::filesystem::create_directories(saveMaterialsDir);
+        std::filesystem::create_directories(saveMeshesDir);
+
+        if (!std::filesystem::exists(texturesDirectory)
+            || !std::filesystem::exists(materialsDirectory)
+            || !std::filesystem::exists(meshesDirectory))
+        {
+            return DirectoryError {};
+        }
+
+        for (size_t i = 0; i < assets.textures.size(); i++)
+        {
+            auto& texture = *assets.textures[i];
+            const auto texturePath =
+                texturesDirectory / (std::to_string(i).append(TEXTURE_EXTENSION));
+
+            std::ofstream textureFile(texturePath, std::ios::binary);
+            cereal::BinaryOutputArchive archive(textureFile);
+            archive(texture);
+
+            texture.path = texturePath.string();
+        }
+
+        for (size_t i = 0; i < assets.materials.size(); i++)
+        {
+            auto& material = *assets.materials[i];
+            const auto materialPath =
+                materialsDirectory / (std::to_string(i).append(MATERIAL_EXTENSION));
+
+            if (material.albedo.texture != nullptr)
+            {
+                material.albedo.texturePath = material.albedo.texture->path;
+            }
+
+            if (material.normal.texture != nullptr)
+            {
+                material.normal.texturePath = material.normal.texture->path;
+            }
+
+            if (material.metallic.texture != nullptr)
+            {
+                material.metallic.texturePath = material.metallic.texture->path;
+            }
+
+            if (material.roughness.texture != nullptr)
+            {
+                material.roughness.texturePath = material.roughness.texture->path;
+            }
+
+            if (material.occlusion.texture != nullptr)
+            {
+                material.occlusion.texturePath = material.occlusion.texture->path;
+            }
+
+            if (material.emissive.texture != nullptr)
+            {
+                material.emissive.texturePath = material.emissive.texture->path;
+            }
+
+            std::ofstream materialFile(materialPath, std::ios::binary);
+            cereal::BinaryOutputArchive archive(materialFile);
+            archive(material);
+
+            material.path = materialPath.string();
+        }
+
+        for (size_t i = 0; i < assets.meshes.size(); i++)
+        {
+            auto& mesh = *assets.meshes[i];
+            const auto meshPath = meshesDirectory / (std::to_string(i).append(MESH_EXTENSION));
+
+            if (mesh.material != nullptr)
+            {
+                mesh.materialPath = mesh.material->path;
+            }
+
+            std::ofstream meshFile(meshPath, std::ios::binary);
+            cereal::BinaryOutputArchive archive(meshFile);
+            archive(mesh);
+
+            mesh.path = meshPath.string();
+        }
+
+        return std::nullopt;
+    }
+
+    auto saveTexture(Texture& texture,
+                     const std::filesystem::path& savePath,
+                     const std::filesystem::path& prefix) noexcept -> std::optional<SaveError>
+    {
+        const auto saveTexturePath = prefix / savePath;
+
+        std::ofstream textureFile(saveTexturePath, std::ios::binary);
+        cereal::BinaryOutputArchive archive(textureFile);
+        archive(texture);
+
+        texture.path = saveTexturePath.string();
+
+        return std::nullopt;
+    }
+
+    namespace
+    {
+        void createChildren(const AssetSceneImportInfo& info,
+                            Scene& scene,
+                            Entity parent,
+                            std::span<std::unique_ptr<AssetImportResult::Node>> children)
+        {
+            for (const auto& child : children)
+            {
+                auto entity = scene.createEntity(parent);
+                scene.addComponent<Transform3D>(entity, child->transform);
+
+                GPUMesh& mesh = info.meshes[child->meshIndex];
+                scene.addComponent<GPUMesh>(entity, mesh);
+
+                createChildren(info, scene, entity, child->children);
+            }
+        }
+    }  // namespace
+
+    EXAGE_EXPORT void importScene(const AssetSceneImportInfo& info,
+                                  Scene& scene,
+                                  Entity parent) noexcept
+    {
+        createChildren(info, scene, parent, info.rootNodes);
+    }
+
 }  // namespace exage::Renderer

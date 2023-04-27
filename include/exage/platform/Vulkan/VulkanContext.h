@@ -20,7 +20,7 @@
 
 namespace exage::Graphics
 {
-    enum class SurfaceError : uint32_t;
+    class VulkanResourceManager;
 
     class EXAGE_EXPORT VulkanContext final : public Context
     {
@@ -53,10 +53,10 @@ namespace exage::Graphics
             -> std::shared_ptr<Buffer> override;
         [[nodiscard]] auto createShader(const ShaderCreateInfo& createInfo) noexcept
             -> std::shared_ptr<Shader> override;
-		[[nodiscard]] auto createPipeline(const PipelineCreateInfo& createInfo) noexcept
-			-> std::shared_ptr<Pipeline> override;
+        [[nodiscard]] auto createPipeline(const PipelineCreateInfo& createInfo) noexcept
+            -> std::shared_ptr<Pipeline> override;
         [[nodiscard]] auto createResourceManager() noexcept
-			-> std::unique_ptr<ResourceManager> override;
+            -> std::unique_ptr<ResourceManager> override;
 
         [[nodiscard]] auto getHardwareSupport() const noexcept -> HardwareSupport override;
 

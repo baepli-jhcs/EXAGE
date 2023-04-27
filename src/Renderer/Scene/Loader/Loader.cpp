@@ -87,8 +87,8 @@ namespace exage::Renderer
         return mesh;
     }
 
-    auto uploadTexture(const Texture& texture,
-                                    const TextureUploadOptions& options) noexcept -> GPUTexture
+    auto uploadTexture(const Texture& texture, const TextureUploadOptions& options) noexcept
+        -> GPUTexture
     {
         GPUTexture gpuTexture;
 
@@ -101,7 +101,7 @@ namespace exage::Renderer
         gpuMesh.path = mesh.path;
         gpuMesh.materialPath = mesh.materialPath;
         gpuMesh.aabb = mesh.aabb;
-        
+
         gpuMesh.lods.resize(mesh.lods.size());
 
         for (size_t i = 0; i < mesh.lods.size(); i++)
@@ -109,8 +109,7 @@ namespace exage::Renderer
             const auto& lod = mesh.lods[i];
             auto& gpuLod = gpuMesh.lods[i];
 
-                        std::span<const std::byte> vertexData = std::as_bytes(std::span(lod.vertices));
-                        
+            std::span<const std::byte> vertexData = std::as_bytes(std::span(lod.vertices));
 
             gpuLod.vertexOffset = options.sceneBuffer.uploadData(
                 options.commandBuffer, vertexData, options.access, options.pipelineStage);

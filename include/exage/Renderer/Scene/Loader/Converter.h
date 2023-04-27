@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include <filesystem>
+#include <memory>
 #include <optional>
 #include <vector>
 
@@ -25,7 +26,7 @@ namespace exage::Renderer
         struct Node
         {
             Transform3D transform;
-            Mesh* mesh = nullptr;
+            size_t meshIndex = 0;
             Node* parent = nullptr;
             std::vector<std::unique_ptr<Node>> children;
         };
@@ -38,5 +39,26 @@ namespace exage::Renderer
 
     [[nodiscard]] EXAGE_EXPORT auto importTexture(const std::filesystem::path& texturePath) noexcept
         -> tl::expected<Texture, TextureImportError>;
+
+    [[nodiscard]] EXAGE_EXPORT auto saveAssets(const AssetImportResult& assets,
+                                               const std::filesystem::path& saveDirectory,
+                                               const std::filesystem::path& prefix) noexcept
+        -> std::optional<DirectoryError>;
+
+    [[nodiscard]] EXAGE_EXPORT auto saveTexture(Texture& texture,
+                                                const std::filesystem::path& savePath,
+                                                const std::filesystem::path& prefix) noexcept
+        -> std::optional<SaveError>;
+
+    struct AssetSceneImportInfo
+    {
+        std::span<GPUMesh> meshes;
+
+        std::span<std::unique_ptr<AssetImportResult::Node>> rootNodes;
+    };
+
+    EXAGE_EXPORT void importScene(const AssetSceneImportInfo& info,
+                                  Scene& scene,
+                                  Entity parent = entt::null) noexcept;
 
 }  // namespace exage::Renderer

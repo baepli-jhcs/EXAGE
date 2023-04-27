@@ -2,6 +2,7 @@
 
 #include <filesystem>
 
+#include <glm/fwd.hpp>
 #include <glm/glm.hpp>
 
 #include "exage/Core/Core.h"
@@ -15,6 +16,7 @@ namespace exage::Renderer
     struct Texture
     {
         std::string path;
+        glm::uvec3 extent;
         std::vector<std::byte> data;
         Graphics::Format format;
         Graphics::Texture::Type type;
@@ -69,7 +71,7 @@ namespace exage::Renderer
     struct MetallicInfo
     {
         bool useTexture = false;
-        float value = 0.0f;
+        float value = 0.0F;
         std::string texturePath;
         Texture* texture = nullptr;
 

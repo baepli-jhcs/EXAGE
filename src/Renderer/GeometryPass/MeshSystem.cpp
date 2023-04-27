@@ -51,37 +51,37 @@ namespace exage::Renderer
     {
         commandBuffer.bindPipeline(_pipeline);
 
-        auto view = scene.registry().view<MeshComponent, TransformRenderInfo>();
+        auto view = scene.registry().view<GPUMesh, TransformRenderInfo>();
 
         auto func = [&](Entity entity)
         {
-            const auto& meshComponent = view.get<MeshComponent>(entity);
+            const auto& mesh = view.get<GPUMesh>(entity);
             const auto& transform = view.get<TransformRenderInfo>(entity);
 
             const auto& cameraInfo = scene.getComponent<CameraRenderInfo>(getSceneCamera(scene));
 
             // Frustum culling using meshComponent.mesh.aabb
-            if (!aabbInFrustum(meshComponent.mesh.aabb, transform.modelViewProjection))
+            if (!aabbInFrustum(mesh.aabb, transform.modelViewProjection))
             {
                 return;
             }
 
-            BindlessPushConstant pushConstant;
+            BindlessPushConstant pushConstant {};
             pushConstant.cameraIndex = cameraInfo.bufferID->get().id;
             pushConstant.transformIndex = transform.bufferID->get().id;
 
             size_t lodLevel = 0;  // TODO: LOD
 
-            const auto& materialID = meshComponent.mesh.material.bufferID;
+            const auto& materialID = mesh.material.bufferID;
             commandBuffer.insertDataDependency(materialID);
             pushConstant.materialIndex = materialID->get().id;
 
             commandBuffer.setPushConstant(sizeof(pushConstant),
                                           reinterpret_cast<std::byte*>(&pushConstant));
 
-            commandBuffer.drawIndexed(meshComponent.mesh.lods[lodLevel].indexCount,
-                                      meshComponent.mesh.lods[lodLevel].indexOffset,
-                                      meshComponent.mesh.lods[lodLevel].vertexOffset,
+            commandBuffer.drawIndexed(mesh.lods[lodLevel].indexCount,
+                                      mesh.lods[lodLevel].indexOffset,
+                                      mesh.lods[lodLevel].vertexOffset,
                                       1,
                                       0);
         };
