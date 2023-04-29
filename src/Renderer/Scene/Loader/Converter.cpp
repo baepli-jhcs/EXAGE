@@ -1,4 +1,5 @@
 ﻿#include <cstddef>
+#include <filesystem>
 #include <fstream>
 #include <memory>
 #include <unordered_map>
@@ -34,7 +35,7 @@ namespace exage::Renderer
     {
         [[nodiscard]] auto processMaterial(
             const aiMaterial& material,
-            std::unordered_map<std::string, std::unique_ptr<Texture>>& textureCache) noexcept
+            std::unordered_map<size_t, std::unique_ptr<Texture>>& textureCache) noexcept
             -> tl::expected<Material, AssetImportError>;
 
         [[nodiscard]] auto processMesh(
@@ -52,7 +53,7 @@ namespace exage::Renderer
             std::vector<std::unique_ptr<Material>> materials;
             materials.reserve(scene.mNumMaterials);
 
-            std::unordered_map<std::string, std::unique_ptr<Texture>> textureCache;
+            std::unordered_map<size_t, std::unique_ptr<Texture>> textureCache;
             std::unordered_map<size_t, Material*> materialCache;
 
             for (size_t i = 0; i < scene.mNumMaterials; ++i)
@@ -121,7 +122,7 @@ namespace exage::Renderer
 
         [[nodiscard]] auto processMaterial(
             const aiMaterial& material,
-            std::unordered_map<std::string, std::unique_ptr<Texture>>& textureCache) noexcept
+            std::unordered_map<size_t, std::unique_ptr<Texture>>& textureCache) noexcept
             -> tl::expected<Material, AssetImportError>
         {
             aiString aiAlbedoPath;
@@ -179,10 +180,10 @@ namespace exage::Renderer
             {
                 if (textureInfo.useTexture)
                 {
-                    auto textureString = texturePath.string();
-                    if (textureCache.contains(textureString))
+                    size_t textureHash = std::filesystem::hash_value(texturePath);
+                    if (textureCache.contains(textureHash))
                     {
-                        textureInfo.texture = textureCache[textureString].get();
+                        textureInfo.texture = textureCache[textureHash].get();
                     }
 
                     else
@@ -193,8 +194,8 @@ namespace exage::Renderer
                         {
                             auto texturePtr =
                                 std::make_unique<Texture>(std::move(textureReturn.value()));
-                            textureCache[textureString] = std::move(texturePtr);
-                            textureInfo.texture = textureCache[textureString].get();
+                            textureCache[textureHash] = std::move(texturePtr);
+                            textureInfo.texture = textureCache[textureHash].get();
                         }
                         else
                         {
