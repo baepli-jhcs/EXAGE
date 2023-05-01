@@ -2,8 +2,8 @@
 
 #include "exage/Core/Core.h"
 #include "exage/Graphics/Context.h"
-#include "glm/glm.hpp"
 #include "exage/utils/classes.h"
+#include "glm/glm.hpp"
 
 namespace exage::Graphics
 {
@@ -31,7 +31,7 @@ namespace exage::Graphics
     };
 
     struct SamplerCreateInfo;
-    
+
     struct EXAGE_EXPORT Sampler
     {
         virtual ~Sampler() = default;
@@ -94,11 +94,12 @@ namespace exage::Graphics
 
         enum class UsageFlags : uint32_t
         {
-            eTransferSource = 1 << 0,
-            eTransferDestination = 1 << 1,
-            eColorAttachment = 1 << 2,
-            eDepthStencilAttachment = 1 << 3,
-            eStorage = 1 << 4,
+            eTransferSrc = 1 << 0,
+            eTransferDst = 1 << 1,
+            eSampled = 1 << 2,
+            eStorage = 1 << 3,
+            eColorAttachment = 1 << 4,
+            eDepthStencilAttachment = 1 << 5,
         };
 
         using Usage = Flags<UsageFlags>;
@@ -184,7 +185,7 @@ namespace exage::Graphics
         TextureExtent extent = glm::uvec3(1);
         Format format = Format::eRGBA8;
         Texture::Type type = Texture::Type::e2D;
-        Texture::Usage usage {};
+        Texture::Usage usage = Texture::UsageFlags::eSampled;
         uint32_t arrayLayers = 1;
         uint32_t mipLevels = 1;
 

@@ -5,6 +5,7 @@
 
 #include "exage/Core/Core.h"
 #include "exage/Graphics/CommandBuffer.h"
+#include "exage/Graphics/Texture.h"
 #include "exage/Renderer/Scene/AssetCache.h"
 #include "exage/Renderer/Scene/Loader/Errors.h"
 #include "exage/Renderer/Scene/Material.h"
@@ -29,9 +30,16 @@ namespace exage::Renderer
         Graphics::CommandBuffer& commandBuffer;
         Graphics::ResourceManager* resourceManager = nullptr;
 
+        Graphics::Texture::Usage usage = Graphics::Texture::UsageFlags::eSampled
+            | Graphics::Texture::UsageFlags::eTransferDst
+            | Graphics::Texture::UsageFlags::eTransferSrc;
         Graphics::Texture::Layout layout = Graphics::Texture::Layout::eShaderReadOnly;
         Graphics::Access access = Graphics::AccessFlags::eShaderRead;
         Graphics::PipelineStage pipelineStage = Graphics::PipelineStageFlags::eFragmentShader;
+
+        bool generateMipmaps = true;
+
+        Graphics::SamplerCreateInfo samplerCreateInfo {};
     };
 
     struct MaterialUploadOptions

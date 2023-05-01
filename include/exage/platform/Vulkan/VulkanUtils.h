@@ -131,14 +131,24 @@ namespace exage::Graphics
     [[nodiscard]] constexpr auto toVulkanImageUsageFlags(Texture::Usage usage) noexcept
         -> vk::ImageUsageFlags
     {
-        vk::ImageUsageFlags flags = vk::ImageUsageFlagBits::eSampled;  // All textures are sampled
+        vk::ImageUsageFlags flags {};
 
-        if (usage.any(Texture::UsageFlags::eTransferSource))
+        if (usage.any(Texture::UsageFlags::eSampled))
+        {
+            flags |= vk::ImageUsageFlagBits::eSampled;
+        }
+
+        if (usage.any(Texture::UsageFlags::eStorage))
+        {
+            flags |= vk::ImageUsageFlagBits::eStorage;
+        }
+
+        if (usage.any(Texture::UsageFlags::eTransferSrc))
         {
             flags |= vk::ImageUsageFlagBits::eTransferSrc;
         }
 
-        if (usage.any(Texture::UsageFlags::eTransferDestination))
+        if (usage.any(Texture::UsageFlags::eTransferDst))
         {
             flags |= vk::ImageUsageFlagBits::eTransferDst;
         }
@@ -151,11 +161,6 @@ namespace exage::Graphics
         if (usage.any(Texture::UsageFlags::eDepthStencilAttachment))
         {
             flags |= vk::ImageUsageFlagBits::eDepthStencilAttachment;
-        }
-
-        if (usage.any(Texture::UsageFlags::eStorage))
-        {
-            flags |= vk::ImageUsageFlagBits::eStorage;
         }
 
         return flags;

@@ -5,6 +5,10 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/cereal.hpp>
 
+#include "exage/Core/Debug.h"
+#include "exage/Graphics/Buffer.h"
+#include "exage/Graphics/Texture.h"
+
 namespace exage::Renderer
 {
     EXAGE_EXPORT auto loadTexture(const std::filesystem::path& path) noexcept
@@ -93,6 +97,59 @@ namespace exage::Renderer
         GPUTexture gpuTexture;
 
         std::shared_ptr<Graphics::Buffer> stagingBuffer;
+
+        Graphics::BufferCreateInfo stagingBufferCreateInfo;
+        stagingBufferCreateInfo.size = texture.data.size();
+        stagingBufferCreateInfo.cached = false;
+        stagingBufferCreateInfo.mapMode = Graphics::Buffer::MapMode::eMapped;
+
+        stagingBuffer = options.context.createBuffer(stagingBufferCreateInfo);
+        std::span<const std::byte> data = std::as_bytes(std::span(texture.data));
+
+        stagingBuffer->write(data, 0);
+
+        Graphics::TextureCreateInfo textureCreateInfo;
+        textureCreateInfo.extent = texture.extent;
+        textureCreateInfo.format = texture.format;
+        textureCreateInfo.usage = options.usage;  // Graphics::Texture::UsageFlags::eSampled |
+        // Graphics::Texture::UsageFlags::eTransferDst;
+
+        debugAssume(textureCreateInfo.usage.any(Graphics::Texture::UsageFlags::eTransferDst),
+                    "Texture must be transferable");
+
+        if (options.generateMipmaps)
+        {
+            auto mipLevels = static_cast<uint32_t>(std::floor(
+                                 std::log2(std::max(texture.extent.x, texture.extent.y))))
+                + 1;
+            textureCreateInfo.mipLevels = mipLevels;
+
+            textureCreateInfo.usage |= Graphics::Texture::UsageFlags::eTransferSrc;
+        }
+        else
+        {
+            textureCreateInfo.mipLevels = 1;
+        }
+
+        textureCreateInfo.type = Graphics::Texture::Type::e2D;
+        textureCreateInfo.arrayLayers = 1;
+
+        textureCreateInfo.samplerCreateInfo = options.samplerCreateInfo;
+
+        gpuTexture.texture = options.context.createTexture(textureCreateInfo);
+
+        options.commandBuffer.copyBufferToTexture(
+            stagingBuffer, gpuTexture.texture, 0, glm::vec3 {0}, 0, 0, 1, texture.extent);
+
+        if (options.generateMipmaps)
+        {
+            debugAssume(textureCreateInfo.usage.any(Graphics::Texture::UsageFlags::eTransferSrc),
+                        "If mipmaps are generated, the texture must be src transferable");
+
+            for (uint32_t i = 0; i < textureCreateInfo.mipLevels; i++)
+            {
+            }
+        }
     }
 
     auto uploadMesh(const Mesh& mesh, const MeshUploadOptions& options) noexcept -> GPUMesh
