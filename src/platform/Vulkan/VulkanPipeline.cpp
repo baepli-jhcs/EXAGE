@@ -63,21 +63,23 @@ namespace exage::Graphics
 
         std::vector<vk::VertexInputBindingDescription> vertexBindings;
         std::vector<vk::VertexInputAttributeDescription> vertexAttributes;
-        for (const auto& vertexDescription : createInfo.vertexDescriptions)
+        for (uint32_t index = 0; const auto& vertexDescription : createInfo.vertexDescriptions)
         {
             vk::VertexInputBindingDescription bindingDescription;
-            bindingDescription.binding = vertexDescription.index;
+            bindingDescription.binding = 0;
             bindingDescription.stride = vertexDescription.stride;
             bindingDescription.inputRate = toVulkanVertexInputRate(vertexDescription.inputRate);
             vertexBindings.push_back(bindingDescription);
 
             vk::VertexInputAttributeDescription attributeDescription;
-            attributeDescription.binding = vertexDescription.index;
-            attributeDescription.location = vertexDescription.index;
+            attributeDescription.binding = 0;
+            attributeDescription.location = index;
             attributeDescription.format =
                 toVulkanFormat(vertexDescription.components, vertexDescription.type);
             attributeDescription.offset = vertexDescription.offset;
             vertexAttributes.push_back(attributeDescription);
+
+            ++index;
         }
 
         vk::PipelineVertexInputStateCreateInfo vertexInputInfo;

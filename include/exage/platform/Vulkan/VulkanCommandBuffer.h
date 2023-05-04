@@ -58,7 +58,8 @@ namespace exage::Graphics
                   uint32_t srcFirstLayer,
                   uint32_t dstFirstLayer,
                   uint32_t layerCount,
-                  glm::uvec3 extent) noexcept override;
+                  glm::uvec3 srcExtent,
+                  glm::uvec3 dstExtent) noexcept override;
 
         void setViewport(glm::uvec2 offset, glm::uvec2 extent) noexcept override;
         void setScissor(glm::uvec2 offset, glm::uvec2 extent) noexcept override;
@@ -96,15 +97,13 @@ namespace exage::Graphics
                                  uint32_t srcFirstLayer,
                                  uint32_t layerCount,
                                  glm::uvec3 extent,
-                                 size_t dstOffset) noexcept override;
+                                 uint64_t dstOffset) noexcept override;
 
         void bindPipeline(std::shared_ptr<Pipeline> pipeline) noexcept override;
 
-        void setPushConstant(size_t size, std::byte* data) noexcept override;
+        void setPushConstant(uint32_t size, std::byte* data) noexcept override;
 
-        void bindVertexBuffer(std::shared_ptr<Buffer> buffer,
-                              uint64_t offset,
-                              uint32_t binding) noexcept override;
+        void bindVertexBuffer(std::shared_ptr<Buffer> buffer, uint64_t offset) noexcept override;
 
         void bindIndexBuffer(std::shared_ptr<Buffer> buffer, uint64_t offset) noexcept override;
 
@@ -128,7 +127,6 @@ namespace exage::Graphics
         void processCommand(const Commands::GPUCommand& command) noexcept;
 
         std::reference_wrapper<VulkanContext> _context;
-        vk::CommandPool _commandPool;
         vk::CommandBuffer _commandBuffer;
 
         std::vector<Commands::GPUCommand> _commands {};

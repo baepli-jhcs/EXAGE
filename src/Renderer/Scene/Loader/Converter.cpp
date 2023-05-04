@@ -410,7 +410,19 @@ namespace exage::Renderer
             }
 
             Texture texture;
-            texture.extent = glm::uvec3(ktxTexture->baseWidth, ktxTexture->baseHeight, 1);
+            texture.mips.resize(ktxTexture->numLevels);
+
+            for (size_t i = 0; i < ktxTexture->numLevels; i++)
+            {
+                texture.mips[i].extent.x = std::max(ktxTexture->baseWidth >> i, 1U);
+                texture.mips[i].extent.y = std::max(ktxTexture->baseHeight >> i, 1U);
+                texture.mips[i].extent.z = 1;
+                size_t offset = 0;
+                ktxTexture_GetImageOffset(ktxTexture, i, 0, 0, &offset);
+                texture.mips[i].offset = offset;
+                texture.mips[i].size = ktxTexture_GetImageSize(ktxTexture, i);
+            }
+
             texture.data = std::vector<std::byte>(ktxTexture_GetDataSize(ktxTexture));
 
             auto vkFormat = static_cast<vk::Format>(ktxTexture_GetVkFormat(ktxTexture));
@@ -440,8 +452,11 @@ namespace exage::Renderer
         }
 
         Texture texture;
-        texture.extent = glm::uvec3(width, height, 1);
-        texture.data = std::vector<std::byte>(static_cast<size_t>(width) * height * channels);
+        texture.mips.resize(1);
+        texture.mips[0].extent = glm::uvec3(width, height, 1);
+        texture.mips[0].offset = 0;
+        texture.mips[0].size = static_cast<size_t>(width) * height * channels;
+        texture.data = std::vector<std::byte>(texture.mips[0].size);
 
         switch (channels)
         {

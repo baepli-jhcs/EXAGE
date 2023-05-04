@@ -5,6 +5,7 @@
 #include "exage/Graphics/Texture.h"
 #include "exage/platform/Vulkan/VulkanContext.h"
 #include "exage/utils/classes.h"
+#include "vulkan/vulkan_enums.hpp"
 
 namespace exage::Graphics
 {
@@ -51,10 +52,11 @@ namespace exage::Graphics
         [[nodiscard]] auto getImage() const noexcept -> vk::Image { return _image; }
         [[nodiscard]] auto getImageView() const noexcept -> vk::ImageView { return _imageView; }
 
-        [[nodiscard]] auto getDescriptorImageInfo() const noexcept -> vk::DescriptorImageInfo
+        [[nodiscard]] auto getDescriptorImageInfo(
+            vk::ImageLayout layout = vk::ImageLayout::eShaderReadOnlyOptimal) const noexcept
+            -> vk::DescriptorImageInfo
         {
-            return vk::DescriptorImageInfo(
-                _sampler->getSampler(), _imageView, vk::ImageLayout::eShaderReadOnlyOptimal);
+            return {_sampler->getSampler(), _imageView, layout};
         }
 
         [[nodiscard]] auto getVulkanSampler() noexcept -> VulkanSampler& { return *_sampler; }
@@ -64,6 +66,7 @@ namespace exage::Graphics
         }
 
         EXAGE_VULKAN_DERIVED
+
       private:
         void cleanup() noexcept;
 

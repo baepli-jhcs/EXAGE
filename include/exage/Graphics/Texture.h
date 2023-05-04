@@ -177,7 +177,7 @@ namespace exage::Graphics
         Sampler::Anisotropy anisotropy = Sampler::Anisotropy::eDisabled;
         Sampler::Filter filter = Sampler::Filter::eLinear;
         Sampler::MipmapMode mipmapMode = Sampler::MipmapMode::eLinear;
-        float lodBias = 0.0f;
+        float lodBias = 0.0F;
     };
 
     struct TextureCreateInfo

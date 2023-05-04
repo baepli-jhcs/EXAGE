@@ -19,7 +19,8 @@ namespace exage::Renderer
         frameBufferCreateInfo.colorAttachments[0] = {
             Graphics::Format::eRGBA8,
             Graphics::Texture::UsageFlags::eColorAttachment
-                | Graphics::Texture::UsageFlags::eTransferSrc};
+                | Graphics::Texture::UsageFlags::eTransferSrc
+                | Graphics::Texture::UsageFlags::eSampled};
 
         _frameBuffer = context.createFrameBuffer(frameBufferCreateInfo);
     }

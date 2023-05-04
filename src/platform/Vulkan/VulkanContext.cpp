@@ -1,11 +1,11 @@
-﻿#define VMA_IMPLEMENTATION
-#include "exage/platform/Vulkan/VulkanContext.h"
-
+﻿#include "exage/Graphics/Error.h"
+#define VMA_IMPLEMENTATION
 #include <exage/platform/GLFW/GLFWindow.h>
 #include <exage/utils/cast.h>
 
 #include "VkBootstrap.h"
 #include "exage/Core/Window.h"
+#include "exage/platform/Vulkan/VulkanContext.h"
 #include "vulkan/vulkan_core.h"
 #include "vulkan/vulkan_enums.hpp"
 #include "vulkan/vulkan_structs.hpp"
@@ -278,10 +278,16 @@ namespace exage::Graphics
                 }
                 else
                 {
-                    debugAssume(false, "Failed to find a suitable depth format");
+                    return GraphicsError::eUnsupportedAPI;
                 }
             }
         }
+
+        vk::CommandPoolCreateInfo commandPoolCreateInfo;
+        commandPoolCreateInfo.queueFamilyIndex = _queue->getFamilyIndex();
+        commandPoolCreateInfo.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
+
+        checkVulkan(getDevice().createCommandPool(&commandPoolCreateInfo, nullptr, &_commandPool));
 
         return std::nullopt;
     }
@@ -296,6 +302,13 @@ namespace exage::Graphics
         for (auto& descriptorSetLayout : _descriptorSetLayoutCache)
         {
             getDevice().destroyDescriptorSetLayout(descriptorSetLayout.second);
+        }
+
+        getDevice().freeCommandBuffers(_commandPool, _freeCommandBuffers);
+
+        if (_commandPool)
+        {
+            getDevice().destroyCommandPool(_commandPool);
         }
 
         _queue = std::nullopt;
@@ -459,7 +472,8 @@ namespace exage::Graphics
         return layout;
     }
 
-    static size_t hashPipelineLayoutInfo(const VulkanContext::PipelineLayoutInfo& info) noexcept
+    static auto hashPipelineLayoutInfo(const VulkanContext::PipelineLayoutInfo& info) noexcept
+        -> size_t
     {
         size_t seed = 0;
         hashCombine(seed,
@@ -532,4 +546,30 @@ namespace exage::Graphics
     {
         return _physicalDevice.physical_device;
     }
+
+    auto VulkanContext::createVulkanCommandBuffer() noexcept -> vk::CommandBuffer
+    {
+        if (!_freeCommandBuffers.empty())
+        {
+            vk::CommandBuffer commandBuffer = _freeCommandBuffers.back();
+            _freeCommandBuffers.pop_back();
+            return commandBuffer;
+        }
+
+        vk::CommandBufferAllocateInfo allocInfo {};
+        allocInfo.commandPool = _commandPool;
+        allocInfo.level = vk::CommandBufferLevel::ePrimary;
+        allocInfo.commandBufferCount = 1;
+
+        vk::CommandBuffer commandBuffer;
+        checkVulkan(getDevice().allocateCommandBuffers(&allocInfo, &commandBuffer));
+        return commandBuffer;
+    }
+
+    void VulkanContext::destroyCommandBuffer(vk::CommandBuffer commandBuffer) noexcept
+    {
+        commandBuffer.reset();
+        _freeCommandBuffers.push_back(commandBuffer);
+    }
+
 }  // namespace exage::Graphics

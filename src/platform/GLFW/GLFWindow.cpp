@@ -327,7 +327,10 @@ namespace exage
 
         win->_extent = {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
 
-        win->_resizeCallback(win->_extent);
+        if (win->_resizeCallback)
+        {
+            win->_resizeCallback(win->_extent);
+        }
     }
 
     void GLFWindow::keyCallback(
@@ -354,7 +357,10 @@ namespace exage
         }
 
         auto keyCode = toKeyCode(key);
-        win->_keyCallback(keyCode, keyAction);
+        if (win->_keyCallback)
+        {
+            win->_keyCallback(keyCode, keyAction);
+        }
     }
 
     auto GLFWindow::exclusiveMonitor() const noexcept -> GLFWmonitor*

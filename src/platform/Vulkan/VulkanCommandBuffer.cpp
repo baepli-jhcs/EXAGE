@@ -1,10 +1,12 @@
 ﻿#include "exage/platform/Vulkan/VulkanCommandBuffer.h"
 
+#include "exage/Graphics/Commands.h"
 #include "exage/platform/Vulkan/VulkanBuffer.h"
 #include "exage/platform/Vulkan/VulkanFrameBuffer.h"
 #include "exage/platform/Vulkan/VulkanPipeline.h"
 #include "exage/platform/Vulkan/VulkanQueue.h"
 #include "exage/platform/Vulkan/VulkanTexture.h"
+#include "vulkan/vulkan_structs.hpp"
 
 namespace exage::Graphics
 {
@@ -13,22 +15,7 @@ namespace exage::Graphics
     VulkanCommandBuffer::VulkanCommandBuffer(VulkanContext& context) noexcept
         : _context(context)
     {
-        vk::CommandPoolCreateInfo commandPoolCreateInfo;
-        commandPoolCreateInfo.queueFamilyIndex = _context.get().getVulkanQueue().getFamilyIndex();
-        commandPoolCreateInfo.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
-
-        vk::Result result = _context.get().getDevice().createCommandPool(
-            &commandPoolCreateInfo, nullptr, &_commandPool);
-        checkVulkan(result);
-
-        vk::CommandBufferAllocateInfo commandBufferAllocateInfo;
-        commandBufferAllocateInfo.level = vk::CommandBufferLevel::ePrimary;
-        commandBufferAllocateInfo.commandPool = _commandPool;
-        commandBufferAllocateInfo.commandBufferCount = 1;
-
-        result = _context.get().getDevice().allocateCommandBuffers(&commandBufferAllocateInfo,
-                                                                   &_commandBuffer);
-        checkVulkan(result);
+        _commandBuffer = _context.get().createVulkanCommandBuffer();
 
         _commands.reserve(128);
         _dataDependencies.reserve(64);
@@ -38,26 +25,19 @@ namespace exage::Graphics
     {
         if (_commandBuffer)
         {
-            _context.get().getDevice().freeCommandBuffers(_commandPool, _commandBuffer);
-        }
-
-        if (_commandPool)
-        {
-            _context.get().getDevice().destroyCommandPool(_commandPool);
+            _context.get().destroyCommandBuffer(_commandBuffer);
         }
     }
 
     VulkanCommandBuffer::VulkanCommandBuffer(VulkanCommandBuffer&& old) noexcept
         : _context(old._context)
         , _commandBuffer(old._commandBuffer)
-        , _commandPool(old._commandPool)
         , _commands(std::move(old._commands))
         , _commandsMutex(std::move(old._commandsMutex))
         , _dataDependencies(std::move(old._dataDependencies))
         , _dataDependenciesMutex(std::move(old._dataDependenciesMutex))
     {
         old._commandBuffer = nullptr;
-        old._commandPool = nullptr;
     }
 
     auto VulkanCommandBuffer::operator=(VulkanCommandBuffer&& old) noexcept -> VulkanCommandBuffer&
@@ -71,23 +51,16 @@ namespace exage::Graphics
 
         if (_commandBuffer)
         {
-            _context.get().getDevice().freeCommandBuffers(_commandPool, _commandBuffer);
-        }
-
-        if (_commandPool)
-        {
-            _context.get().getDevice().destroyCommandPool(_commandPool);
+            _context.get().destroyCommandBuffer(_commandBuffer);
         }
 
         _commandBuffer = old._commandBuffer;
-        _commandPool = old._commandPool;
         _commands = std::move(old._commands);
         _commandsMutex = std::move(old._commandsMutex);
         _dataDependencies = std::move(old._dataDependencies);
         _dataDependenciesMutex = std::move(old._dataDependenciesMutex);
 
         old._commandBuffer = nullptr;
-        old._commandPool = nullptr;
 
         return *this;
     }
@@ -97,8 +70,6 @@ namespace exage::Graphics
         _commands.clear();
         _dataDependencies.clear();
         _commandBuffer.reset();
-
-        _context.get().getDevice().resetCommandPool(_commandPool, {});
     }
 
     void VulkanCommandBuffer::end() noexcept
@@ -203,7 +174,8 @@ namespace exage::Graphics
                                    uint32_t srcFirstLayer,
                                    uint32_t dstFirstLayer,
                                    uint32_t layerCount,
-                                   glm::uvec3 extent) noexcept
+                                   glm::uvec3 srcExtent,
+                                   glm::uvec3 dstExtent) noexcept
     {
         BlitCommand blitCommand;
         blitCommand.srcTexture = srcTexture;
@@ -215,7 +187,8 @@ namespace exage::Graphics
         blitCommand.srcFirstLayer = srcFirstLayer;
         blitCommand.dstFirstLayer = dstFirstLayer;
         blitCommand.layerCount = layerCount;
-        blitCommand.extent = extent;
+        blitCommand.srcExtent = srcExtent;
+        blitCommand.dstExtent = dstExtent;
 
         std::lock_guard<std::mutex> const lock(*_commandsMutex);
         _commands.emplace_back(blitCommand);
@@ -337,7 +310,7 @@ namespace exage::Graphics
                                                   uint32_t srcFirstLayer,
                                                   uint32_t layerCount,
                                                   glm::uvec3 extent,
-                                                  size_t dstOffset) noexcept
+                                                  uint64_t dstOffset) noexcept
     {
         debugAssume(srcTexture->getLayout() == Texture::Layout::eTransferSrc,
                     "Image must be in transfer layout");
@@ -365,14 +338,69 @@ namespace exage::Graphics
         _commands.emplace_back(bindPipelineCommand);
     }
 
-    void VulkanCommandBuffer::setPushConstant(size_t size, std::byte* data) noexcept
+    void VulkanCommandBuffer::setPushConstant(uint32_t size, std::byte* data) noexcept
     {
-        SetPushConstantCommand setPushConstantCommand;
+        SetPushConstantCommand setPushConstantCommand {};
         setPushConstantCommand.size = size;
         std::memcpy(setPushConstantCommand.data, data, size);
 
         std::lock_guard<std::mutex> const lock(*_commandsMutex);
         _commands.emplace_back(setPushConstantCommand);
+    }
+
+    void VulkanCommandBuffer::bindVertexBuffer(std::shared_ptr<Buffer> buffer,
+                                               uint64_t offset) noexcept
+    {
+        BindVertexBufferCommand bindVertexBufferCommand;
+        bindVertexBufferCommand.buffer = buffer;
+        bindVertexBufferCommand.offset = offset;
+
+        std::lock_guard<std::mutex> const lock(*_commandsMutex);
+        _commands.emplace_back(bindVertexBufferCommand);
+    }
+
+    void VulkanCommandBuffer::bindIndexBuffer(std::shared_ptr<Buffer> buffer,
+                                              uint64_t offset) noexcept
+    {
+        BindIndexBufferCommand bindIndexBufferCommand;
+        bindIndexBufferCommand.buffer = buffer;
+        bindIndexBufferCommand.offset = offset;
+
+        std::lock_guard<std::mutex> const lock(*_commandsMutex);
+        _commands.emplace_back(bindIndexBufferCommand);
+    }
+
+    void VulkanCommandBuffer::bindSampledTexture(std::shared_ptr<Texture> texture,
+                                                 uint32_t binding) noexcept
+    {
+        BindSampledTextureCommand bindSampledTextureCommand;
+        bindSampledTextureCommand.texture = texture;
+        bindSampledTextureCommand.binding = binding;
+
+        std::lock_guard<std::mutex> const lock(*_commandsMutex);
+        _commands.emplace_back(bindSampledTextureCommand);
+    }
+
+    void VulkanCommandBuffer::bindStorageTexture(std::shared_ptr<Texture> texture,
+                                                 uint32_t binding) noexcept
+    {
+        BindStorageTextureCommand bindStorageTextureCommand;
+        bindStorageTextureCommand.texture = texture;
+        bindStorageTextureCommand.binding = binding;
+
+        std::lock_guard<std::mutex> const lock(*_commandsMutex);
+        _commands.emplace_back(bindStorageTextureCommand);
+    }
+
+    void VulkanCommandBuffer::bindStorageBuffer(std::shared_ptr<Buffer> buffer,
+                                                uint32_t binding) noexcept
+    {
+        BindStorageBufferCommand bindStorageBufferCommand;
+        bindStorageBufferCommand.buffer = buffer;
+        bindStorageBufferCommand.binding = binding;
+
+        std::lock_guard<std::mutex> const lock(*_commandsMutex);
+        _commands.emplace_back(bindStorageBufferCommand);
     }
 
     void VulkanCommandBuffer::userDefined(
@@ -469,9 +497,9 @@ namespace exage::Graphics
                                                             static_cast<int32_t>(copy.srcOffset.y),
                                                             static_cast<int32_t>(copy.srcOffset.z)};
                     imageBlit.srcOffsets[1] =
-                        vk::Offset3D {static_cast<int32_t>(copy.srcOffset.x + copy.extent.x),
-                                      static_cast<int32_t>(copy.srcOffset.y + copy.extent.y),
-                                      static_cast<int32_t>(copy.srcOffset.z + copy.extent.z)};
+                        vk::Offset3D {static_cast<int32_t>(copy.srcOffset.x + copy.srcExtent.x),
+                                      static_cast<int32_t>(copy.srcOffset.y + copy.srcExtent.y),
+                                      static_cast<int32_t>(copy.srcOffset.z + copy.srcExtent.z)};
                     imageBlit.dstSubresource.aspectMask =
                         toVulkanImageAspectFlags(dstTexture.getUsage());
                     imageBlit.dstSubresource.mipLevel = copy.dstMipLevel;
@@ -481,9 +509,9 @@ namespace exage::Graphics
                                                             static_cast<int32_t>(copy.dstOffset.y),
                                                             static_cast<int32_t>(copy.dstOffset.z)};
                     imageBlit.dstOffsets[1] =
-                        vk::Offset3D {static_cast<int32_t>(copy.dstOffset.x + copy.extent.x),
-                                      static_cast<int32_t>(copy.dstOffset.y + copy.extent.y),
-                                      static_cast<int32_t>(copy.dstOffset.z + copy.extent.z)};
+                        vk::Offset3D {static_cast<int32_t>(copy.dstOffset.x + copy.dstExtent.x),
+                                      static_cast<int32_t>(copy.dstOffset.y + copy.dstExtent.y),
+                                      static_cast<int32_t>(copy.dstOffset.z + copy.dstExtent.z)};
 
                     _commandBuffer.blitImage(srcTexture.getImage(),
                                              vk::ImageLayout::eTransferSrcOptimal,
@@ -677,14 +705,86 @@ namespace exage::Graphics
 
                     _currentPipeline = &pipeline;
                 },
-                [this](const SetPushConstantCommand& cmd) 
+                [this](const SetPushConstantCommand& cmd)
                 {
                     _commandBuffer.pushConstants(_currentPipeline->getPipelineLayout(),
                                                  vk::ShaderStageFlagBits::eAll,
                                                  0,
                                                  cmd.size,
                                                  cmd.data);
+                },
+                [this](const BindVertexBufferCommand& cmd)
+                {
+                    auto& buffer = *cmd.buffer->as<VulkanBuffer>();
+                    vk::DeviceSize offset = 0;
+                    _commandBuffer.bindVertexBuffers(0, buffer.getBuffer(), offset);
+                },
+                [this](const BindIndexBufferCommand& cmd)
+                {
+                    auto& buffer = *cmd.buffer->as<VulkanBuffer>();
+                    _commandBuffer.bindIndexBuffer(buffer.getBuffer(), 0, vk::IndexType::eUint32);
+                },
+                [this](const BindSampledTextureCommand& cmd)
+                {
+                    auto& texture = *cmd.texture->as<VulkanTexture>();
+                    vk::DescriptorImageInfo imageInfo =
+                        texture.getDescriptorImageInfo(vk::ImageLayout::eShaderReadOnlyOptimal);
 
+                    vk::WriteDescriptorSet write {};
+                    write.dstSet = _currentPipeline->getResourceManager()->getDescriptorSet();
+                    write.dstBinding = cmd.binding;
+                    write.dstArrayElement = 0;
+                    write.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+                    write.descriptorCount = 1;
+                    write.pImageInfo = &imageInfo;
+
+                    _commandBuffer.pushDescriptorSetKHR(vk::PipelineBindPoint::eGraphics,
+                                                        _currentPipeline->getPipelineLayout(),
+                                                        0,
+                                                        1,
+                                                        &write);
+                },
+                [this](const BindStorageTextureCommand& cmd)
+                {
+                    auto& texture = *cmd.texture->as<VulkanTexture>();
+                    vk::DescriptorImageInfo imageInfo =
+                        texture.getDescriptorImageInfo(vk::ImageLayout::eGeneral);
+
+                    vk::WriteDescriptorSet write {};
+                    write.dstSet = _currentPipeline->getResourceManager()->getDescriptorSet();
+                    write.dstBinding = cmd.binding;
+                    write.dstArrayElement = 0;
+                    write.descriptorType = vk::DescriptorType::eStorageImage;
+                    write.descriptorCount = 1;
+                    write.pImageInfo = &imageInfo;
+
+                    _commandBuffer.pushDescriptorSetKHR(vk::PipelineBindPoint::eGraphics,
+                                                        _currentPipeline->getPipelineLayout(),
+                                                        0,
+                                                        1,
+                                                        &write);
+                },
+                [this](const BindStorageBufferCommand& cmd)
+                {
+                    auto& buffer = *cmd.buffer->as<VulkanBuffer>();
+                    vk::DescriptorBufferInfo bufferInfo {};
+                    bufferInfo.buffer = buffer.getBuffer();
+                    bufferInfo.offset = 0;
+                    bufferInfo.range = buffer.getSize();
+
+                    vk::WriteDescriptorSet write {};
+                    write.dstSet = _currentPipeline->getResourceManager()->getDescriptorSet();
+                    write.dstBinding = cmd.binding;
+                    write.dstArrayElement = 0;
+                    write.descriptorType = vk::DescriptorType::eStorageBuffer;
+                    write.descriptorCount = 1;
+                    write.pBufferInfo = &bufferInfo;
+
+                    _commandBuffer.pushDescriptorSetKHR(vk::PipelineBindPoint::eGraphics,
+                                                        _currentPipeline->getPipelineLayout(),
+                                                        0,
+                                                        1,
+                                                        &write);
                 },
 
             },

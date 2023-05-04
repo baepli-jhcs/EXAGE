@@ -23,7 +23,6 @@ namespace exage::Graphics
             eInstance,
         };
 
-        uint32_t index;
         uint32_t offset;
         uint32_t components;
         uint32_t stride;
@@ -202,6 +201,7 @@ namespace exage::Graphics
         Pipeline::DepthStencilState depthStencilState;
         uint32_t pushConstantSize;
 
-        std::shared_ptr<ResourceManager> resourceManager; // If provided, a resource manager will allow for bindless resources
+        std::shared_ptr<ResourceManager>
+            resourceManager;  // If provided, a resource manager will allow for bindless resources
     };
 }  // namespace exage::Graphics

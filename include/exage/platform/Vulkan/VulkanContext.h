@@ -76,6 +76,14 @@ namespace exage::Graphics
         [[nodiscard]] auto getVulkanQueue() noexcept -> VulkanQueue& { return *_queue; }
         [[nodiscard]] auto getVulkanQueue() const noexcept -> const VulkanQueue& { return *_queue; }
 
+        [[nodiscard]] auto getCommandPool() const noexcept -> vk::CommandPool
+        {
+            return _commandPool;
+        }
+
+        [[nodiscard]] auto createVulkanCommandBuffer() noexcept -> vk::CommandBuffer;
+        void destroyCommandBuffer(vk::CommandBuffer commandBuffer) noexcept;
+
         EXAGE_VULKAN_DERIVED
 
         struct PipelineLayoutInfo
@@ -94,10 +102,13 @@ namespace exage::Graphics
         vkb::PhysicalDevice _physicalDevice;
         vkb::Device _device;
         std::optional<VulkanQueue> _queue = std::nullopt;
+        vk::CommandPool _commandPool;
 
         HardwareSupport _hardwareSupport;
 
         std::unordered_map<size_t, vk::DescriptorSetLayout> _descriptorSetLayoutCache;
         std::unordered_map<size_t, vk::PipelineLayout> _pipelineLayoutCache;
+
+        std::vector<vk::CommandBuffer> _freeCommandBuffers;
     };
 }  // namespace exage::Graphics

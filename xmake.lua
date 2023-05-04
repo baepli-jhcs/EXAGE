@@ -1,8 +1,8 @@
-﻿add_rules("mode.debug", "mode.release", "mode.releasedbg")
+﻿add_rules("mode.debug", "mode.release", "mode.releasedbg", "mode.asan", "mode.tsan", "mode.lsan", "mode.ubsan")
 
-add_requires("assimp v5.2.5", "cereal 1.3.2", "debugbreak", "entt v3.11.1", "fmt", "glfw", "glm", "magic_enum", "shaderc v2022.2", "stb 2023.01.30", "unordered_dense v3.0.0", "vk-bootstrap", "vulkan-headers")
-add_requires("vcpkg::alpaca", {alias = "alpaca"})
+add_requires("assimp v5.2.5", "debugbreak", "entt v3.11.1", "fmt", "glfw 3.3.8", "glm", "magic_enum", "shaderc v2022.2", "stb 2023.01.30", "unordered_dense v3.0.0", "vk-bootstrap v0.5", "vulkan-headers 1.3.239+0")
 add_requires("imgui v1.89.3-docking", {alias = "imgui", configs = {shared = true}})
+add_requires("vcpkg::cereal 1.3.2", {alias = "cereal"})
 add_requires("vcpkg::ktx 4.1.0-rc2", {alias = "ktx", configs = {features = {"vulkan"}}})
 add_requires("vcpkg::tl-expected", {alias = "tl_expected"})
 add_requires("vcpkg::vulkan-memory-allocator-hpp", {alias = "vma-hpp"})

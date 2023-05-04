@@ -58,7 +58,8 @@ namespace exage::Graphics
                           uint32_t srcFirstLayer,
                           uint32_t dstFirstLayer,
                           uint32_t layerCount,
-                          glm::uvec3 extent) noexcept = 0;
+                          glm::uvec3 srcExtent,
+                          glm::uvec3 dstExtent) noexcept = 0;
 
         virtual void setViewport(glm::uvec2 offset, glm::uvec2 extent) noexcept = 0;
         virtual void setScissor(glm::uvec2 offset, glm::uvec2 extent) noexcept = 0;
@@ -96,22 +97,23 @@ namespace exage::Graphics
                                          uint32_t srcFirstLayer,
                                          uint32_t layerCount,
                                          glm::uvec3 extent,
-                                         size_t dstOffset) noexcept = 0;
+                                         uint64_t dstOffset) noexcept = 0;
 
         virtual void bindPipeline(std::shared_ptr<Pipeline> pipeline) noexcept = 0;
 
-        virtual void setPushConstant(size_t size, std::byte* data) noexcept = 0;
+        virtual void setPushConstant(uint32_t size, std::byte* data) noexcept = 0;
 
-        virtual void bindVertexBuffer(std::shared_ptr<Buffer> buffer,
-                                      uint64_t offset,
-                                      uint32_t binding) noexcept = 0;
+        virtual void bindVertexBuffer(std::shared_ptr<Buffer> buffer, uint64_t offset) noexcept = 0;
 
         virtual void bindIndexBuffer(std::shared_ptr<Buffer> buffer, uint64_t offset) noexcept = 0;
 
-        virtual void bindSampledTexture(std::shared_ptr<Texture> texture, uint32_t binding) noexcept = 0;
-        virtual void bindStorageTexture(std::shared_ptr<Texture> texture, uint32_t binding) noexcept = 0;
+        virtual void bindSampledTexture(std::shared_ptr<Texture> texture,
+                                        uint32_t binding) noexcept = 0;
+        virtual void bindStorageTexture(std::shared_ptr<Texture> texture,
+                                        uint32_t binding) noexcept = 0;
 
-        virtual void bindStorageBuffer(std::shared_ptr<Buffer> buffer, uint32_t binding) noexcept = 0;
+        virtual void bindStorageBuffer(std::shared_ptr<Buffer> buffer,
+                                       uint32_t binding) noexcept = 0;
 
         virtual void userDefined(std::function<void(CommandBuffer&)> commandFunction) noexcept = 0;
 

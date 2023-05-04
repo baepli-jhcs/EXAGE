@@ -1,9 +1,11 @@
 ﻿#pragma once
 
 #include <filesystem>
+#include <vector>
 
 #include <glm/fwd.hpp>
 #include <glm/glm.hpp>
+#include <stdint.h>
 
 #include "exage/Core/Core.h"
 #include "exage/Graphics/ResourceManager.h"
@@ -15,8 +17,22 @@ namespace exage::Renderer
 {
     struct Texture
     {
+        struct Mip
+        {
+            glm::uvec3 extent;
+            size_t offset;
+            size_t size;
+
+            // Serialization
+            template<class Archive>
+            void serialize(Archive& archive)
+            {
+                archive(extent, offset, size);
+            }
+        };
+
         std::string path;
-        glm::uvec3 extent;
+        std::vector<Mip> mips;
         std::vector<std::byte> data;
         Graphics::Format format;
         Graphics::Texture::Type type;
@@ -25,7 +41,7 @@ namespace exage::Renderer
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(path, data, format, type);
+            archive(path, mips, data, format, type);
         }
     };
 
@@ -162,6 +178,13 @@ namespace exage::Renderer
             alignas(4) bool roughnessUseTexture = false;
             alignas(4) bool occlusionUseTexture = false;
             alignas(4) bool emissiveUseTexture = false;
+
+            alignas(4) uint32_t albedoTextureIndex = 0;
+            alignas(4) uint32_t normalTextureIndex = 0;
+            alignas(4) uint32_t metallicTextureIndex = 0;
+            alignas(4) uint32_t roughnessTextureIndex = 0;
+            alignas(4) uint32_t occlusionTextureIndex = 0;
+            alignas(4) uint32_t emissiveTextureIndex = 0;
         };
 
         std::string path;

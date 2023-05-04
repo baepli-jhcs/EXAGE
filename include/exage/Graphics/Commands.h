@@ -125,7 +125,8 @@ namespace exage::Graphics
             uint32_t srcFirstLayer;
             uint32_t dstFirstLayer;
             uint32_t layerCount;
-            glm::uvec3 extent;
+            glm::uvec3 srcExtent;
+            glm::uvec3 dstExtent;
         };
 
         struct SetViewportCommand
@@ -169,8 +170,8 @@ namespace exage::Graphics
         {
             std::shared_ptr<Buffer> srcBuffer;
             std::shared_ptr<Buffer> dstBuffer;
-            size_t srcOffset;
-            size_t dstOffset;
+            uint64_t srcOffset;
+            uint64_t dstOffset;
             size_t size;
         };
 
@@ -178,7 +179,7 @@ namespace exage::Graphics
         {
             std::shared_ptr<Buffer> srcBuffer;
             std::shared_ptr<Texture> dstTexture;
-            size_t srcOffset;
+            uint64_t srcOffset;
             glm::uvec3 dstOffset;
             uint32_t dstMipLevel;
             uint32_t dstFirstLayer;
@@ -195,7 +196,7 @@ namespace exage::Graphics
             uint32_t srcFirstLayer;
             uint32_t layerCount;
             glm::uvec3 extent;
-            size_t dstOffset;
+            uint64_t dstOffset;
         };
 
         struct BindPipelineCommand
@@ -205,8 +206,38 @@ namespace exage::Graphics
 
         struct SetPushConstantCommand
         {
-            size_t size;
+            uint32_t size;
             std::byte data[128];
+        };
+
+        struct BindVertexBufferCommand
+        {
+            std::shared_ptr<Buffer> buffer;
+            uint64_t offset;
+        };
+
+        struct BindIndexBufferCommand
+        {
+            std::shared_ptr<Buffer> buffer;
+            uint64_t offset;
+        };
+
+        struct BindSampledTextureCommand
+        {
+            std::shared_ptr<Texture> texture;
+            uint32_t binding;
+        };
+
+        struct BindStorageTextureCommand
+        {
+            std::shared_ptr<Texture> texture;
+            uint32_t binding;
+        };
+
+        struct BindStorageBufferCommand
+        {
+            std::shared_ptr<Buffer> buffer;
+            uint32_t binding;
         };
 
         using GPUCommand = std::variant<DrawCommand,
@@ -224,7 +255,12 @@ namespace exage::Graphics
                                         CopyBufferToTextureCommand,
                                         CopyTextureToBufferCommand,
                                         BindPipelineCommand,
-                                        SetPushConstantCommand>;
+                                        SetPushConstantCommand,
+                                        BindVertexBufferCommand,
+                                        BindIndexBufferCommand,
+                                        BindSampledTextureCommand,
+                                        BindStorageTextureCommand,
+                                        BindStorageBufferCommand>;
     }  // namespace Commands
 
     using DataDependency = entt::basic_any<sizeof(std::shared_ptr<Buffer>)>;
