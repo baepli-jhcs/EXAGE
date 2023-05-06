@@ -9,12 +9,12 @@
 
 #include <optional>
 
-#include <VkBootstrap.h>
 #include <vulkan-memory-allocator-hpp/vk_mem_alloc.hpp>
 #include <vulkan/vulkan.hpp>
 
 #include "exage/Graphics/Pipeline.h"
 #include "exage/Graphics/Queue.h"
+#include "exage/platform/Vulkan/VkBootstrap.h"
 #include "exage/platform/Vulkan/VulkanQueue.h"
 #include "exage/platform/Vulkan/VulkanUtils.h"
 
@@ -25,8 +25,8 @@ namespace exage::Graphics
     class EXAGE_EXPORT VulkanContext final : public Context
     {
       public:
-        [[nodiscard]] static tl::expected<std::unique_ptr<VulkanContext>, Error> create(
-            ContextCreateInfo& createInfo) noexcept;
+        [[nodiscard]] static auto create(ContextCreateInfo& createInfo) noexcept
+            -> tl::expected<std::unique_ptr<VulkanContext>, Error>;
         ~VulkanContext() override;
 
         EXAGE_DELETE_COPY(VulkanContext);

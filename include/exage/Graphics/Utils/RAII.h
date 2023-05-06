@@ -9,8 +9,8 @@ namespace exage::Graphics::RAII
       public:
         BufferID(ResourceManager& resourceManager, Buffer& buffer) noexcept
             : _resourceManager(resourceManager)
+            , _id(_resourceManager.get().bindBuffer(buffer))
         {
-            _id = _resourceManager.get().bindBuffer(buffer);
         }
         ~BufferID() { _resourceManager.get().unbindBuffer(_id); }
 
@@ -33,8 +33,8 @@ namespace exage::Graphics::RAII
       public:
         TextureID(ResourceManager& resourceManager, Texture& texture) noexcept
             : _resourceManager(resourceManager)
+            , _id(_resourceManager.get().bindTexture(texture))
         {
-            _id = _resourceManager.get().bindTexture(texture);
         }
         ~TextureID() { _resourceManager.get().unbindTexture(_id); }
 

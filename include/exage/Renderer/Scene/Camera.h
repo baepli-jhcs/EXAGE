@@ -24,9 +24,6 @@ namespace exage::Renderer
         glm::mat4 projection;
         glm::mat4 viewProjection;
         alignas(16) glm::vec3 position;
-
-        std::shared_ptr<Graphics::Buffer> buffer;
-        std::shared_ptr<Graphics::RAII::BufferID> bufferID;
     };
 
     EXAGE_EXPORT void setSceneCamera(Scene& scene, Entity cameraEntity) noexcept;

@@ -13,8 +13,5 @@ namespace exage::Renderer
         glm::mat4 model;
         glm::mat4 normal;
         glm::mat4 modelViewProjection;
-
-        std::shared_ptr<Graphics::Buffer> buffer;
-        std::shared_ptr<Graphics::RAII::BufferID> bufferID;
     };
 }  // namespace exage::Renderer

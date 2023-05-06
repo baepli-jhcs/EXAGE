@@ -40,8 +40,8 @@ namespace exage::Graphics
         EXAGE_VULKAN_DERIVED;
 
       private:
-        [[nodiscard]] void createSurface(Window& window) noexcept;
-        [[nodiscard]] void createSwapchain() noexcept;
+        void createSurface(Window& window) noexcept;
+        void createSwapchain() noexcept;
 
         std::reference_wrapper<VulkanContext> _context;
 
@@ -55,7 +55,7 @@ namespace exage::Graphics
         vkb::Swapchain _swapchain;
         vk::SwapchainKHR _oldSwapchain = nullptr;
 
-        glm::uvec2 _extent{};
+        glm::uvec2 _extent {};
         std::vector<vk::Image> _swapchainImages;
         std::vector<bool> _swapchainTransitioned;
 

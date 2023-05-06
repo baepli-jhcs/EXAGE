@@ -77,6 +77,8 @@ namespace exage::Renderer
         block.offset = offset;
         block.size = data.size();
         _usedBlocks.push_back(block);
+
+        return offset;
     }
 
     void SceneBuffer::freeData(size_t offset, size_t size) noexcept

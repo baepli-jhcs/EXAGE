@@ -541,6 +541,8 @@ namespace exage::Graphics
                         return vk::Format::eR32G32B32A32Sint;
                 }
                 return vk::Format::eR32G32B32A32Uint;
+            default:
+                break;
         }
 
         return vk::Format::eUndefined;
@@ -725,6 +727,8 @@ namespace exage::Graphics
                 return Format ::eDepth32Stencil8;
             case vk ::Format ::eB8G8R8A8Unorm:
                 return Format ::eBGRA8;
+            default:
+                break;
         };
         return std ::nullopt;
     }

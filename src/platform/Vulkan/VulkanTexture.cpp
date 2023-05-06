@@ -63,6 +63,7 @@ namespace exage::Graphics
         switch (_anisotropy)
         {
             case Anisotropy::eDisabled:
+            case Anisotropy::e1:
                 samplerInfo.maxAnisotropy = 1.0F;
                 break;
             case Anisotropy::e2:

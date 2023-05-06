@@ -26,10 +26,9 @@ namespace exage::Graphics
             return _textures;
         }
 
-        [[nodiscard]] void resize(glm::uvec2 extent) noexcept override;
-        [[nodiscard]] void attachColor(std::shared_ptr<Texture> texture) noexcept override;
-        [[nodiscard]] void attachOrReplaceDepthStencil(
-            std::shared_ptr<Texture> texture) noexcept override;
+        void resize(glm::uvec2 extent) noexcept override;
+        void attachColor(std::shared_ptr<Texture> texture) noexcept override;
+        void attachOrReplaceDepthStencil(std::shared_ptr<Texture> texture) noexcept override;
 
         EXAGE_VULKAN_DERIVED
 

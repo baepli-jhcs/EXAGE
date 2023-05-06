@@ -3,7 +3,6 @@
 #include <exage/platform/GLFW/GLFWindow.h>
 #include <exage/utils/cast.h>
 
-#include "VkBootstrap.h"
 #include "exage/Core/Window.h"
 #include "exage/platform/Vulkan/VulkanContext.h"
 #include "vulkan/vulkan_core.h"

@@ -5,6 +5,8 @@
 #include "exage/Core/Core.h"
 #include "exage/Graphics/Context.h"
 #include "exage/Graphics/ResourceManager.h"
+#include "exage/Graphics/Utils/BufferTypes.h"
+#include "exage/Graphics/Utils/RAII.h"
 #include "exage/Renderer/GeometryPass/GeometryRenderer.h"
 #include "exage/Scene/Scene.h"
 
@@ -13,7 +15,7 @@ namespace exage::Renderer
     struct RendererCreateInfo
     {
         Graphics::Context& context;
-        Graphics::ResourceManager* resourceManager;
+        std::shared_ptr<Graphics::ResourceManager> resourceManager = nullptr;  // Can be nullptr
         glm::uvec2 extent;
     };
 
@@ -38,10 +40,16 @@ namespace exage::Renderer
 
       private:
         std::reference_wrapper<Graphics::Context> _context;
+        std::shared_ptr<Graphics::ResourceManager> _resourceManager;
         glm::uvec2 _extent;
 
         ForwardRenderer _forwardRenderer;
 
         std::shared_ptr<Graphics::FrameBuffer> _frameBuffer;
+
+        Graphics::DynamicFixedBuffer _cameraBuffer;
+        std::shared_ptr<Graphics::RAII::BufferID> _cameraBufferID;
+        Graphics::ResizableDynamicBuffer _transformBuffer;
+        std::shared_ptr<Graphics::RAII::BufferID> _transformBufferID;
     };
 }  // namespace exage::Renderer
