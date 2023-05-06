@@ -10,7 +10,6 @@
 #include "exage/Graphics/Context.h"
 #include "exage/Graphics/FrameBuffer.h"
 #include "exage/Graphics/Texture.h"
-#include "exage/Graphics/Utils/RAII.h"
 
 namespace exage::Graphics
 {

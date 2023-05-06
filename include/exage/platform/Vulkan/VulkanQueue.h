@@ -1,17 +1,12 @@
 ﻿#pragma once
 
-#define VK_NO_PROTOTYPES
-#define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
-#define VULKAN_HPP_STORAGE_SHARED
-#define VULKAN_HPP_STORAGE_SHARED_EXPORT
-
 #include "exage/Graphics/Queue.h"
-#include "vulkan/vulkan.hpp"
+#include "exage/platform/Vulkan/VKinclude.h"
 
 namespace exage::Graphics
 {
     class VulkanContext;
-    
+
     struct VulkanQueueCreateInfo
     {
         size_t maxFramesInFlight;

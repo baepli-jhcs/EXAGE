@@ -28,7 +28,6 @@ namespace exage::Renderer
     {
         Graphics::Context& context;
         Graphics::CommandBuffer& commandBuffer;
-        Graphics::ResourceManager* resourceManager = nullptr;
 
         Graphics::Texture::Usage usage = Graphics::Texture::UsageFlags::eSampled
             | Graphics::Texture::UsageFlags::eTransferDst

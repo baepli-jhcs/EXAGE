@@ -693,13 +693,13 @@ namespace exage::Graphics
                     _commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics,
                                                 pipeline.getPipeline());
 
-                    if (pipeline.getResourceManager() != nullptr)
+                    if (pipeline.isBindless())
                     {
                         _commandBuffer.bindDescriptorSets(
                             vk::PipelineBindPoint::eGraphics,
                             pipeline.getPipelineLayout(),
                             0,
-                            pipeline.getResourceManager()->getDescriptorSet(),
+                            _context.get().getResourceManager().getDescriptorSet(),
                             {});
                     }
 
@@ -731,7 +731,6 @@ namespace exage::Graphics
                         texture.getDescriptorImageInfo(vk::ImageLayout::eShaderReadOnlyOptimal);
 
                     vk::WriteDescriptorSet write {};
-                    write.dstSet = _currentPipeline->getResourceManager()->getDescriptorSet();
                     write.dstBinding = cmd.binding;
                     write.dstArrayElement = 0;
                     write.descriptorType = vk::DescriptorType::eCombinedImageSampler;
@@ -751,7 +750,6 @@ namespace exage::Graphics
                         texture.getDescriptorImageInfo(vk::ImageLayout::eGeneral);
 
                     vk::WriteDescriptorSet write {};
-                    write.dstSet = _currentPipeline->getResourceManager()->getDescriptorSet();
                     write.dstBinding = cmd.binding;
                     write.dstArrayElement = 0;
                     write.descriptorType = vk::DescriptorType::eStorageImage;
@@ -773,7 +771,6 @@ namespace exage::Graphics
                     bufferInfo.range = buffer.getSize();
 
                     vk::WriteDescriptorSet write {};
-                    write.dstSet = _currentPipeline->getResourceManager()->getDescriptorSet();
                     write.dstBinding = cmd.binding;
                     write.dstArrayElement = 0;
                     write.descriptorType = vk::DescriptorType::eStorageBuffer;

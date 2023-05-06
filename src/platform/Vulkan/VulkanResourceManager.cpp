@@ -2,12 +2,21 @@
 
 #include "exage/platform/Vulkan/VulkanBuffer.h"
 #include "exage/platform/Vulkan/VulkanTexture.h"
+#include "vulkan/vulkan_structs.hpp"
 
 namespace exage::Graphics
 {
     VulkanResourceManager::VulkanResourceManager(VulkanContext& context) noexcept
         : _context(context)
     {
+        _support = _context.get().getHardwareSupport().bindlessBuffer
+            && _context.get().getHardwareSupport().bindlessTexture;
+
+        if (!_support)
+        {
+            return;
+        }
+
         vk::DescriptorPoolSize const bufferDescriptorPoolSize {vk::DescriptorType::eStorageBuffer,
                                                                maxBufferCount};
 
@@ -39,11 +48,12 @@ namespace exage::Graphics
         storageBufferDescriptorSetLayoutBinding.descriptorCount = maxBufferCount;
         storageBufferDescriptorSetLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eAll;
 
-        //vk::DescriptorSetLayoutBinding uniformBufferDescriptorSetLayoutBinding {};
-        //uniformBufferDescriptorSetLayoutBinding.binding = uniformBufferBinding;
-        //uniformBufferDescriptorSetLayoutBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
-        //uniformBufferDescriptorSetLayoutBinding.descriptorCount = maxBufferCount;
-        //uniformBufferDescriptorSetLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eAll;
+        // vk::DescriptorSetLayoutBinding uniformBufferDescriptorSetLayoutBinding {};
+        // uniformBufferDescriptorSetLayoutBinding.binding = uniformBufferBinding;
+        // uniformBufferDescriptorSetLayoutBinding.descriptorType =
+        // vk::DescriptorType::eUniformBuffer;
+        // uniformBufferDescriptorSetLayoutBinding.descriptorCount = maxBufferCount;
+        // uniformBufferDescriptorSetLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eAll;
 
         vk::DescriptorSetLayoutBinding storageImageDescriptorSetLayoutBinding {};
         storageImageDescriptorSetLayoutBinding.binding = storageTextureBinding;
@@ -53,7 +63,7 @@ namespace exage::Graphics
 
         std::array descriptorSetLayoutBindings {combinedImageSamplerSetLayoutBinding,
                                                 storageBufferDescriptorSetLayoutBinding,
-                                                //uniformBufferDescriptorSetLayoutBinding,
+                                                // uniformBufferDescriptorSetLayoutBinding,
                                                 storageImageDescriptorSetLayoutBinding};
 
         vk::DescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo {};
@@ -86,19 +96,29 @@ namespace exage::Graphics
 
     VulkanResourceManager::~VulkanResourceManager()
     {
-        _context.get().getDevice().destroyDescriptorPool(_descriptorPool);
-        _context.get().getDevice().destroyDescriptorSetLayout(_descriptorSetLayout);
+        if (!_support)
+        {
+            return;
+        }
+
         _context.get().getDevice().freeDescriptorSets(_descriptorPool, _descriptorSet);
+
+        _context.get().getDevice().destroyDescriptorSetLayout(_descriptorSetLayout);
+
+        _context.get().getDevice().destroyDescriptorPool(_descriptorPool);
     }
 
-    auto VulkanResourceManager::bindBuffer(Buffer& buffer) noexcept -> BufferID
+    auto VulkanResourceManager::bindBuffer(VulkanBuffer& buffer) noexcept -> BufferID
     {
-        const auto* vulkanBuffer = buffer.as<VulkanBuffer>();
+        if (!_support)
+        {
+            return BufferID {};
+        }
 
         vk::DescriptorBufferInfo descriptorBufferInfo {};
-        descriptorBufferInfo.buffer = vulkanBuffer->getBuffer();
+        descriptorBufferInfo.buffer = buffer.getBuffer();
         descriptorBufferInfo.offset = 0;
-        descriptorBufferInfo.range = vulkanBuffer->getSize();
+        descriptorBufferInfo.range = buffer.getSize();
 
         uint32_t const index = _bufferPool.allocate();
 
@@ -115,51 +135,80 @@ namespace exage::Graphics
         return BufferID {index};
     }
 
-    auto VulkanResourceManager::bindTexture(Texture& texture) noexcept -> TextureID
+    auto VulkanResourceManager::bindTexture(VulkanTexture& texture) noexcept -> TextureID
     {
-        const auto* vulkanTexture = texture.as<VulkanTexture>();
-
-        vk::DescriptorImageInfo const imageInfo = vulkanTexture->getDescriptorImageInfo();
+        if (!_support)
+        {
+            return TextureID {};
+        }
 
         uint32_t const index = _texturePool.allocate();
 
-        vk::WriteDescriptorSet writeDescriptorSet {};
-        writeDescriptorSet.dstSet = _descriptorSet;
-        writeDescriptorSet.dstBinding = sampledTextureBinding;
-        writeDescriptorSet.dstArrayElement = index;
-        writeDescriptorSet.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-        writeDescriptorSet.descriptorCount = 1;
-        writeDescriptorSet.pImageInfo = &imageInfo;
+        bool sampledImage = texture.getUsage().any(Texture::UsageFlags::eSampled);
+        vk::WriteDescriptorSet sampledImageWriteDescriptorSet {};
+        vk::DescriptorImageInfo sampledImageInfo = texture.getDescriptorImageInfo();
+        if (sampledImage)
+        {
+            sampledImageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+            sampledImageWriteDescriptorSet.dstSet = _descriptorSet;
+            sampledImageWriteDescriptorSet.dstBinding = sampledTextureBinding;
+            sampledImageWriteDescriptorSet.dstArrayElement = index;
+            sampledImageWriteDescriptorSet.descriptorType =
+                vk::DescriptorType::eCombinedImageSampler;
+            sampledImageWriteDescriptorSet.descriptorCount = 1;
+            sampledImageWriteDescriptorSet.pImageInfo = &sampledImageInfo;
+        }
 
         vk::WriteDescriptorSet storageImageWriteDescriptorSet {};
-        vk::DescriptorImageInfo storageImageDescriptorImageInfo = imageInfo;
-        bool storageImage = vulkanTexture->getUsage().any(Texture::UsageFlags::eStorage); 
+        vk::DescriptorImageInfo storageImageDescriptorImageInfo = sampledImageInfo;
+        bool storageImage = texture.getUsage().any(Texture::UsageFlags::eStorage);
         if (storageImage)
         {
             storageImageDescriptorImageInfo.imageLayout = vk::ImageLayout::eGeneral;
-			storageImageWriteDescriptorSet.dstSet = _descriptorSet;
-			storageImageWriteDescriptorSet.dstBinding = storageTextureBinding;
-			storageImageWriteDescriptorSet.dstArrayElement = index;
-			storageImageWriteDescriptorSet.descriptorType = vk::DescriptorType::eStorageImage;
-			storageImageWriteDescriptorSet.descriptorCount = 1;
-			storageImageWriteDescriptorSet.pImageInfo = &storageImageDescriptorImageInfo;
+            storageImageWriteDescriptorSet.dstSet = _descriptorSet;
+            storageImageWriteDescriptorSet.dstBinding = storageTextureBinding;
+            storageImageWriteDescriptorSet.dstArrayElement = index;
+            storageImageWriteDescriptorSet.descriptorType = vk::DescriptorType::eStorageImage;
+            storageImageWriteDescriptorSet.descriptorCount = 1;
+            storageImageWriteDescriptorSet.pImageInfo = &storageImageDescriptorImageInfo;
         }
 
-        std::array writeDescriptorSets {writeDescriptorSet, storageImageWriteDescriptorSet};
-        uint32_t writeDescriptorSetCount = storageImage ? 2 : 1;
+        std::array<vk::WriteDescriptorSet, 2> writeDescriptorSets {};
+        uint32_t writeDescriptorSetCount = 0;
+        if (sampledImage)
+        {
+            writeDescriptorSets[writeDescriptorSetCount] = sampledImageWriteDescriptorSet;
+            writeDescriptorSetCount++;
+        }
+        if (storageImage)
+        {
+            writeDescriptorSets[writeDescriptorSetCount] = storageImageWriteDescriptorSet;
+            writeDescriptorSetCount++;
+        }
 
-        _context.get().getDevice().updateDescriptorSets(writeDescriptorSetCount, &writeDescriptorSet, 0, nullptr);
+        _context.get().getDevice().updateDescriptorSets(
+            writeDescriptorSetCount, &sampledImageWriteDescriptorSet, 0, nullptr);
 
         return TextureID {index};
     }
 
     void VulkanResourceManager::unbindBuffer(BufferID buffer) noexcept
     {
+        if (!_support)
+        {
+            return;
+        }
+
         _bufferPool.free(buffer.id);
     }
 
     void VulkanResourceManager::unbindTexture(TextureID texture) noexcept
     {
+        if (!_support)
+        {
+            return;
+        }
+
         _texturePool.free(texture.id);
     }
 

@@ -1,7 +1,10 @@
 ﻿#pragma once
 
-#include "exage/Graphics/ResourceManager.h"
-#include "exage/platform/Vulkan/VulkanContext.h"
+#include <memory>
+#include <mutex>
+
+#include "exage/Graphics/BindlessResources.h"
+#include "exage/platform/Vulkan/VKinclude.h"
 
 namespace exage::Graphics
 {
@@ -10,7 +13,7 @@ namespace exage::Graphics
         class VulkanResourcePool
         {
           public:
-            VulkanResourcePool(uint32_t maxResourceCount) noexcept
+            explicit VulkanResourcePool(uint32_t maxResourceCount) noexcept
             {
                 freeSlots.resize(maxResourceCount);
                 for (uint32_t i = 0; i < maxResourceCount; ++i)
@@ -18,6 +21,9 @@ namespace exage::Graphics
                     freeSlots[i] = i;
                 }
             }
+
+            EXAGE_DELETE_COPY(VulkanResourcePool);
+            EXAGE_DELETE_MOVE(VulkanResourcePool);
 
             [[nodiscard]] auto allocate() noexcept -> uint32_t
             {
@@ -46,7 +52,11 @@ namespace exage::Graphics
         };
     }  // namespace detail
 
-    class EXAGE_EXPORT VulkanResourceManager final : public ResourceManager
+    class VulkanContext;
+    class VulkanBuffer;
+    class VulkanTexture;
+
+    class EXAGE_EXPORT VulkanResourceManager
     {
       public:
         using ResourcePool = detail::VulkanResourcePool;
@@ -58,17 +68,17 @@ namespace exage::Graphics
         constexpr static uint32_t storageBufferBinding = 1;
         constexpr static uint32_t storageTextureBinding = 2;
 
-        VulkanResourceManager(VulkanContext& context) noexcept;
-        ~VulkanResourceManager() override;
+        explicit VulkanResourceManager(VulkanContext& context) noexcept;
+        ~VulkanResourceManager();
 
         EXAGE_DELETE_COPY(VulkanResourceManager);
         EXAGE_DELETE_MOVE(VulkanResourceManager);
 
-        [[nodiscard]] auto bindBuffer(Buffer& buffer) noexcept -> BufferID override;
-        [[nodiscard]] auto bindTexture(Texture& texture) noexcept -> TextureID override;
+        [[nodiscard]] auto bindBuffer(VulkanBuffer& buffer) noexcept -> BufferID;
+        [[nodiscard]] auto bindTexture(VulkanTexture& texture) noexcept -> TextureID;
 
-        void unbindBuffer(BufferID buffer) noexcept override;
-        void unbindTexture(TextureID texture) noexcept override;
+        void unbindBuffer(BufferID buffer) noexcept;
+        void unbindTexture(TextureID texture) noexcept;
 
         [[nodiscard]] auto getDescriptorSet() const noexcept -> vk::DescriptorSet
         {
@@ -79,10 +89,10 @@ namespace exage::Graphics
             return _descriptorSetLayout;
         }
 
-        EXAGE_VULKAN_DERIVED
-
       private:
         std::reference_wrapper<VulkanContext> _context;
+
+        bool _support;
 
         vk::DescriptorPool _descriptorPool;
         vk::DescriptorSetLayout _descriptorSetLayout;

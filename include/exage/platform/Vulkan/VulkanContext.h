@@ -1,21 +1,16 @@
 ﻿#pragma once
 
-#include "exage/Graphics/Context.h"
-
-#define VK_NO_PROTOTYPES
-#define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
-#define VULKAN_HPP_STORAGE_SHARED
-#define VULKAN_HPP_STORAGE_SHARED_EXPORT
-
 #include <optional>
 
+#include <exage/platform/Vulkan/VKinclude.h>
 #include <vulkan-memory-allocator-hpp/vk_mem_alloc.hpp>
-#include <vulkan/vulkan.hpp>
 
+#include "exage/Graphics/Context.h"
 #include "exage/Graphics/Pipeline.h"
 #include "exage/Graphics/Queue.h"
 #include "exage/platform/Vulkan/VkBootstrap.h"
 #include "exage/platform/Vulkan/VulkanQueue.h"
+#include "exage/platform/Vulkan/VulkanResourceManager.h"
 #include "exage/platform/Vulkan/VulkanUtils.h"
 
 namespace exage::Graphics
@@ -55,8 +50,6 @@ namespace exage::Graphics
             -> std::shared_ptr<Shader> override;
         [[nodiscard]] auto createPipeline(const PipelineCreateInfo& createInfo) noexcept
             -> std::shared_ptr<Pipeline> override;
-        [[nodiscard]] auto createResourceManager() noexcept
-            -> std::unique_ptr<ResourceManager> override;
 
         [[nodiscard]] auto getHardwareSupport() const noexcept -> HardwareSupport override;
 
@@ -76,6 +69,15 @@ namespace exage::Graphics
         [[nodiscard]] auto getVulkanQueue() noexcept -> VulkanQueue& { return *_queue; }
         [[nodiscard]] auto getVulkanQueue() const noexcept -> const VulkanQueue& { return *_queue; }
 
+        [[nodiscard]] auto getResourceManager() noexcept -> VulkanResourceManager&
+        {
+            return *_resourceManager;
+        }
+        [[nodiscard]] auto getResourceManager() const noexcept -> const VulkanResourceManager&
+        {
+            return *_resourceManager;
+        }
+
         [[nodiscard]] auto getCommandPool() const noexcept -> vk::CommandPool
         {
             return _commandPool;
@@ -90,7 +92,7 @@ namespace exage::Graphics
         {
             std::vector<ResourceDescription> resourceDescriptions;
             uint32_t pushConstantSize;
-            VulkanResourceManager* resourceManager;
+            bool bindless;
         };
 
       private:
@@ -102,6 +104,7 @@ namespace exage::Graphics
         vkb::PhysicalDevice _physicalDevice;
         vkb::Device _device;
         std::optional<VulkanQueue> _queue = std::nullopt;
+        std::optional<VulkanResourceManager> _resourceManager = std::nullopt;
         vk::CommandPool _commandPool;
 
         HardwareSupport _hardwareSupport;

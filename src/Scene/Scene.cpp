@@ -37,7 +37,7 @@ namespace exage
     {
         auto& relationship = getComponent<EntityRelationship>(entity);
 
-        if (isValid(relationship.parent))
+        if (relationship.parent != entt::null)
         {
             auto& parentRelationship = getComponent<EntityRelationship>(relationship.parent);
             parentRelationship.childCount--;
@@ -47,14 +47,14 @@ namespace exage
             }
         }
 
-        if (isValid(relationship.nextSibling))
+        if (relationship.nextSibling != entt::null)
         {
             auto& nextSiblingRelationship =
                 getComponent<EntityRelationship>(relationship.nextSibling);
             nextSiblingRelationship.previousSibling = relationship.previousSibling;
         }
 
-        if (isValid(relationship.previousSibling))
+        if (relationship.previousSibling != entt::null)
         {
             auto& previousSiblingRelationship =
                 getComponent<EntityRelationship>(relationship.previousSibling);
@@ -94,7 +94,7 @@ namespace exage
         {
             auto& relationship = view.get<EntityRelationship>(entity);
 
-            if (!isValid(relationship.parent))
+            if (relationship.parent == entt::null)
             {
                 _registry.emplace_or_replace<RootEntity>(entity);
             }

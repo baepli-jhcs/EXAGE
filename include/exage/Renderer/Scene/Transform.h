@@ -3,7 +3,6 @@
 #include <glm/glm.hpp>
 
 #include "exage/Graphics/Buffer.h"
-#include "exage/Graphics/Utils/RAII.h"
 #include "exage/Scene/Scene.h"
 
 namespace exage::Renderer

@@ -11,8 +11,8 @@ namespace exage::Renderer
         auto view = scene.registry().view<ActiveCameraTag>();
         for (auto entity : view)
         {
-			scene.registry().remove<ActiveCameraTag>(entity);
-		}
+            scene.registry().remove<ActiveCameraTag>(entity);
+        }
 
         scene.registry().emplace<ActiveCameraTag>(cameraEntity);
     }
@@ -22,9 +22,9 @@ namespace exage::Renderer
         auto view = scene.registry().view<ActiveCameraTag>();
         for (auto entity : view)
         {
-			return entity;
-		}
+            return entity;
+        }
 
-		return entt::null;
+        return entt::null;
     }
 }  // namespace exage::Renderer

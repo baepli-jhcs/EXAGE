@@ -35,6 +35,8 @@ namespace exage::Graphics
                 _mappedData = info.pMappedData;
             }
         }
+
+        _id = _context.get().getResourceManager().bindBuffer(*this);
     }
 
     VulkanBuffer::~VulkanBuffer()
@@ -49,6 +51,8 @@ namespace exage::Graphics
         , _allocation(old._allocation)
         , _mappedData(old._mappedData)
     {
+        old._id = {};
+
         old._buffer = nullptr;
         old._allocation = nullptr;
         old._mappedData = nullptr;
@@ -71,6 +75,8 @@ namespace exage::Graphics
         _allocation = old._allocation;
         _mappedData = old._mappedData;
 
+        old._id = {};
+
         old._buffer = nullptr;
         old._allocation = nullptr;
         old._mappedData = nullptr;
@@ -81,7 +87,7 @@ namespace exage::Graphics
     void VulkanBuffer::write(std::span<const std::byte> data, size_t offset) noexcept
     {
         debugAssume(offset + data.size() <= _size, "Buffer overflow");
-        debugAssume(_isMapped == true, "Buffer is not mapped");
+        debugAssume(_isMapped, "Buffer is not mapped");
 
         std::memcpy(static_cast<std::byte*>(_mappedData) + offset, data.data(), data.size());
         _context.get().getAllocator().flushAllocation(_allocation, offset, data.size());
@@ -98,6 +104,11 @@ namespace exage::Graphics
 
     void VulkanBuffer::cleanup() noexcept
     {
+        if (_id.valid())
+        {
+            _context.get().getResourceManager().unbindBuffer(_id);
+        }
+
         if (_buffer)
         {
             _context.get().getDevice().destroyBuffer(_buffer);

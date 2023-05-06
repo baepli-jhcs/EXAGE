@@ -5,9 +5,6 @@
 
 #include "exage/Core/Window.h"
 #include "exage/platform/Vulkan/VulkanContext.h"
-#include "vulkan/vulkan_core.h"
-#include "vulkan/vulkan_enums.hpp"
-#include "vulkan/vulkan_structs.hpp"
 
 #define GLFW_INCLUDE_VULKAN
 #include <iostream>
@@ -288,6 +285,8 @@ namespace exage::Graphics
 
         checkVulkan(getDevice().createCommandPool(&commandPoolCreateInfo, nullptr, &_commandPool));
 
+        _resourceManager.emplace(*this);
+
         return std::nullopt;
     }
 
@@ -311,6 +310,8 @@ namespace exage::Graphics
         }
 
         _queue = std::nullopt;
+
+        _resourceManager.reset();
 
         if (_allocator)
         {
@@ -378,11 +379,6 @@ namespace exage::Graphics
         -> std::shared_ptr<Pipeline>
     {
         return std::make_shared<VulkanPipeline>(*this, createInfo);
-    }
-
-    auto VulkanContext::createResourceManager() noexcept -> std::unique_ptr<ResourceManager>
-    {
-        return std::make_unique<VulkanResourceManager>(*this);
     }
 
     auto VulkanContext::getHardwareSupport() const noexcept -> HardwareSupport
@@ -478,7 +474,7 @@ namespace exage::Graphics
         hashCombine(seed,
                     info.pushConstantSize,
                     hashResourceDescriptions(info.resourceDescriptions),
-                    info.resourceManager);
+                    info.bindless);
         return seed;
     }
 
@@ -492,11 +488,10 @@ namespace exage::Graphics
             return it->second;
         }
 
-        vk::DescriptorSetLayout layout = nullptr;
-
-        if (info.resourceManager)
+        vk::DescriptorSetLayout layout;
+        if (info.bindless)
         {
-            layout = info.resourceManager->getDescriptorSetLayout();
+            layout = _resourceManager->getDescriptorSetLayout();
         }
         else
         {

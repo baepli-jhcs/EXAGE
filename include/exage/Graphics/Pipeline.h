@@ -53,6 +53,8 @@ namespace exage::Graphics
         EXAGE_DEFAULT_COPY(Pipeline);
         EXAGE_DEFAULT_MOVE(Pipeline);
 
+        [[nodiscard]] auto isBindless() const noexcept -> bool { return _bindless; }
+
         EXAGE_BASE_API(API, Pipeline);
 
         enum class CompareOperation
@@ -188,6 +190,14 @@ namespace exage::Graphics
             std::vector<Format> colorFormats;
             Format depthStencilFormat;
         };
+
+      protected:
+        explicit Pipeline(bool bindless) noexcept
+            : _bindless(bindless)
+        {
+        }
+
+        bool _bindless = false;
     };
 
     struct PipelineCreateInfo
@@ -201,7 +211,6 @@ namespace exage::Graphics
         Pipeline::DepthStencilState depthStencilState;
         uint32_t pushConstantSize;
 
-        std::shared_ptr<ResourceManager>
-            resourceManager;  // If provided, a resource manager will allow for bindless resources
+        bool bindless = false;  // If set, resourceDescriptions are ignored
     };
 }  // namespace exage::Graphics

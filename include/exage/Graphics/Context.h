@@ -78,8 +78,6 @@ namespace exage::Graphics
             -> std::shared_ptr<Shader> = 0;
         [[nodiscard]] virtual auto createPipeline(const PipelineCreateInfo& createInfo) noexcept
             -> std::shared_ptr<Pipeline> = 0;
-        [[nodiscard]] virtual auto createResourceManager() noexcept
-            -> std::unique_ptr<ResourceManager> = 0;
 
         [[nodiscard]] virtual auto getHardwareSupport() const noexcept -> HardwareSupport = 0;
 

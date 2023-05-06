@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "exage/Core/Core.h"
+#include "exage/Graphics/BindlessResources.h"
 #include "exage/Graphics/Context.h"
 #include "exage/utils/classes.h"
 #include "glm/glm.hpp"
@@ -117,6 +118,8 @@ namespace exage::Graphics
         [[nodiscard]] auto getLayerCount() const noexcept -> uint32_t { return _layerCount; }
         [[nodiscard]] auto getMipLevelCount() const noexcept -> uint32_t { return _mipLevelCount; }
 
+        [[nodiscard]] auto getBindlessID() const noexcept -> TextureID { return _id; }
+
         [[nodiscard]] auto getTextureCreateInfo() const noexcept -> TextureCreateInfo;
 
         [[nodiscard]] virtual auto getSampler() noexcept -> Sampler& = 0;
@@ -153,6 +156,8 @@ namespace exage::Graphics
         uint32_t _layerCount;
         uint32_t _mipLevelCount;
 
+        TextureID _id {};
+
         Texture(TextureExtent extent,
                 Format format,
                 Type type,
@@ -178,6 +183,8 @@ namespace exage::Graphics
         Sampler::Filter filter = Sampler::Filter::eLinear;
         Sampler::MipmapMode mipmapMode = Sampler::MipmapMode::eLinear;
         float lodBias = 0.0F;
+
+        TextureID _id {};
     };
 
     struct TextureCreateInfo

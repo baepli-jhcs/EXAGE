@@ -6,14 +6,9 @@ namespace exage::Graphics
 {
     VulkanPipeline::VulkanPipeline(VulkanContext& context,
                                    const PipelineCreateInfo& createInfo) noexcept
-        : _context(context)
+        : Pipeline(createInfo.bindless)
+        , _context(context)
     {
-        if (createInfo.resourceManager)
-        {
-            _resourceManager =
-                std::static_pointer_cast<VulkanResourceManager>(createInfo.resourceManager);
-        }
-
         auto device = _context.get().getDevice();
 
         std::vector<vk::PipelineShaderStageCreateInfo> shaderStages;
@@ -163,9 +158,17 @@ namespace exage::Graphics
         std::array dynamicStates = {vk::DynamicState::eViewport, vk::DynamicState::eScissor};
 
         VulkanContext::PipelineLayoutInfo pipelineLayoutInfo;
-        pipelineLayoutInfo.resourceDescriptions = createInfo.resourceDescriptions;
+
+        if (createInfo.bindless)
+        {
+            pipelineLayoutInfo.resourceDescriptions = createInfo.resourceDescriptions;
+        }
+        else
+        {
+            pipelineLayoutInfo.bindless = createInfo.bindless;
+        }
+
         pipelineLayoutInfo.pushConstantSize = createInfo.pushConstantSize;
-        pipelineLayoutInfo.resourceManager = _resourceManager.get();
 
         _pipelineLayout = _context.get().getOrCreatePipelineLayout(pipelineLayoutInfo);
 

@@ -18,19 +18,15 @@ namespace exage::Graphics
         auto operator=(VulkanPipeline&& old) noexcept -> VulkanPipeline&;
 
         [[nodiscard]] auto getPipeline() const noexcept -> vk::Pipeline { return _pipeline; }
-        [[nodiscard]] auto getPipelineLayout() const noexcept -> vk::PipelineLayout { return _pipelineLayout; }
-
-        [[nodiscard]] auto getResourceManager() const noexcept
-            -> const std::shared_ptr<VulkanResourceManager>&
+        [[nodiscard]] auto getPipelineLayout() const noexcept -> vk::PipelineLayout
         {
-            return _resourceManager;
+            return _pipelineLayout;
         }
 
         EXAGE_VULKAN_DERIVED
 
       private:
         std::reference_wrapper<VulkanContext> _context;
-        std::shared_ptr<VulkanResourceManager> _resourceManager;
 
         vk::PipelineLayout _pipelineLayout;
         vk::Pipeline _pipeline;

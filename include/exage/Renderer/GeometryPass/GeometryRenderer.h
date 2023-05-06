@@ -8,21 +8,20 @@
 
 namespace exage::Renderer
 {
-    struct ForwardRendererCreateInfo
+    struct GeometryRendererCreateInfo
     {
         Graphics::Context& context;
-        std::shared_ptr<Graphics::ResourceManager> resourceManager;
         glm::uvec2 extent;
     };
 
-    class EXAGE_EXPORT ForwardRenderer
+    class EXAGE_EXPORT GeometryRenderer
     {
       public:
-        explicit ForwardRenderer(const ForwardRendererCreateInfo& createInfo) noexcept;
-        virtual ~ForwardRenderer() = default;
+        explicit GeometryRenderer(const GeometryRendererCreateInfo& createInfo) noexcept;
+        virtual ~GeometryRenderer() = default;
 
-        EXAGE_DELETE_COPY(ForwardRenderer);
-        EXAGE_DEFAULT_MOVE(ForwardRenderer);
+        EXAGE_DELETE_COPY(GeometryRenderer);
+        EXAGE_DEFAULT_MOVE(GeometryRenderer);
 
         void render(Graphics::CommandBuffer& commandBuffer, Scene& scene) noexcept;
         void resize(glm::uvec2 extent) noexcept;
@@ -35,7 +34,6 @@ namespace exage::Renderer
 
       private:
         std::reference_wrapper<Graphics::Context> _context;
-        std::shared_ptr<Graphics::ResourceManager> _resourceManager;
         glm::uvec2 _extent;
 
         std::shared_ptr<Graphics::FrameBuffer> _frameBuffer;

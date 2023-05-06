@@ -1,4 +1,6 @@
 ﻿#pragma once
+#include <memory_resource>
+
 #include <entt/entity/registry.hpp>
 
 #include "exage/Core/Core.h"
@@ -10,18 +12,30 @@ namespace exage
     class EXAGE_EXPORT Scene
     {
       public:
-        Scene() noexcept = default;
+        using Registry =
+            entt::basic_registry<entt::entity, std::pmr::polymorphic_allocator<entt::entity>>;
+
+        explicit Scene(std::pmr::polymorphic_allocator<Entity> allocator = {})
+            : _registry(allocator)
+        {
+        }
         ~Scene() = default;
+
+        EXAGE_DELETE_COPY(Scene);
+        EXAGE_DEFAULT_MOVE(Scene);
 
         [[nodiscard]] auto createEntity(Entity parent = entt::null) noexcept -> Entity;
         void destroyEntity(Entity entity) noexcept;
 
         void updateHierarchy(bool calculateTransforms = true) noexcept;
 
-        entt::registry& registry() noexcept { return _registry; }
-        const entt::registry& registry() const noexcept { return _registry; }
+        [[nodiscard]] auto registry() noexcept -> Registry& { return _registry; }
+        [[nodiscard]] auto registry() const noexcept -> const Registry& { return _registry; }
 
-        bool isValid(Entity entity) const noexcept { return _registry.valid(entity); }
+        [[nodiscard]] auto isValid(Entity entity) const noexcept -> bool
+        {
+            return _registry.valid(entity);
+        }
 
         template<typename T, typename... Args>
         auto addComponent(Entity entity, Args&&... args) noexcept -> T&
@@ -29,20 +43,20 @@ namespace exage
             return _registry.emplace<T>(entity, std::forward<Args>(args)...);
         }
 
-        template <typename T>
+        template<typename T>
         auto getComponent(Entity entity) noexcept -> T&
         {
-			return _registry.get<T>(entity);
-		}
+            return _registry.get<T>(entity);
+        }
 
         template<typename T>
         void removeComponent(Entity entity) noexcept
         {
-			_registry.remove<T>(entity);
-		}
+            _registry.remove<T>(entity);
+        }
 
         template<typename T>
-        bool hasComponent(Entity entity) const noexcept
+        [[nodiscard]] auto hasComponent(Entity entity) const noexcept -> bool
         {
             return _registry.all_of<T>(entity);
         }
@@ -62,6 +76,6 @@ namespace exage
       private:
         void calculateChildTransform(Transform3D& parentTransform, Entity entity) noexcept;
 
-        entt::registry _registry;
+        Registry _registry;
     };
 }  // namespace exage

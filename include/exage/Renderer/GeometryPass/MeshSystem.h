@@ -25,7 +25,6 @@ namespace exage::Renderer
       private:
         std::reference_wrapper<Graphics::Context> _context;
         std::reference_wrapper<SceneBuffer> _sceneBuffer;
-        std::shared_ptr<Graphics::ResourceManager> _resourceManager;
 
         std::shared_ptr<Graphics::Pipeline> _pipeline;
     };

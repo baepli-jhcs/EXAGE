@@ -8,9 +8,7 @@
 #include <stdint.h>
 
 #include "exage/Core/Core.h"
-#include "exage/Graphics/ResourceManager.h"
 #include "exage/Graphics/Texture.h"
-#include "exage/Graphics/Utils/RAII.h"
 #include "exage/utils/glm.h"
 
 namespace exage::Renderer
@@ -50,7 +48,6 @@ namespace exage::Renderer
         std::string path;
 
         std::shared_ptr<Graphics::Texture> texture;
-        std::shared_ptr<Graphics::RAII::TextureID> textureID;
     };
 
     constexpr std::string_view TEXTURE_EXTENSION = ".extex";
@@ -197,7 +194,6 @@ namespace exage::Renderer
         GPUTexture occlusionTexture;
 
         std::shared_ptr<Graphics::Buffer> buffer;
-        std::shared_ptr<Graphics::RAII::BufferID> bufferID;
     };
 
     constexpr std::string_view MATERIAL_EXTENSION = ".exmat";

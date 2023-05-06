@@ -10,11 +10,10 @@ namespace exage::Renderer
 {
     Renderer::Renderer(const RendererCreateInfo& createInfo) noexcept
         : _context(createInfo.context)
-        , _resourceManager(createInfo.resourceManager)
         , _extent(createInfo.extent)
-        , _forwardRenderer({createInfo.context, createInfo.resourceManager, createInfo.extent})
-        , _cameraBuffer({createInfo.context, sizeof(CameraRenderInfo::Data), false})
-        , _transformBuffer({createInfo.context, sizeof(TransformRenderInfo::Data), true})
+        , _geometryRenderer({createInfo.context, createInfo.extent})
+        , _cameraBuffer({createInfo.context, sizeof(CameraRenderInfo), false})
+        , _transformBuffer({createInfo.context, sizeof(TransformRenderInfo), true})
     {
         auto& context = _context.get();
 
@@ -28,14 +27,6 @@ namespace exage::Renderer
                 | Graphics::Texture::UsageFlags::eSampled};
 
         _frameBuffer = context.createFrameBuffer(frameBufferCreateInfo);
-
-        if (_resourceManager)
-        {
-            _cameraBufferID =
-                std::make_shared<Graphics::RAII::BufferID>(*_resourceManager, _cameraBuffer);
-            _transformBufferID =
-                std::make_shared<Graphics::RAII::BufferID>(*_resourceManager, _transformBuffer);
-        }
     }
 
     void Renderer::render(Graphics::CommandBuffer& commandBuffer, Scene& scene) noexcept
@@ -44,6 +35,12 @@ namespace exage::Renderer
         auto colorTexture = _frameBuffer->getTexture(0);
 
         auto camera = getSceneCamera(scene);
+
+        if (!scene.isValid(camera))
+        {
+            return;
+        }
+
         auto& cameraComponent = scene.getComponent<Camera>(camera);
         auto& transform = scene.getComponent<Transform3D>(camera);
 
@@ -61,34 +58,13 @@ namespace exage::Renderer
         cameraRenderInfo.viewProjection = projection * view;
         cameraRenderInfo.position = transform.globalPosition;
 
-        // Camera buffer
-        if (!cameraRenderInfo.buffer)
-        {
-            constexpr auto cameraBufferSize = sizeof(CameraRenderInfo::Data);
-
-            Graphics::BufferCreateInfo bufferCreateInfo {};
-            // size is size until position
-            bufferCreateInfo.size = cameraBufferSize;
-            bufferCreateInfo.cached = false;
-            bufferCreateInfo.mapMode = Graphics::Buffer::MapMode::eMapped;
-
-            cameraRenderInfo.buffer = context.createBuffer(bufferCreateInfo);
-
-            if (_resourceManager)
-            {
-                cameraRenderInfo.bufferID = std::make_shared<Graphics::RAII::BufferID>(
-                    *_resourceManager, *cameraRenderInfo.buffer);
-            }
-        }
-
-        commandBuffer.insertDataDependency(cameraRenderInfo.buffer);
-        commandBuffer.insertDataDependency(cameraRenderInfo.bufferID);
-
-        std::span<const std::byte> data(reinterpret_cast<const std::byte*>(&cameraRenderInfo.data),
-                                        sizeof(CameraRenderInfo::Data));
-        cameraRenderInfo.buffer->write(data, 0);
+        std::span<const std::byte> data(reinterpret_cast<const std::byte*>(&cameraRenderInfo),
+                                        sizeof(CameraRenderInfo));
+        _cameraBuffer.write(data, 0);
 
         // Transform buffers
+
+        _geometryRenderer.render(commandBuffer, scene);
 
         commandBuffer.textureBarrier(colorTexture,
                                      Graphics::Texture::Layout::eColorAttachment,

@@ -67,14 +67,13 @@ namespace exage::Renderer
             }
 
             BindlessPushConstant pushConstant {};
-            pushConstant.cameraIndex = cameraInfo.bufferID->get().id;
-            pushConstant.transformIndex = transform.bufferID->get().id;
+            pushConstant.cameraIndex = 0;  // TODO: camera index
+            pushConstant.transformIndex = 0;  // TODO: transform index
 
             size_t lodLevel = 0;  // TODO: LOD
 
-            const auto& materialID = mesh.material.bufferID;
-            commandBuffer.insertDataDependency(materialID);
-            pushConstant.materialIndex = materialID->get().id;
+            commandBuffer.insertDataDependency(mesh.material.buffer);
+            pushConstant.materialIndex = mesh.material.buffer->getBindlessID().id;
 
             commandBuffer.setPushConstant(sizeof(pushConstant),
                                           reinterpret_cast<std::byte*>(&pushConstant));

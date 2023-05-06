@@ -3,6 +3,7 @@
 #include <span>
 
 #include "exage/Core/Core.h"
+#include "exage/Graphics/BindlessResources.h"
 #include "exage/Graphics/Context.h"
 
 namespace exage::Graphics
@@ -26,13 +27,12 @@ namespace exage::Graphics
         virtual void read(std::span<std::byte> data, size_t offset) const noexcept = 0;
 
         [[nodiscard]] auto getSize() const noexcept -> size_t { return _size; }
-        [[nodiscard]] auto getMapMode() const noexcept -> MapMode
-        {
-            return _mapMode;
-        }
+        [[nodiscard]] auto getMapMode() const noexcept -> MapMode { return _mapMode; }
         [[nodiscard]] auto isCached() const noexcept -> bool { return _cached; }
 
         [[nodiscard]] auto isMapped() const noexcept -> bool { return _isMapped; }
+
+        [[nodiscard]] auto getBindlessID() const noexcept -> BufferID { return _id; }
 
         EXAGE_BASE_API(API, Buffer);
 
@@ -42,6 +42,7 @@ namespace exage::Graphics
         bool _cached = false;
 
         bool _isMapped = false;
+        BufferID _id {};
 
         Buffer(uint64_t size, MapMode mapMode, bool cached) noexcept
             : _size(size)

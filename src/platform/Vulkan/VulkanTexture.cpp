@@ -100,6 +100,11 @@ namespace exage::Graphics
 
     void VulkanTexture::cleanup() noexcept
     {
+        if (_id.valid())
+        {
+            _context.get().getResourceManager().unbindTexture(_id);
+        }
+
         if (_imageView)
         {
             _context.get().getDevice().destroyImageView(_imageView);
@@ -124,6 +129,8 @@ namespace exage::Graphics
         , _imageView(old._imageView)
         , _sampler(std::move(old._sampler))
     {
+        old._id = {};
+
         old._allocation = nullptr;
         old._image = nullptr;
         old._imageView = nullptr;
@@ -144,6 +151,8 @@ namespace exage::Graphics
         _image = old._image;
         _imageView = old._imageView;
         _sampler = std::move(old._sampler);
+
+        old._id = {};
 
         old._allocation = nullptr;
         old._image = nullptr;
@@ -202,5 +211,7 @@ namespace exage::Graphics
         checkVulkan(result);
 
         _sampler = VulkanSampler {_context, createInfo.samplerCreateInfo, _mipLevelCount};
+
+        _id = _context.get().getResourceManager().bindTexture(*this);
     }
 }  // namespace exage::Graphics
