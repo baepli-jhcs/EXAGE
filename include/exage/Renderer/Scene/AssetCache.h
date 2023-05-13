@@ -16,23 +16,45 @@ namespace exage::Renderer
         AssetCache() noexcept = default;
         ~AssetCache() = default;
 
-        EXAGE_DELETE_COPY(AssetCache);
+        EXAGE_DEFAULT_COPY(AssetCache);
         EXAGE_DEFAULT_MOVE(AssetCache);
 
-        void addTexture(std::unique_ptr<Texture> texture) noexcept;
-        void addMesh(std::unique_ptr<Mesh> mesh) noexcept;
-        void addMaterial(std::unique_ptr<Material> material) noexcept;
+        void addTexture(GPUTexture texture) noexcept { _textures.emplace(texture.path, texture); }
+        void addMesh(GPUMesh mesh) noexcept { _meshes.emplace(mesh.path, mesh); }
+        void addMaterial(GPUMaterial material) noexcept
+        {
+            _materials.emplace(material.path, material);
+        }
 
-        [[nodiscard]] auto getTexture(const std::filesystem::path& path) noexcept -> Texture*;
-        [[nodiscard]] auto getMesh(const std::filesystem::path& path) noexcept -> Mesh*;
-        [[nodiscard]] auto getMaterial(const std::filesystem::path& path) noexcept -> Material*;
+        [[nodiscard]] auto getTexture(const std::filesystem::path& path) noexcept -> GPUTexture
+        {
+            return _textures[path];
+        }
+        [[nodiscard]] auto getMesh(const std::filesystem::path& path) noexcept -> GPUMesh
+        {
+            return _meshes[path];
+        }
+        [[nodiscard]] auto getMaterial(const std::filesystem::path& path) noexcept -> GPUMaterial
+        {
+            return _materials[path];
+        }
+
+        [[nodiscard]] auto hasTexture(const std::filesystem::path& path) const noexcept -> bool
+        {
+            return _textures.contains(path);
+        }
+        [[nodiscard]] auto hasMesh(const std::filesystem::path& path) const noexcept -> bool
+        {
+            return _meshes.contains(path);
+        }
+        [[nodiscard]] auto hasMaterial(const std::filesystem::path& path) const noexcept -> bool
+        {
+            return _materials.contains(path);
+        }
 
       private:
-        std::unordered_map<std::filesystem::path, std::unique_ptr<Texture>, Filesystem::PathHash>
-            _textures;
-        std::unordered_map<std::filesystem::path, std::unique_ptr<Mesh>, Filesystem::PathHash>
-            _meshes;
-        std::unordered_map<std::filesystem::path, std::unique_ptr<Material>, Filesystem::PathHash>
-            _materials;
+        std::unordered_map<std::filesystem::path, GPUTexture, Filesystem::PathHash> _textures;
+        std::unordered_map<std::filesystem::path, GPUMesh, Filesystem::PathHash> _meshes;
+        std::unordered_map<std::filesystem::path, GPUMaterial, Filesystem::PathHash> _materials;
     };
 }  // namespace exage::Renderer

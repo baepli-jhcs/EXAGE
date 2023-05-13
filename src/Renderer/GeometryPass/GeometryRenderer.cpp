@@ -27,7 +27,9 @@ namespace exage::Renderer
             Graphics::Format::eRGBA16f, Graphics::Texture::UsageFlags::eColorAttachment};  // Normal
 
         frameBufferCreateInfo.colorAttachments[2] = {
-            Graphics::Format::eRGBA16f, Graphics::Texture::UsageFlags::eColorAttachment};  // Albedo
+            Graphics::Format::eRGBA16f,
+            Graphics::Texture::UsageFlags::eColorAttachment
+                | Graphics::Texture::UsageFlags::eTransferSrc};  // Albedo
 
         frameBufferCreateInfo.colorAttachments[3] = {
             Graphics::Format::eR16f, Graphics::Texture::UsageFlags::eColorAttachment};  // Metallic

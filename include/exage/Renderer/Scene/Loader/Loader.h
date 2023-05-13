@@ -29,14 +29,11 @@ namespace exage::Renderer
         Graphics::Context& context;
         Graphics::CommandBuffer& commandBuffer;
 
-        Graphics::Texture::Usage usage = Graphics::Texture::UsageFlags::eSampled
-            | Graphics::Texture::UsageFlags::eTransferDst
-            | Graphics::Texture::UsageFlags::eTransferSrc;
+        Graphics::Texture::Usage usage =
+            Graphics::Texture::UsageFlags::eSampled | Graphics::Texture::UsageFlags::eTransferDst;
         Graphics::Texture::Layout layout = Graphics::Texture::Layout::eShaderReadOnly;
         Graphics::Access access = Graphics::AccessFlags::eShaderRead;
         Graphics::PipelineStage pipelineStage = Graphics::PipelineStageFlags::eFragmentShader;
-
-        bool generateMipmaps = true;
 
         Graphics::SamplerCreateInfo samplerCreateInfo {};
     };

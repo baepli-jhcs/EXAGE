@@ -1,5 +1,6 @@
 ﻿#include "exage/platform/Vulkan/VulkanCommandBuffer.h"
 
+#include "debugbreak.h"
 #include "exage/Graphics/Commands.h"
 #include "exage/platform/Vulkan/VulkanBuffer.h"
 #include "exage/platform/Vulkan/VulkanFrameBuffer.h"
@@ -266,6 +267,11 @@ namespace exage::Graphics
                                          uint64_t dstOffset,
                                          uint64_t size) noexcept
     {
+        debugAssume(srcBuffer->getSize() >= srcOffset + size,
+                    "Source buffer is too small for the copy");
+        debugAssume(dstBuffer->getSize() >= dstOffset + size,
+                    "Destination buffer is too small for the copy");
+
         CopyBufferCommand copyBufferCommand;
         copyBufferCommand.srcBuffer = srcBuffer;
         copyBufferCommand.dstBuffer = dstBuffer;
@@ -603,12 +609,12 @@ namespace exage::Graphics
 
                     std::shared_ptr<Texture> const depthTexture =
                         frameBuffer.getDepthStencilTexture();
+                    vk::RenderingAttachmentInfo depthAttachmentInfo {};
                     if (depthTexture)
                     {
                         auto& vulkanTexture = *depthTexture->as<VulkanTexture>();
                         const auto& clearDepth = cmd.clearDepth;
 
-                        vk::RenderingAttachmentInfo depthAttachmentInfo {};
                         depthAttachmentInfo.imageView = vulkanTexture.getImageView();
                         depthAttachmentInfo.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
                         depthAttachmentInfo.resolveMode = vk::ResolveModeFlagBits::eNone;

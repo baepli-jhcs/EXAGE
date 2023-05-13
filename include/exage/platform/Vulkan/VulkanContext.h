@@ -3,7 +3,6 @@
 #include <optional>
 
 #include <exage/platform/Vulkan/VKinclude.h>
-#include <vulkan-memory-allocator-hpp/vk_mem_alloc.hpp>
 
 #include "exage/Graphics/Context.h"
 #include "exage/Graphics/Pipeline.h"

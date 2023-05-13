@@ -28,7 +28,7 @@ namespace exage::Graphics
         virtual void startNextFrame() noexcept = 0;
         virtual void submit(QueueSubmitInfo& submitInfo) noexcept = 0;
         [[nodiscard]] virtual auto present(QueuePresentInfo& presentInfo) noexcept
-            -> tl::expected<void, Error>;
+            -> tl::expected<void, Error> = 0;
 
         virtual void submitTemporary(std::unique_ptr<CommandBuffer> commandBuffer) noexcept = 0;
 

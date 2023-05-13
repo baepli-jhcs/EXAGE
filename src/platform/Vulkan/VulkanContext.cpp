@@ -99,6 +99,8 @@ namespace exage::Graphics
         vkb::InstanceBuilder builder;
 
         builder.set_app_name("EXAGE");
+        builder.require_api_version(1, 2);
+        builder.set_engine_name("EXAGE");
 
 #ifdef EXAGE_DEBUG
         builder.request_validation_layers(/*enable_validation=*/true).use_default_debug_messenger();
@@ -504,10 +506,8 @@ namespace exage::Graphics
         pushConstantRange.size = static_cast<uint32_t>(info.pushConstantSize);
 
         vk::PipelineLayoutCreateInfo pipelineLayoutInfo {};
-        pipelineLayoutInfo.setLayoutCount = 1;
-        pipelineLayoutInfo.pSetLayouts = &layout;
-        pipelineLayoutInfo.pushConstantRangeCount = 1;
-        pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
+        pipelineLayoutInfo.setSetLayouts(layout);
+        pipelineLayoutInfo.setPushConstantRanges(pushConstantRange);
 
         vk::PipelineLayout pipelineLayout;
         checkVulkan(

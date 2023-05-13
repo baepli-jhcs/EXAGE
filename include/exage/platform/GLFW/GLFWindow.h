@@ -18,7 +18,6 @@ namespace exage
         EXAGE_DELETE_COPY(GLFWindow);
         EXAGE_DEFAULT_MOVE(GLFWindow);
 
-        void update() noexcept override;
         void close() noexcept override;
 
         void setResizeCallback(ResizeCallback callback) noexcept override;
@@ -59,6 +58,9 @@ namespace exage
         [[nodiscard]] auto isMinimized() const noexcept -> bool override;
 
         [[nodiscard]] auto getGLFWWindow() const noexcept -> GLFWwindow* { return _window; }
+
+        static void pollEvents() noexcept;
+        static void waitEvents() noexcept;
 
         static auto getMonitorCount() noexcept -> uint32_t;
         static auto getMonitor(uint32_t index) noexcept -> Monitor;

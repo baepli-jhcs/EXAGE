@@ -483,7 +483,7 @@ namespace exage::Graphics
         return vk::CullModeFlagBits::eNone;
     }
 
-    [[nodiscard]] constexpr auto toVulkanFormat(uint32_t components, VertexDescription::Type type)
+    [[nodiscard]] constexpr auto toVulkanFormat(uint32_t components, VertexAttribute::Type type)
         -> vk::Format
     {
         switch (components)
@@ -491,53 +491,53 @@ namespace exage::Graphics
             case 1:
                 switch (type)
                 {
-                    case VertexDescription::Type::eFloat:
+                    case VertexAttribute::Type::eFloat:
                         return vk::Format::eR32Sfloat;
-                    case VertexDescription::Type::eU32:
+                    case VertexAttribute::Type::eU32:
                         return vk::Format::eR32Uint;
-                    case VertexDescription::Type::eI8:
+                    case VertexAttribute::Type::eI8:
                         return vk::Format::eR8Sint;
-                    case VertexDescription::Type::eI32:
+                    case VertexAttribute::Type::eI32:
                         return vk::Format::eR32Sint;
                 }
                 return vk::Format::eR32Uint;
             case 2:
                 switch (type)
                 {
-                    case VertexDescription::Type::eFloat:
+                    case VertexAttribute::Type::eFloat:
                         return vk::Format::eR32G32Sfloat;
-                    case VertexDescription::Type::eU32:
+                    case VertexAttribute::Type::eU32:
                         return vk::Format::eR32G32Uint;
-                    case VertexDescription::Type::eI8:
+                    case VertexAttribute::Type::eI8:
                         return vk::Format::eR8G8Sint;
-                    case VertexDescription::Type::eI32:
+                    case VertexAttribute::Type::eI32:
                         return vk::Format::eR32G32Sint;
                 }
                 return vk::Format::eR32G32Uint;
             case 3:
                 switch (type)
                 {
-                    case VertexDescription::Type::eFloat:
+                    case VertexAttribute::Type::eFloat:
                         return vk::Format::eR32G32B32Sfloat;
                         return vk::Format::eR16G16B16Uint;
-                    case VertexDescription::Type::eU32:
+                    case VertexAttribute::Type::eU32:
                         return vk::Format::eR32G32B32Uint;
-                    case VertexDescription::Type::eI8:
+                    case VertexAttribute::Type::eI8:
                         return vk::Format::eR8G8B8Sint;
-                    case VertexDescription::Type::eI32:
+                    case VertexAttribute::Type::eI32:
                         return vk::Format::eR32G32B32Sint;
                 }
                 return vk::Format::eR32G32B32Uint;
             case 4:
                 switch (type)
                 {
-                    case VertexDescription::Type::eFloat:
+                    case VertexAttribute::Type::eFloat:
                         return vk::Format::eR32G32B32A32Sfloat;
-                    case VertexDescription::Type::eU32:
+                    case VertexAttribute::Type::eU32:
                         return vk::Format::eR32G32B32A32Uint;
-                    case VertexDescription::Type::eI8:
+                    case VertexAttribute::Type::eI8:
                         return vk::Format::eR8G8B8A8Sint;
-                    case VertexDescription::Type::eI32:
+                    case VertexAttribute::Type::eI32:
                         return vk::Format::eR32G32B32A32Sint;
                 }
                 return vk::Format::eR32G32B32A32Uint;

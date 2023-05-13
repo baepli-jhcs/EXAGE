@@ -1,7 +1,19 @@
-﻿#include "Editor.h"
+﻿#include <algorithm>
 
+#include "Editor.h"
+
+#include "exage/Core/Debug.h"
+#include "exage/Core/Window.h"
+#include "exage/Graphics/Buffer.h"
 #include "exage/Renderer/Renderer.h"
+#include "exage/Renderer/Scene/AssetCache.h"
+#include "exage/Renderer/Scene/Camera.h"
+#include "exage/Renderer/Scene/Loader/Converter.h"
+#include "exage/Renderer/Scene/Loader/Loader.h"
+#include "exage/Renderer/Scene/Material.h"
+#include "exage/Renderer/Scene/Mesh.h"
 #include "exage/Renderer/Scene/SceneBuffer.h"
+#include "exage/Scene/Hierarchy.h"
 
 constexpr static auto WINDOW_API = exage::WindowAPI::eGLFW;
 constexpr static auto GRAPHICS_API = exage::Graphics::API::eVulkan;
@@ -68,6 +80,8 @@ namespace exitor
         Renderer::RendererCreateInfo rendererCreateInfo {
             .context = *_context, .sceneBuffer = *_sceneBuffer, .extent = _viewportExtent};
         _renderer = Renderer::Renderer {rendererCreateInfo};
+
+        prepareTestScene();
     }
 
     Editor::~Editor()
@@ -75,11 +89,120 @@ namespace exitor
         _context->waitIdle();
     }
 
+    void Editor::prepareTestScene() noexcept
+    {
+        auto cameraEntity = _scene.createEntity();
+
+        auto& camera = _scene.addComponent<Renderer::Camera>(cameraEntity);
+        camera.fov = glm::radians(45.0F);
+
+        auto& transform = _scene.addComponent<Transform3D>(cameraEntity);
+        transform.position = {0.0F, 0.0F, 0.0F};
+
+        Renderer::setSceneCamera(_scene, cameraEntity);
+
+        auto importResult = Renderer::importAsset("assets/exage/models/sponza/sponza.gltf");
+        debugAssume(importResult.has_value(), "Failed to import asset");
+
+        auto saveResult = Renderer::saveAssets(*importResult, "assets/exage/models/exspon", "");
+
+        Renderer::AssetCache assetCache;
+
+        auto commamdBuffer = _context->createCommandBuffer();
+        commamdBuffer->begin();
+
+        for (auto& texturePtr : importResult->textures)
+        {
+            Renderer::Texture& texture = *texturePtr;
+
+            Renderer::TextureUploadOptions uploadOptions {.context = *_context,
+                                                          .commandBuffer = *commamdBuffer};
+
+            Renderer::GPUTexture gpuTexture = Renderer::uploadTexture(texture, uploadOptions);
+            assetCache.addTexture(gpuTexture);
+        }
+
+        for (auto& materialPtr : importResult->materials)
+        {
+            Renderer::Material& material = *materialPtr;
+
+            Renderer::GPUMaterial gpuMaterial {.path = material.path};
+            if (assetCache.hasTexture(material.albedo.texturePath))
+            {
+                gpuMaterial.albedoTexture = assetCache.getTexture(material.albedo.texturePath);
+            }
+            if (assetCache.hasTexture(material.emissive.texturePath))
+            {
+                gpuMaterial.emissiveTexture = assetCache.getTexture(material.emissive.texturePath);
+            }
+            if (assetCache.hasTexture(material.normal.texturePath))
+            {
+                gpuMaterial.normalTexture = assetCache.getTexture(material.normal.texturePath);
+            }
+            if (assetCache.hasTexture(material.metallic.texturePath))
+            {
+                gpuMaterial.metallicTexture = assetCache.getTexture(material.metallic.texturePath);
+            }
+            if (assetCache.hasTexture(material.roughness.texturePath))
+            {
+                gpuMaterial.roughnessTexture =
+                    assetCache.getTexture(material.roughness.texturePath);
+            }
+            if (assetCache.hasTexture(material.occlusion.texturePath))
+            {
+                gpuMaterial.occlusionTexture =
+                    assetCache.getTexture(material.occlusion.texturePath);
+            }
+
+            Renderer::GPUMaterial::Data data =
+                Renderer::materialDataFromGPUAndCPU(gpuMaterial, material);
+
+            Graphics::BufferCreateInfo bufferCreateInfo {
+                .size = sizeof(Renderer::GPUMaterial::Data),
+                .mapMode = Graphics::Buffer::MapMode::eMapped,
+                .cached = false,
+            };
+
+            gpuMaterial.buffer = _context->createBuffer(bufferCreateInfo);
+            gpuMaterial.buffer->write(std::as_bytes(std::span(&data, 1)), 0);
+
+            assetCache.addMaterial(gpuMaterial);
+        }
+
+        std::vector<Renderer::GPUMesh> gpuMeshes;
+
+        for (auto& meshPtr : importResult->meshes)
+        {
+            Renderer::Mesh& mesh = *meshPtr;
+
+            Renderer::MeshUploadOptions uploadOptions {.context = *_context,
+                                                       .commandBuffer = *commamdBuffer,
+                                                       .sceneBuffer = *_sceneBuffer};
+
+            Renderer::GPUMesh gpuMesh = Renderer::uploadMesh(mesh, uploadOptions);
+
+            if (assetCache.hasMaterial(mesh.materialPath))
+            {
+                gpuMesh.material = assetCache.getMaterial(mesh.materialPath);
+            }
+
+            assetCache.addMesh(gpuMesh);
+            gpuMeshes.push_back(gpuMesh);
+        }
+
+        commamdBuffer->end();
+        _context->getQueue().submitTemporary(std::move(commamdBuffer));
+
+        Renderer::AssetSceneImportInfo sceneImportInfo {.meshes = gpuMeshes,
+                                                        .rootNodes = importResult->rootNodes};
+        Renderer::importScene(sceneImportInfo, _scene);
+    }
+
     void Editor::run() noexcept
     {
         while (!_window->shouldClose())
         {
-            _window->update();
+            pollEvents(_window->getAPI());
 
             if (_window->isMinimized())
             {

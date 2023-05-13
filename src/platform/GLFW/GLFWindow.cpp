@@ -296,11 +296,6 @@ namespace exage
         glfwDestroyWindow(_window);
     }
 
-    void GLFWindow::update() noexcept
-    {
-        glfwPollEvents();
-    }
-
     void GLFWindow::close() noexcept
     {
         glfwSetWindowShouldClose(_window, GLFW_TRUE);
@@ -473,6 +468,16 @@ namespace exage
     auto GLFWindow::isMinimized() const noexcept -> bool
     {
         return glfwGetWindowAttrib(_window, GLFW_ICONIFIED) == GLFW_TRUE;
+    }
+
+    void GLFWindow::pollEvents() noexcept
+    {
+        glfwPollEvents();
+    }
+
+    void GLFWindow::waitEvents() noexcept
+    {
+        glfwWaitEvents();
     }
 
     auto GLFWindow::getMonitorCount() noexcept -> uint32_t

@@ -2,12 +2,13 @@
 
 #include "exage/Core/Core.h"
 #include "exage/Graphics/Context.h"
+#include "exage/Graphics/Pipeline.h"
 #include "exage/Graphics/Shader.h"
 #include "exage/Graphics/Texture.h"
 
 namespace exage::Graphics
 {
-    struct VertexDescription
+    struct VertexAttribute
     {
         enum class Type
         {
@@ -17,17 +18,23 @@ namespace exage::Graphics
             eI32,
         };
 
+        uint32_t offset;
+        uint32_t components;
+        Type type;
+    };
+
+    struct VertexDescription
+    {
         enum class InputRate
         {
             eVertex,
             eInstance,
         };
 
-        uint32_t offset;
-        uint32_t components;
         uint32_t stride;
-        Type type;
         InputRate inputRate;
+
+        std::vector<VertexAttribute> attributes;
     };
 
     struct ResourceDescription
@@ -202,7 +209,7 @@ namespace exage::Graphics
 
     struct PipelineCreateInfo
     {
-        std::vector<VertexDescription> vertexDescriptions;
+        VertexDescription vertexDescription;
         std::vector<ResourceDescription> resourceDescriptions;
         Pipeline::ShaderInfo shaderInfo;
         Pipeline::ColorBlendState colorBlendState;

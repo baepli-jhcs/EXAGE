@@ -1,5 +1,7 @@
 ﻿#include "exage/platform/Vulkan/VulkanBuffer.h"
 
+#include "vulkan/vulkan_enums.hpp"
+
 namespace exage::Graphics
 {
     VulkanBuffer::VulkanBuffer(VulkanContext& context, const BufferCreateInfo& createInfo) noexcept
@@ -27,10 +29,13 @@ namespace exage::Graphics
 
         if (_mapMode != MapMode::eUnmapped)
         {
-            vma::AllocationInfo const info = allocator.getAllocationInfo(_allocation);
+            vk::MemoryPropertyFlags flags;
+            allocator.getAllocationMemoryProperties(_allocation, &flags);
 
-            if (info.memoryType & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
+            if (flags & vk::MemoryPropertyFlagBits::eHostVisible)
             {
+                vma::AllocationInfo const info = allocator.getAllocationInfo(_allocation);
+
                 _isMapped = true;
                 _mappedData = info.pMappedData;
             }

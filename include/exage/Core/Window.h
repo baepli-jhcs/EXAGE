@@ -46,10 +46,10 @@ namespace exage
       public:
         Window() = default;
         virtual ~Window() = default;
+
         EXAGE_DELETE_COPY(Window);
         EXAGE_DEFAULT_MOVE(Window);
 
-        virtual void update() noexcept = 0;
         virtual void close() noexcept = 0;
 
         virtual void setResizeCallback(ResizeCallback callback) noexcept = 0;
@@ -100,30 +100,35 @@ namespace exage
         eUnsupportedAPI,
     };
 
+    void pollEvents(WindowAPI api) noexcept;
+    void waitEvents(WindowAPI api) noexcept;
+
     //// revamp of event system
-    //struct CloseEvent
+    // struct CloseEvent
     //{
-    //};
+    // };
 
-    //struct KeyEvent
+    // struct KeyEvent
     //{
-    //    KeyCode key;
-    //    KeyAction action;
-    //};
+    //     KeyCode key;
+    //     KeyAction action;
+    // };
 
-    //struct ResizeEvent
+    // struct ResizeEvent
     //{
-    //    glm::uvec2 extent;
-    //};
+    //     glm::uvec2 extent;
+    // };
 
-    //using WindowEvent = std::variant<CloseEvent, KeyEvent, ResizeEvent>;
-    //struct EventCallback
+    // using WindowEvent = std::variant<CloseEvent, KeyEvent, ResizeEvent>;
+    // struct EventCallback
     //{
-    //    void* data;
-    //    void (*callback)(void* data, Window& window, const WindowEvent& event);
-    //};
+    //     void* data;
+    //     void (*callback)(void* data, Window& window, const WindowEvent& event);
+    // };
 
-    //[[nodiscard]] EXAGE_EXPORT auto pollEvent(WindowAPI api) noexcept -> std::optional<WindowEvent>;
-    //[[nodiscard]] EXAGE_EXPORT auto waitEvent(WindowAPI api) noexcept -> std::optional<WindowEvent>;
+    //[[nodiscard]] EXAGE_EXPORT auto pollEvent(WindowAPI api) noexcept ->
+    // std::optional<WindowEvent>;
+    //[[nodiscard]] EXAGE_EXPORT auto waitEvent(WindowAPI api) noexcept ->
+    // std::optional<WindowEvent>;
     //
 }  // namespace exage

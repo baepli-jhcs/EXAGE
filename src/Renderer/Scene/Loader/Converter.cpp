@@ -13,6 +13,7 @@
 #include <assimp/scene.h>
 #include <cereal/archives/binary.hpp>
 #include <cereal/cereal.hpp>
+#define KHRONOS_STATIC
 #include <ktx.h>
 
 #include "exage/Renderer/Scene/Material.h"
@@ -34,6 +35,7 @@ namespace exage::Renderer
     namespace
     {
         [[nodiscard]] auto processMaterial(
+            const std::filesystem::path& assetDirectory,
             const aiMaterial& material,
             std::unordered_map<size_t, std::unique_ptr<Texture>>& textureCache) noexcept
             -> tl::expected<Material, AssetImportError>;
@@ -47,7 +49,8 @@ namespace exage::Renderer
                                        AssetImportResult::Node* parent) noexcept
             -> std::vector<std::unique_ptr<AssetImportResult::Node>>;
 
-        [[nodiscard]] auto processScene(const aiScene& scene) noexcept
+        [[nodiscard]] auto processScene(const std::filesystem::path& assetPath,
+                                        const aiScene& scene) noexcept
             -> tl::expected<AssetImportResult, AssetImportError>
         {
             std::vector<std::unique_ptr<Material>> materials;
@@ -56,11 +59,14 @@ namespace exage::Renderer
             std::unordered_map<size_t, std::unique_ptr<Texture>> textureCache;
             std::unordered_map<size_t, Material*> materialCache;
 
+            std ::filesystem::path assetDirectory = assetPath.parent_path();
+
             for (size_t i = 0; i < scene.mNumMaterials; ++i)
             {
                 const auto* material = scene.mMaterials[i];
 
-                tl::expected materialReturn = processMaterial(*material, textureCache);
+                tl::expected materialReturn =
+                    processMaterial(assetDirectory, *material, textureCache);
 
                 if (materialReturn.has_value())
                 {
@@ -103,7 +109,7 @@ namespace exage::Renderer
             result.materials = std::move(materials);
             result.meshes = std::move(meshes);
 
-            result.textures.resize(textureCache.size());
+            result.textures.reserve(textureCache.size());
 
             for (auto& [path, texture] : textureCache)
             {
@@ -121,6 +127,7 @@ namespace exage::Renderer
         }
 
         [[nodiscard]] auto processMaterial(
+            const std::filesystem::path& assetDirectory,
             const aiMaterial& material,
             std::unordered_map<size_t, std::unique_ptr<Texture>>& textureCache) noexcept
             -> tl::expected<Material, AssetImportError>
@@ -176,8 +183,9 @@ namespace exage::Renderer
             emissiveInfo.useTexture = !emissivePath.empty();
 
             // Refactor
-            auto processTexture = [&](auto& textureInfo, auto& texturePath)
+            auto processTexture = [&](auto& textureInfo, auto& relativePath)
             {
+                std::filesystem::path texturePath = assetDirectory / relativePath;
                 if (textureInfo.useTexture)
                 {
                     size_t textureHash = std::filesystem::hash_value(texturePath);
@@ -364,7 +372,7 @@ namespace exage::Renderer
 
             nodes.back()->children = std::move(children);
 
-            return children;
+            return nodes;
         }
 
     }  // namespace
@@ -391,7 +399,7 @@ namespace exage::Renderer
             return tl::make_unexpected(FileFormatError {});
         }
 
-        return processScene(*scene);
+        return processScene(assetPath, *scene);
     }
 
     auto importTexture(const std::filesystem::path& texturePath) noexcept

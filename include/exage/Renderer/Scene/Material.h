@@ -196,5 +196,51 @@ namespace exage::Renderer
         std::shared_ptr<Graphics::Buffer> buffer;
     };
 
+    inline auto materialDataFromGPUAndCPU(const GPUMaterial& gpu, const Material& material)
+        -> GPUMaterial::Data
+    {
+        GPUMaterial::Data data;
+
+        data.albedoColor = material.albedo.color;
+        data.emissiveColor = material.emissive.color;
+
+        data.metallicValue = material.metallic.value;
+        data.roughnessValue = material.roughness.value;
+
+        data.albedoUseTexture = material.albedo.useTexture;
+        data.normalUseTexture = material.normal.useTexture;
+        data.metallicUseTexture = material.metallic.useTexture;
+        data.roughnessUseTexture = material.roughness.useTexture;
+        data.occlusionUseTexture = material.occlusion.useTexture;
+        data.emissiveUseTexture = material.emissive.useTexture;
+
+        if (gpu.albedoTexture.texture)
+        {
+            data.albedoTextureIndex = gpu.albedoTexture.texture->getBindlessID().id;
+        }
+        if (gpu.emissiveTexture.texture)
+        {
+            data.emissiveTextureIndex = gpu.emissiveTexture.texture->getBindlessID().id;
+        }
+        if (gpu.normalTexture.texture)
+        {
+            data.normalTextureIndex = gpu.normalTexture.texture->getBindlessID().id;
+        }
+        if (gpu.metallicTexture.texture)
+        {
+            data.metallicTextureIndex = gpu.metallicTexture.texture->getBindlessID().id;
+        }
+        if (gpu.roughnessTexture.texture)
+        {
+            data.roughnessTextureIndex = gpu.roughnessTexture.texture->getBindlessID().id;
+        }
+        if (gpu.occlusionTexture.texture)
+        {
+            data.occlusionTextureIndex = gpu.occlusionTexture.texture->getBindlessID().id;
+        }
+
+        return data;
+    }
+
     constexpr std::string_view MATERIAL_EXTENSION = ".exmat";
 }  // namespace exage::Renderer

@@ -67,9 +67,9 @@ namespace exage::Renderer
             createInfo.cached = false;
 
             auto buffer = _context.get().createBuffer(createInfo);
-            buffer->write(data, offset);
+            buffer->write(data, 0);
 
-            commandBuffer.copyBuffer(buffer, _buffer.get(), offset, 0, data.size());
+            commandBuffer.copyBuffer(buffer, _buffer.get(), 0, offset, data.size());
         }
 
         // Add the block to the used blocks

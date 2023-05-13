@@ -19,19 +19,13 @@ namespace exage::Renderer
     {
 
         template<typename T>
-        void copyComponent(entt::registry& reg) noexcept
+        void copyComponent(entt::registry& reg, entt::hashed_string now) noexcept
         {
             auto view = reg.view<T>();
-            auto& renderStorage = reg.storage<T>(CURRENT_RENDER_DATA);
+            auto&& renderStorage = reg.storage<T>(now);
 
             renderStorage.clear();
             renderStorage.insert(view.begin(), view.end(), view.storage().begin());
-        }
-
-        template<typename... Components>
-        void copyComponents(entt::registry& reg) noexcept
-        {
-            (copyComponent<Components>(reg), ...);
         }
 
         template<typename T>
@@ -39,19 +33,11 @@ namespace exage::Renderer
                                    entt::hashed_string previousStorage,
                                    entt::hashed_string currentStorage) noexcept
         {
-            auto view = entt::basic_view(reg.storage<T>(previousStorage));
-            auto& renderStorage = reg.storage<T>(currentStorage);
+            auto view = entt::basic_view(reg.storage<T>(currentStorage));
+            auto&& renderStorage = reg.storage<T>(previousStorage);
 
             renderStorage.clear();
             renderStorage.insert(view.begin(), view.end(), view.storage().begin());
-        }
-
-        template<typename... Components>
-        void copyComponentsWithName(entt::registry& reg,
-                                    entt::hashed_string previousStorage,
-                                    entt::hashed_string currentStorage) noexcept
-        {
-            (copyComponentWithName<Components>(reg, previousStorage, currentStorage), ...);
         }
 
     }  // namespace
@@ -71,7 +57,8 @@ namespace exage::Renderer
             Graphics::Format::eRGBA8,
             Graphics::Texture::UsageFlags::eColorAttachment
                 | Graphics::Texture::UsageFlags::eTransferSrc
-                | Graphics::Texture::UsageFlags::eSampled};
+                | Graphics::Texture::UsageFlags::eSampled
+                | Graphics::Texture::UsageFlags::eTransferDst};
 
         _frameBuffer = context.createFrameBuffer(frameBufferCreateInfo);
     }
@@ -88,11 +75,13 @@ namespace exage::Renderer
             return;
         }
 
-        copyComponentsWithName<Transform3D, GPUMesh, Camera>(
-            scene.registry(), LAST_RENDER_DATA, CURRENT_RENDER_DATA);
+        auto&& transformStorage = scene.registry().storage<Transform3D>(CURRENT_TRANSFORM_3D);
+        auto&& cameraStorage = scene.registry().storage<Camera>(CURRENT_CAMERA);
 
-        auto& transformStorage = scene.registry().storage<Transform3D>(CURRENT_RENDER_DATA);
-        auto& cameraStorage = scene.registry().storage<Camera>(CURRENT_RENDER_DATA);
+        if (!cameraStorage.contains(camera))
+        {
+            return;
+        }
 
         auto& cameraComponent = cameraStorage.get(camera);
         auto& cameraTransform = transformStorage.get(camera);
@@ -105,8 +94,8 @@ namespace exage::Renderer
                              cameraComponent.near,
                              cameraComponent.far);
 
-        auto& cameraRenderInfoStorage =
-            scene.registry().storage<CameraRenderInfo>(CURRENT_RENDER_DATA);
+        auto&& cameraRenderInfoStorage =
+            scene.registry().storage<CameraRenderInfo>(CURRENT_CAMERA_RENDER_INFO);
         if (!cameraRenderInfoStorage.contains(camera))
         {
             cameraRenderInfoStorage.emplace(camera);
@@ -127,14 +116,12 @@ namespace exage::Renderer
         }
 
         {
-            std::span<const std::byte> data(reinterpret_cast<const std::byte*>(&cameraRenderInfo),
-                                            sizeof(CameraRenderInfo::Data));
-            cameraRenderInfo.buffer->write(data, 0);
+            cameraRenderInfo.buffer->write(std::as_bytes(std::span(&cameraRenderInfo, 1)), 0);
         }
 
         // Transform buffers
-        auto& transformRenderInfoStorage =
-            scene.registry().storage<TransformRenderInfo>(CURRENT_RENDER_DATA);
+        auto&& transformRenderInfoStorage =
+            scene.registry().storage<TransformRenderInfo>(CURRENT_TRANSFORM_RENDER_INFO);
         auto transformView = entt::basic_view(transformStorage);
 
         for (auto entity : transformView)
@@ -160,11 +147,7 @@ namespace exage::Renderer
                 transformRenderInfo.buffer = Graphics::DynamicFixedBuffer {bufferCreateInfo};
             }
 
-            std::span<const std::byte> data(
-                reinterpret_cast<const std::byte*>(&transformRenderInfo),
-                sizeof(TransformRenderInfo::Data));
-
-            transformRenderInfo.buffer->write(data, 0);
+            transformRenderInfo.buffer->write(std::as_bytes(std::span(&transformRenderInfo, 1)), 0);
         }
 
         _geometryRenderer.render(commandBuffer, scene);
@@ -173,10 +156,17 @@ namespace exage::Renderer
                                      Graphics::Texture::Layout::eTransferDst,
                                      Graphics::PipelineStageFlags::eTopOfPipe,
                                      Graphics::PipelineStageFlags::eTransfer,
-                                     Graphics::AccessFlags::eColorAttachmentWrite,
+                                     Graphics::Access {},
                                      Graphics::AccessFlags::eTransferWrite);
 
         auto albedo = _geometryRenderer.getFrameBuffer().getTexture(2);
+
+        commandBuffer.textureBarrier(albedo,
+                                     Graphics::Texture::Layout::eTransferSrc,
+                                     Graphics::PipelineStageFlags::eColorAttachmentOutput,
+                                     Graphics::PipelineStageFlags::eTransfer,
+                                     Graphics::AccessFlags::eColorAttachmentWrite,
+                                     Graphics::AccessFlags::eTransferRead);
 
         commandBuffer.blit(albedo,
                            colorTexture,
@@ -218,7 +208,13 @@ namespace exage::Renderer
     {
         auto& reg = scene.registry();
 
-        copyComponents<Transform3D, GPUMesh, Camera>(reg);
+        copyComponentWithName<Transform3D>(reg, LAST_TRANSFORM_3D, CURRENT_TRANSFORM_3D);
+        copyComponentWithName<GPUMesh>(reg, LAST_GPU_MESH, CURRENT_GPU_MESH);
+        copyComponentWithName<Camera>(reg, LAST_CAMERA, CURRENT_CAMERA);
+
+        copyComponent<Transform3D>(reg, CURRENT_TRANSFORM_3D);
+        copyComponent<GPUMesh>(reg, CURRENT_GPU_MESH);
+        copyComponent<Camera>(reg, CURRENT_CAMERA);
     }
 
 }  // namespace exage::Renderer

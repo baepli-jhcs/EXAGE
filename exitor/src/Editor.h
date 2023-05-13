@@ -23,6 +23,8 @@ namespace exitor
         void run() noexcept;
 
       private:
+        void prepareTestScene() noexcept;
+
         void resizeCallback(glm::uvec2 extent);
 
         void drawGUI() noexcept;

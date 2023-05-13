@@ -99,6 +99,7 @@ namespace exage::Renderer
         debugAssume(!texture.mips.empty(), "Texture must have at least one mip level");
 
         GPUTexture gpuTexture;
+        gpuTexture.path = texture.path;
 
         std::shared_ptr<Graphics::Buffer> stagingBuffer;
 
@@ -129,6 +130,13 @@ namespace exage::Renderer
         textureCreateInfo.samplerCreateInfo = options.samplerCreateInfo;
 
         gpuTexture.texture = options.context.createTexture(textureCreateInfo);
+
+        options.commandBuffer.textureBarrier(gpuTexture.texture,
+                                             Graphics::Texture::Layout::eTransferDst,
+                                             Graphics::PipelineStageFlags::eTopOfPipe,
+                                             Graphics::PipelineStageFlags::eTransfer,
+                                             Graphics::Access {},
+                                             Graphics::AccessFlags::eTransferWrite);
 
         for (size_t i = 0; i < texture.mips.size(); i++)
         {

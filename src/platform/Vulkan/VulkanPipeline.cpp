@@ -1,6 +1,7 @@
 ﻿#include "exage/platform/Vulkan/VulkanPipeline.h"
 
 #include "exage/platform/Vulkan/VulkanShader.h"
+#include "vulkan/vulkan_structs.hpp"
 
 namespace exage::Graphics
 {
@@ -56,31 +57,29 @@ namespace exage::Graphics
             shaderStages.push_back(createInfo);
         }
 
-        std::vector<vk::VertexInputBindingDescription> vertexBindings;
-        std::vector<vk::VertexInputAttributeDescription> vertexAttributes;
-        for (uint32_t index = 0; const auto& vertexDescription : createInfo.vertexDescriptions)
-        {
-            vk::VertexInputBindingDescription bindingDescription;
-            bindingDescription.binding = 0;
-            bindingDescription.stride = vertexDescription.stride;
-            bindingDescription.inputRate = toVulkanVertexInputRate(vertexDescription.inputRate);
-            vertexBindings.push_back(bindingDescription);
+        vk::VertexInputBindingDescription bindingDescription;
+        bindingDescription.binding = 0;
+        bindingDescription.stride = createInfo.vertexDescription.stride;
+        bindingDescription.inputRate =
+            toVulkanVertexInputRate(createInfo.vertexDescription.inputRate);
 
+        std::vector<vk::VertexInputAttributeDescription> vertexAttributes;
+
+        for (uint32_t index = 0; const auto& attribute : createInfo.vertexDescription.attributes)
+        {
             vk::VertexInputAttributeDescription attributeDescription;
             attributeDescription.binding = 0;
             attributeDescription.location = index;
-            attributeDescription.format =
-                toVulkanFormat(vertexDescription.components, vertexDescription.type);
-            attributeDescription.offset = vertexDescription.offset;
+            attributeDescription.format = toVulkanFormat(attribute.components, attribute.type);
+            attributeDescription.offset = attribute.offset;
             vertexAttributes.push_back(attributeDescription);
 
             ++index;
         }
 
         vk::PipelineVertexInputStateCreateInfo vertexInputInfo;
-        vertexInputInfo.vertexBindingDescriptionCount =
-            static_cast<uint32_t>(vertexBindings.size());
-        vertexInputInfo.pVertexBindingDescriptions = vertexBindings.data();
+        vertexInputInfo.vertexBindingDescriptionCount = 1;
+        vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
         vertexInputInfo.vertexAttributeDescriptionCount =
             static_cast<uint32_t>(vertexAttributes.size());
         vertexInputInfo.pVertexAttributeDescriptions = vertexAttributes.data();
@@ -155,8 +154,6 @@ namespace exage::Graphics
         colorBlending.blendConstants[2] = createInfo.colorBlendState.blendConstants[2];
         colorBlending.blendConstants[3] = createInfo.colorBlendState.blendConstants[3];
 
-        std::array dynamicStates = {vk::DynamicState::eViewport, vk::DynamicState::eScissor};
-
         VulkanContext::PipelineLayoutInfo pipelineLayoutInfo;
 
         if (createInfo.bindless)
@@ -187,6 +184,12 @@ namespace exage::Graphics
             toVulkanFormat(createInfo.renderInfo.depthStencilFormat);
         renderingInfo.stencilAttachmentFormat = renderingInfo.depthAttachmentFormat;
 
+        std::array dynamicStates = {vk::DynamicState::eViewport, vk::DynamicState::eScissor};
+
+        vk::PipelineDynamicStateCreateInfo dynamicState;
+        dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
+        dynamicState.pDynamicStates = dynamicStates.data();
+
         vk::GraphicsPipelineCreateInfo pipelineInfo;
         pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
         pipelineInfo.pStages = shaderStages.data();
@@ -198,7 +201,7 @@ namespace exage::Graphics
         pipelineInfo.pMultisampleState = &multisampling;
         pipelineInfo.pDepthStencilState = &depthStencil;
         pipelineInfo.pColorBlendState = &colorBlending;
-        pipelineInfo.pDynamicState = nullptr;
+        pipelineInfo.pDynamicState = &dynamicState;
         pipelineInfo.layout = _pipelineLayout;
         pipelineInfo.setPNext(&renderingInfo);
 

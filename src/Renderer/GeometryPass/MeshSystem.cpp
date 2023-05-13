@@ -56,22 +56,24 @@ namespace exage::Renderer
         uint32_t materialIndex;
     };
 
-    constexpr std::string_view VERTEX_SHADER_PATH = "geometry_pass/mesh_system.vert";
-    constexpr std::string_view FRAGMENT_SHADER_PATH = "geometry_pass/mesh_system.frag";
+    constexpr std::string_view VERTEX_SHADER_PATH = "geometry_pass/mesh.vert";
+    constexpr std::string_view FRAGMENT_SHADER_PATH = "geometry_pass/mesh.frag";
 
     MeshSystem::MeshSystem(const MeshSystemCreateInfo& createInfo) noexcept
         : _context(createInfo.context)
         , _sceneBuffer(createInfo.sceneBuffer)
     {
+        std::filesystem::path vertexShaderPath =
+            Filesystem::getEngineShaderDirectory() / VERTEX_SHADER_PATH;
         auto vertexShaderCode =
-            Graphics::compileShaderToIR(Filesystem::getEngineShaderDirectory() / VERTEX_SHADER_PATH,
-                                        Graphics::Shader::Stage::eVertex);
+            Graphics::compileShaderToIR(vertexShaderPath, Graphics::Shader::Stage::eVertex);
 
-        debugAssume(vertexShaderCode.has_value(), "Failed to compile vertex shader");
+        debugAssume(vertexShaderCode.has_value(), fmt::format("Failed to compile vertex shader"));
 
-        auto fragmentShaderCode = Graphics::compileShaderToIR(
-            Filesystem::getEngineShaderDirectory() / FRAGMENT_SHADER_PATH,
-            Graphics::Shader::Stage::eFragment);
+        std::filesystem::path fragmentShaderPath =
+            Filesystem::getEngineShaderDirectory() / FRAGMENT_SHADER_PATH;
+        auto fragmentShaderCode =
+            Graphics::compileShaderToIR(fragmentShaderPath, Graphics::Shader::Stage::eFragment);
 
         debugAssume(fragmentShaderCode.has_value(), "Failed to compile fragment shader");
 
@@ -91,46 +93,40 @@ namespace exage::Renderer
         shaderInfo.vertexShader = vertexShader;
         shaderInfo.fragmentShader = fragmentShader;
 
-        Graphics::VertexDescription positionVertexDescription {};
+        Graphics::VertexDescription vertexDescription {};
+        vertexDescription.inputRate = Graphics::VertexDescription::InputRate::eVertex;
+        vertexDescription.stride = sizeof(MeshVertex);
+
+        Graphics::VertexAttribute positionVertexDescription {};
         positionVertexDescription.offset = offsetof(MeshVertex, position);
         positionVertexDescription.components = 3;
-        positionVertexDescription.stride = sizeof(float) * 3;
-        positionVertexDescription.type = Graphics::VertexDescription::Type::eFloat;
-        positionVertexDescription.inputRate = Graphics::VertexDescription::InputRate::eVertex;
+        positionVertexDescription.type = Graphics::VertexAttribute::Type::eFloat;
 
-        Graphics::VertexDescription normalVertexDescription {};
+        Graphics::VertexAttribute normalVertexDescription {};
         normalVertexDescription.offset = offsetof(MeshVertex, normal);
         normalVertexDescription.components = 3;
-        normalVertexDescription.stride = sizeof(float) * 3;
-        normalVertexDescription.type = Graphics::VertexDescription::Type::eFloat;
-        normalVertexDescription.inputRate = Graphics::VertexDescription::InputRate::eVertex;
+        normalVertexDescription.type = Graphics::VertexAttribute::Type::eFloat;
 
-        Graphics::VertexDescription uvVertexDescription {};
+        Graphics::VertexAttribute uvVertexDescription {};
         uvVertexDescription.offset = offsetof(MeshVertex, uv);
         uvVertexDescription.components = 2;
-        uvVertexDescription.stride = sizeof(float) * 2;
-        uvVertexDescription.type = Graphics::VertexDescription::Type::eFloat;
-        uvVertexDescription.inputRate = Graphics::VertexDescription::InputRate::eVertex;
+        uvVertexDescription.type = Graphics::VertexAttribute::Type::eFloat;
 
-        Graphics::VertexDescription tangentVertexDescription {};
+        Graphics::VertexAttribute tangentVertexDescription {};
         tangentVertexDescription.offset = offsetof(MeshVertex, tangent);
         tangentVertexDescription.components = 3;
-        tangentVertexDescription.stride = sizeof(float) * 3;
-        tangentVertexDescription.type = Graphics::VertexDescription::Type::eFloat;
-        tangentVertexDescription.inputRate = Graphics::VertexDescription::InputRate::eVertex;
+        tangentVertexDescription.type = Graphics::VertexAttribute::Type::eFloat;
 
-        Graphics::VertexDescription bitangentVertexDescription {};
+        Graphics::VertexAttribute bitangentVertexDescription {};
         bitangentVertexDescription.offset = offsetof(MeshVertex, bitangent);
         bitangentVertexDescription.components = 3;
-        bitangentVertexDescription.stride = sizeof(float) * 3;
-        bitangentVertexDescription.type = Graphics::VertexDescription::Type::eFloat;
-        bitangentVertexDescription.inputRate = Graphics::VertexDescription::InputRate::eVertex;
+        bitangentVertexDescription.type = Graphics::VertexAttribute::Type::eFloat;
 
-        std::vector vertexDescriptions = {positionVertexDescription,
-                                          normalVertexDescription,
-                                          uvVertexDescription,
-                                          tangentVertexDescription,
-                                          bitangentVertexDescription};
+        vertexDescription.attributes = {positionVertexDescription,
+                                        normalVertexDescription,
+                                        uvVertexDescription,
+                                        tangentVertexDescription,
+                                        bitangentVertexDescription};
 
         Pipeline::ColorBlendState colorBlendState {};
         colorBlendState.blendConstants = {0.0F, 0.0F, 0.0F, 0.0F};
@@ -178,7 +174,7 @@ namespace exage::Renderer
         depthStencilState.stencilTest = false;
 
         Graphics::PipelineCreateInfo pipelineCreateInfo {};
-        pipelineCreateInfo.vertexDescriptions = vertexDescriptions;
+        pipelineCreateInfo.vertexDescription = vertexDescription;
         pipelineCreateInfo.shaderInfo = shaderInfo;
         pipelineCreateInfo.colorBlendState = colorBlendState;
         pipelineCreateInfo.renderInfo = renderInfo;
@@ -194,10 +190,12 @@ namespace exage::Renderer
     {
         commandBuffer.bindPipeline(_pipeline);
 
-        auto view = entt::basic_view {scene.registry().storage<GPUMesh>(CURRENT_RENDER_DATA)}
-            | entt::basic_view {scene.registry().storage<TransformRenderInfo>(CURRENT_RENDER_DATA)};
+        auto view = entt::basic_view {scene.registry().storage<GPUMesh>(CURRENT_GPU_MESH)}
+            | entt::basic_view {
+                scene.registry().storage<TransformRenderInfo>(CURRENT_TRANSFORM_RENDER_INFO)};
 
-        const auto& cameraStorage = scene.registry().storage<CameraRenderInfo>(CURRENT_RENDER_DATA);
+        const auto& cameraStorage =
+            scene.registry().storage<CameraRenderInfo>(CURRENT_CAMERA_RENDER_INFO);
         const auto cameraEntity = getSceneCamera(scene);
         const auto& cameraInfo = cameraStorage.get(cameraEntity);
 

@@ -12,6 +12,7 @@ namespace exage::Graphics
 {
     namespace
     {
+
         class ShaderIncluder : public shaderc::CompileOptions::IncluderInterface
         {
             auto GetInclude(const char* requestedSource,
@@ -23,11 +24,12 @@ namespace exage::Graphics
                 msg += std::to_string(type);
                 msg += static_cast<char>(includeDepth);
 
-                const std::string name = std::string(requestedSource);
-                const std::string contents = readFile(name);
+                const std::string requestedSourcePath =
+                    getFilePath(requestedSource, requestingSource);
+                const std::string contents = readFile(requestedSourcePath);
 
                 auto* container = new std::array<std::string, 2>;
-                (*container)[0] = name;
+                (*container)[0] = requestedSourcePath;
                 (*container)[1] = contents;
 
                 auto* data = new shaderc_include_result;
@@ -49,7 +51,16 @@ namespace exage::Graphics
                 delete data;
             }
 
-            static std::string readFile(const std::string& filepath)
+            static auto getFilePath(const std::filesystem::path& requestedSource,
+                                    const std::string& requestingSource) -> std::string
+            {
+                std::filesystem::path path(requestingSource);
+                path.remove_filename();
+                path /= requestedSource;
+                return path.string();
+            }
+
+            static auto readFile(const std::string& filepath) -> std::string
             {
                 std::string sourceCode;
                 std::ifstream in(filepath, std::ios::in | std::ios::binary);
@@ -128,21 +139,13 @@ namespace exage::Graphics
         std::string shaderSource((std::istreambuf_iterator<char>(shaderFile)),
                                  std::istreambuf_iterator<char>());
 
-        auto preProcessed = compiler.PreprocessGlsl(
-            shaderSource, shaderKind, path.filename().string().c_str(), options);
-
-        if (preProcessed.GetCompilationStatus() != shaderc_compilation_status_success)
-        {
-            return tl::make_unexpected(
-                Errors::ShaderCompilationFailed {preProcessed.GetErrorMessage()});
-        }
-
-        shaderc::SpvCompilationResult module = compiler.CompileGlslToSpv(
-            shaderSource, shaderc_glsl_fragment_shader, path.filename().string().c_str(), options);
+        shaderc::SpvCompilationResult module =
+            compiler.CompileGlslToSpv(shaderSource, shaderKind, path.string().c_str(), options);
 
         if (module.GetCompilationStatus() != shaderc_compilation_status_success)
         {
-            return tl::make_unexpected(Errors::ShaderCompilationFailed {module.GetErrorMessage()});
+            std::string msg = module.GetErrorMessage();
+            return tl::make_unexpected(Errors::ShaderCompilationFailed {msg});
         }
 
         return std::vector<uint32_t>(module.cbegin(), module.cend());

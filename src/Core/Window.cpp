@@ -17,6 +17,32 @@ namespace exage
         }
     }
 
+    void pollEvents(WindowAPI api) noexcept
+    {
+        switch (api)
+        {
+            case WindowAPI::eGLFW:
+                GLFWindow::pollEvents();
+                break;
+            case WindowAPI::eSDL:
+            default:
+                break;
+        }
+    }
+
+    void waitEvents(WindowAPI api) noexcept
+    {
+        switch (api)
+        {
+            case WindowAPI::eGLFW:
+                GLFWindow::waitEvents();
+                break;
+            case WindowAPI::eSDL:
+            default:
+                break;
+        }
+    }
+
     auto getMonitorCount(WindowAPI api) noexcept -> uint32_t
     {
         switch (api)
