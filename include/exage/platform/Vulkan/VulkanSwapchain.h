@@ -25,7 +25,7 @@ namespace exage::Graphics
         }
 
         void resize(glm::uvec2 extent) noexcept override;
-        [[nodiscard]] auto acquireNextImage() noexcept -> std::optional<Error> override;
+        [[nodiscard]] auto acquireNextImage() noexcept -> tl::expected<void, Error> override;
         void drawImage(CommandBuffer& commandBuffer,
                        const std::shared_ptr<Texture>& texture) noexcept override;
 

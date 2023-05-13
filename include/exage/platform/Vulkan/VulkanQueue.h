@@ -27,7 +27,7 @@ namespace exage::Graphics
         void startNextFrame() noexcept override;
         void submit(QueueSubmitInfo& submitInfo) noexcept override;
         [[nodiscard]] auto present(QueuePresentInfo& presentInfo) noexcept
-            -> std::optional<Error> override;
+            -> tl::expected<void, Error> override;
 
         void submitTemporary(std::unique_ptr<CommandBuffer> commandBuffer) noexcept override;
 

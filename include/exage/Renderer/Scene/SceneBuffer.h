@@ -17,7 +17,7 @@ namespace exage::Renderer
     {
       public:
         explicit SceneBuffer(const SceneBufferCreateInfo& createInfo) noexcept;
-        ~SceneBuffer();
+        ~SceneBuffer() = default;
 
         EXAGE_DELETE_COPY(SceneBuffer);
         EXAGE_DEFAULT_MOVE(SceneBuffer);

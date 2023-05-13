@@ -12,13 +12,9 @@ namespace exage
     class EXAGE_EXPORT Scene
     {
       public:
-        using Registry =
-            entt::basic_registry<entt::entity, std::pmr::polymorphic_allocator<entt::entity>>;
+        using Registry = entt::registry;  // May swap for an allocator in the future
 
-        explicit Scene(std::pmr::polymorphic_allocator<Entity> allocator = {})
-            : _registry(allocator)
-        {
-        }
+        Scene() = default;
         ~Scene() = default;
 
         EXAGE_DELETE_COPY(Scene);

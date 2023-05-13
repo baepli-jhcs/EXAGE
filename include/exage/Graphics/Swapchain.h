@@ -5,8 +5,8 @@
 #include "Context.h"
 #include "exage/Core/Core.h"
 #include "exage/Core/Window.h"
-#include "glm/glm.hpp"
 #include "exage/utils/classes.h"
+#include "glm/glm.hpp"
 
 namespace exage::Graphics
 {
@@ -37,7 +37,7 @@ namespace exage::Graphics
         [[nodiscard]] virtual auto getPresentMode() const noexcept -> PresentMode = 0;
 
         virtual void resize(glm::uvec2 extent) noexcept = 0;
-        [[nodiscard]] virtual auto acquireNextImage() noexcept -> std::optional<Error> = 0;
+        [[nodiscard]] virtual auto acquireNextImage() noexcept -> tl::expected<void, Error>;
         virtual void drawImage(CommandBuffer& commandBuffer,
                                const std::shared_ptr<Texture>& texture) noexcept = 0;
 

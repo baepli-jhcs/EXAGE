@@ -1,41 +1,93 @@
-﻿#include <fstream>
+﻿#include <array>
+#include <fstream>
+#include <memory>
 
 #include "exage/Graphics/Shader.h"
 
+#include "exage/Graphics/Error.h"
+#include "fmt/core.h"
 #include "shaderc/shaderc.hpp"
 
 namespace exage::Graphics
 {
-    auto compileShaderToIR(const std::filesystem::path& path,
-                           Shader::Stage stage,
-                           bool cache,
-                           bool forceRecompile) noexcept
+    namespace
+    {
+        class ShaderIncluder : public shaderc::CompileOptions::IncluderInterface
+        {
+            auto GetInclude(const char* requestedSource,
+                            shaderc_include_type type,
+                            const char* requestingSource,
+                            size_t includeDepth) -> shaderc_include_result* override
+            {
+                std::string msg = std::string(requestingSource);
+                msg += std::to_string(type);
+                msg += static_cast<char>(includeDepth);
+
+                const std::string name = std::string(requestedSource);
+                const std::string contents = readFile(name);
+
+                auto* container = new std::array<std::string, 2>;
+                (*container)[0] = name;
+                (*container)[1] = contents;
+
+                auto* data = new shaderc_include_result;
+
+                data->user_data = container;
+
+                data->source_name = (*container)[0].data();
+                data->source_name_length = (*container)[0].size();
+
+                data->content = (*container)[1].data();
+                data->content_length = (*container)[1].size();
+
+                return data;
+            }
+            void ReleaseInclude(shaderc_include_result* data) override
+            {
+                auto* container = static_cast<std::array<std::string, 2>*>(data->user_data);
+                delete container;
+                delete data;
+            }
+
+            static std::string readFile(const std::string& filepath)
+            {
+                std::string sourceCode;
+                std::ifstream in(filepath, std::ios::in | std::ios::binary);
+                if (in)
+                {
+                    in.seekg(0, std::ios::end);
+                    size_t size = in.tellg();
+                    if (size > 0)
+                    {
+                        sourceCode.resize(size);
+                        in.seekg(0, std::ios::beg);
+                        in.read(sourceCode.data(), static_cast<std::streamsize>(size));
+                    }
+                    else
+                    {
+                        fmt::print("Could not read from file '{0}'", filepath);
+                    }
+                }
+                else
+                {
+                    fmt::print("Could not open file '{0}'", filepath);
+                }
+                return sourceCode;
+            }
+        };
+    }  // namespace
+
+    EXAGE_EXPORT auto compileShaderToIR(const std::filesystem::path& path,
+                                        Shader::Stage stage) noexcept
         -> tl::expected<std::vector<uint32_t>, Error>
     {
-        if (!forceRecompile)
-        {
-            std::filesystem::path saveName = path.parent_path() / "bin" / path.stem();
-            saveName.replace_extension(".spv");
-
-            if (std::filesystem::exists(saveName))
-            {
-                std::ifstream file(saveName, std::ios::binary | std::ios::ate);
-                if (file.is_open())
-                {
-                    std::vector<uint32_t> result;
-                    std::streamsize size = file.tellg();
-                    result.resize(size / sizeof(uint32_t));
-                    file.seekg(0, std::ios::beg);
-                    file.read(reinterpret_cast<char*>(result.data()), size);
-                    return result;
-                }
-            }
-        }
-
         shaderc::Compiler compiler;
         shaderc::CompileOptions options;
+
         options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_2);
         options.SetOptimizationLevel(shaderc_optimization_level_performance);
+        options.SetIncluder(std::unique_ptr<shaderc::CompileOptions::IncluderInterface>(
+            new (std::nothrow) ShaderIncluder));
 
 #ifdef EXAGE_DEBUG
         options.SetGenerateDebugInfo();
@@ -64,38 +116,36 @@ namespace exage::Graphics
 
         if (!std::filesystem::exists(path))
         {
-            return tl::make_unexpected(FileError::eFileNotFound);
+            return tl::make_unexpected(Errors::FileNotFound {path});
         }
 
         std::ifstream shaderFile(path);
         if (!shaderFile.is_open())
         {
-            return tl::make_unexpected(FileError::eFileNotReadable);
+            return tl::make_unexpected(Errors::FileNotFound {path});
         }
 
         std::string shaderSource((std::istreambuf_iterator<char>(shaderFile)),
                                  std::istreambuf_iterator<char>());
+
+        auto preProcessed = compiler.PreprocessGlsl(
+            shaderSource, shaderKind, path.filename().string().c_str(), options);
+
+        if (preProcessed.GetCompilationStatus() != shaderc_compilation_status_success)
+        {
+            return tl::make_unexpected(
+                Errors::ShaderCompilationFailed {preProcessed.GetErrorMessage()});
+        }
 
         shaderc::SpvCompilationResult module = compiler.CompileGlslToSpv(
             shaderSource, shaderc_glsl_fragment_shader, path.filename().string().c_str(), options);
 
         if (module.GetCompilationStatus() != shaderc_compilation_status_success)
         {
-            return tl::make_unexpected(Errors::ShaderCompileFailed {module.GetErrorMessage()});
+            return tl::make_unexpected(Errors::ShaderCompilationFailed {module.GetErrorMessage()});
         }
 
-        if (cache)
-        {
-            std::filesystem::path saveName = path.parent_path() / "bin" / path.stem();
-            saveName.replace_extension(".spv");
-            std::filesystem::create_directories(saveName.parent_path());
-            std::ofstream file(saveName, std::ios::binary);
-            if (file.is_open())
-            {
-                file.write(reinterpret_cast<const char*>(module.cbegin()),
-                           module.cend() - module.cbegin());
-            }
-        }
         return std::vector<uint32_t>(module.cbegin(), module.cend());
     }
+
 }  // namespace exage::Graphics

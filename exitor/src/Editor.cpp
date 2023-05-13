@@ -1,13 +1,16 @@
 ﻿#include "Editor.h"
 
-constexpr static auto windowAPI = exage::WindowAPI::eGLFW;
-constexpr static auto graphicsAPI = exage::Graphics::API::eVulkan;
+#include "exage/Renderer/Renderer.h"
+#include "exage/Renderer/Scene/SceneBuffer.h"
+
+constexpr static auto WINDOW_API = exage::WindowAPI::eGLFW;
+constexpr static auto GRAPHICS_API = exage::Graphics::API::eVulkan;
 
 namespace exitor
 {
     Editor::Editor() noexcept
     {
-        Monitor monitor = getDefaultMonitor(windowAPI);
+        Monitor monitor = getDefaultMonitor(WINDOW_API);
         WindowInfo windowInfo {
             .name = "EXitor",
             .extent = {monitor.extent.x * 3 / 4, monitor.extent.y * 3 / 4},
@@ -17,20 +20,20 @@ namespace exitor
             .exclusiveMonitor = monitor,
         };
 
-        tl::expected windowResult = Window::create(windowInfo, windowAPI);
+        tl::expected windowResult = Window::create(windowInfo, WINDOW_API);
         assert(windowResult.has_value());
         _window = std::move(*windowResult);
 
         _window->setResizeCallback([this](glm::uvec2 extent) { resizeCallback(extent); });
 
         Graphics::ContextCreateInfo contextInfo {
-            .api = graphicsAPI,
-            .windowAPI = windowAPI,
+            .api = GRAPHICS_API,
+            .windowAPI = WINDOW_API,
             .optionalWindow = _window.get(),
             .maxFramesInFlight = 2,
         };
         contextInfo.optionalWindow = _window.get();
-        contextInfo.api = graphicsAPI;
+        contextInfo.api = GRAPHICS_API;
 
         tl::expected contextResult = Graphics::Context::create(contextInfo);
         assert(contextResult.has_value());
@@ -59,8 +62,11 @@ namespace exitor
         };
         _imGui = Graphics::ImGuiInstance {imGuiInfo};
 
-        Renderer::RendererCreateInfo rendererCreateInfo {.context = *_context,
-                                                         .extent = _viewportExtent};
+        Renderer::SceneBufferCreateInfo sceneBufferCreateInfo {.context = *_context};
+        _sceneBuffer = Renderer::SceneBuffer {sceneBufferCreateInfo};
+
+        Renderer::RendererCreateInfo rendererCreateInfo {
+            .context = *_context, .sceneBuffer = *_sceneBuffer, .extent = _viewportExtent};
         _renderer = Renderer::Renderer {rendererCreateInfo};
     }
 
@@ -80,10 +86,12 @@ namespace exitor
                 continue;
             }
 
+            Renderer::copySceneForRenderer(_scene);
+
             Graphics::CommandBuffer& cmd = _queueCommandRepo->current();
             _context->getQueue().startNextFrame();
-            std::optional swapError = _swapchain->acquireNextImage();
-            if (swapError.has_value())
+            tl::expected swapError = _swapchain->acquireNextImage();
+            if (!swapError.has_value())
             {
                 continue;
             }

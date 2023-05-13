@@ -97,7 +97,7 @@ namespace exage::Graphics
 
       private:
         VulkanContext() = default;
-        auto init(ContextCreateInfo& createInfo) noexcept -> std::optional<Error>;
+        auto init(ContextCreateInfo& createInfo) noexcept -> tl::expected<void, Error>;
 
         vma::Allocator _allocator;
         vkb::Instance _instance;

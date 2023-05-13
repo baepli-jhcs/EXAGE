@@ -8,6 +8,7 @@
 #include "exage/Graphics/Utils/BufferTypes.h"
 #include "exage/Graphics/Utils/QueueCommand.h"
 #include "exage/Renderer/Renderer.h"
+#include "exage/Renderer/Scene/SceneBuffer.h"
 
 namespace exitor
 {
@@ -34,6 +35,7 @@ namespace exitor
         std::optional<exage::Graphics::QueueCommandRepo> _queueCommandRepo;
         std::optional<Graphics::ImGuiInstance> _imGui;
 
+        std::optional<Renderer::SceneBuffer> _sceneBuffer;
         std::optional<Renderer::Renderer> _renderer;
 
         glm::uvec2 _viewportExtent = {600, 600};
@@ -41,4 +43,3 @@ namespace exitor
         Scene _scene;
     };
 }  // namespace exitor
-

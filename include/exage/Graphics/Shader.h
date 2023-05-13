@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include <filesystem>
+#include <span>
 
 #include "exage/Core/Core.h"
 #include "exage/Graphics/Context.h"
@@ -40,14 +41,12 @@ namespace exage::Graphics
     };
 
     EXAGE_EXPORT auto compileShaderToIR(const std::filesystem::path& path,
-                           Shader::Stage stage,
-                           bool cache = true,
-                           bool forceRecompile = false) noexcept
+                                        Shader::Stage stage) noexcept
         -> tl::expected<std::vector<uint32_t>, Error>;
 
     struct ShaderCreateInfo
     {
-        std::vector<uint32_t> irCode;
+        std::span<uint32_t> irCode;
         Shader::Stage stage;
         std::filesystem::path compileDirectory;
     };

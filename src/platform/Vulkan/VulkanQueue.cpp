@@ -1,5 +1,6 @@
 ﻿#include "exage/platform/Vulkan/VulkanQueue.h"
 
+#include "exage/Graphics/Error.h"
 #include "exage/platform/Vulkan/VulkanCommandBuffer.h"
 #include "exage/platform/Vulkan/VulkanContext.h"
 #include "exage/platform/Vulkan/VulkanSwapchain.h"
@@ -48,14 +49,14 @@ namespace exage::Graphics
     }
 
     VulkanQueue::VulkanQueue(VulkanQueue&& old) noexcept
-        : _context(old._context), _framesInFlight(old._framesInFlight), _queue(old._queue), _familyIndex(old._familyIndex), _renderFences(std::move(old._renderFences)), _presentSemaphores(std::move(old._presentSemaphores)), _renderSemaphores(std::move(old._renderSemaphores))
+        : _context(old._context)
+        , _framesInFlight(old._framesInFlight)
+        , _queue(old._queue)
+        , _familyIndex(old._familyIndex)
+        , _renderFences(std::move(old._renderFences))
+        , _presentSemaphores(std::move(old._presentSemaphores))
+        , _renderSemaphores(std::move(old._renderSemaphores))
     {
-        
-        
-        
-        
-        
-        
     }
 
     void VulkanQueue::cleanup() noexcept
@@ -139,7 +140,7 @@ namespace exage::Graphics
         checkVulkan(result);
     }
 
-    auto VulkanQueue::present(QueuePresentInfo& presentInfo) noexcept -> std::optional<Error>
+    auto VulkanQueue::present(QueuePresentInfo& presentInfo) noexcept -> tl::expected<void, Error>
     {
         auto* swapchain = presentInfo.swapchain.as<VulkanSwapchain>();
 
@@ -158,12 +159,12 @@ namespace exage::Graphics
 
         if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eSuboptimalKHR)
         {
-            return GraphicsError::eSwapchainOutOfDate;
+            return tl::make_unexpected(Errors::SwapchainOutOfDate {});
         }
 
         checkVulkan(result);
 
-        return std::nullopt;
+        return {};
     }
 
     void VulkanQueue::submitTemporary(std::unique_ptr<CommandBuffer> commandBuffer) noexcept

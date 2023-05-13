@@ -23,8 +23,12 @@ namespace exage::Graphics
         vk::DescriptorPoolSize const combinedImageSamplerDescriptorPoolSize {
             vk::DescriptorType::eCombinedImageSampler, maxTextureCount};
 
-        std::array descriptorPoolSizes {bufferDescriptorPoolSize,
-                                        combinedImageSamplerDescriptorPoolSize};
+        vk::DescriptorPoolSize const storageImageDescriptorPoolSize {
+            vk::DescriptorType::eStorageImage, maxTextureCount};
+
+        std::array descriptorPoolSizes {combinedImageSamplerDescriptorPoolSize,
+                                        bufferDescriptorPoolSize,
+                                        storageImageDescriptorPoolSize};
 
         vk::DescriptorPoolCreateInfo descriptorPoolCreateInfo {};
         descriptorPoolCreateInfo.flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet
@@ -88,6 +92,7 @@ namespace exage::Graphics
 
         vk::DescriptorSetAllocateInfo descriptorSetAllocateInfo {};
         descriptorSetAllocateInfo.descriptorPool = _descriptorPool;
+        descriptorSetAllocateInfo.descriptorSetCount = 1;
         descriptorSetAllocateInfo.setSetLayouts(_descriptorSetLayout);
 
         checkVulkan(_context.get().getDevice().allocateDescriptorSets(&descriptorSetAllocateInfo,

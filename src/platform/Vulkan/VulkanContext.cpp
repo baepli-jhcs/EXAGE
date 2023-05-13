@@ -80,17 +80,17 @@ namespace exage::Graphics
     auto VulkanContext::create(ContextCreateInfo& createInfo) noexcept
         -> tl::expected<std::unique_ptr<VulkanContext>, Error>
     {
-        std::unique_ptr<VulkanContext> context(new VulkanContext());
-        std::optional<Error> result = context->init(createInfo);
-        if (result.has_value())
+        std::unique_ptr<VulkanContext> context(new (std::nothrow) VulkanContext());
+        tl::expected<void, Error> result = context->init(createInfo);
+        if (!result.has_value())
         {
-            return tl::make_unexpected(result.value());
+            return tl::make_unexpected(result.error());
         }
 
         return context;
     }
 
-    auto VulkanContext::init(ContextCreateInfo& createInfo) noexcept -> std::optional<Error>
+    auto VulkanContext::init(ContextCreateInfo& createInfo) noexcept -> tl::expected<void, Error>
     {
         auto vkGetInstanceProcAddr =
             dl.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
@@ -107,7 +107,7 @@ namespace exage::Graphics
         auto inst = builder.build();
         if (!inst)
         {
-            return GraphicsError::eUnsupportedAPI;
+            return tl::make_unexpected(Errors::UnsupportedAPI {});
         }
 
         _instance = inst.value();
@@ -156,7 +156,7 @@ namespace exage::Graphics
         auto phys = selector.select();
         if (!phys)
         {
-            return GraphicsError::eUnsupportedAPI;
+            return tl::make_unexpected(Errors::UnsupportedAPI {});
         }
         _physicalDevice = phys.value();
 
@@ -274,7 +274,7 @@ namespace exage::Graphics
                 }
                 else
                 {
-                    return GraphicsError::eUnsupportedAPI;
+                    return tl::make_unexpected(Errors::UnsupportedAPI {});
                 }
             }
         }
@@ -287,7 +287,7 @@ namespace exage::Graphics
 
         _resourceManager.emplace(*this);
 
-        return std::nullopt;
+        return {};
     }
 
     VulkanContext::~VulkanContext()

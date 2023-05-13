@@ -73,6 +73,16 @@ namespace exage::Graphics
         return _deviceBuffer;
     }
 
+    auto DynamicFixedBuffer::currentBindlessID() const noexcept -> BufferID
+    {
+        if (_deviceBuffer)
+        {
+            return _deviceBuffer->getBindlessID();
+        }
+
+        return _hostBuffers[_queue.get().currentFrame()]->getBindlessID();
+    }
+
     ResizableBuffer::ResizableBuffer(const ResizableBufferCreateInfo& createInfo)
         : _context(createInfo.context)
         , _size(createInfo.size)

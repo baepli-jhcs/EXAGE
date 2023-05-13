@@ -61,8 +61,8 @@ namespace exage::Graphics
       public:
         using ResourcePool = detail::VulkanResourcePool;
 
-        constexpr static uint32_t maxBufferCount = 1048576;
-        constexpr static uint32_t maxTextureCount = 1048576;
+        constexpr static uint32_t maxBufferCount = 65536;
+        constexpr static uint32_t maxTextureCount = 65536;
 
         constexpr static uint32_t sampledTextureBinding = 0;
         constexpr static uint32_t storageBufferBinding = 1;

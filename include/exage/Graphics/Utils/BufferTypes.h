@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include "exage/Graphics/BindlessResources.h"
 #include "exage/Graphics/Buffer.h"
 #include "exage/Graphics/Commands.h"
 
@@ -33,6 +34,8 @@ namespace exage::Graphics
 
         [[nodiscard]] auto currentHost() const noexcept -> std::shared_ptr<Buffer>;
         [[nodiscard]] auto deviceBuffer() const noexcept -> std::shared_ptr<Buffer>;
+
+        [[nodiscard]] auto currentBindlessID() const noexcept -> BufferID;
 
       private:
         std::reference_wrapper<Queue> _queue;

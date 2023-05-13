@@ -4,6 +4,8 @@
 
 #include "exage/Core/Core.h"
 #include "exage/Graphics/Context.h"
+#include "exage/Renderer/GeometryPass/MeshSystem.h"
+#include "exage/Renderer/Scene/SceneBuffer.h"
 #include "exage/Scene/Scene.h"
 
 namespace exage::Renderer
@@ -11,6 +13,7 @@ namespace exage::Renderer
     struct GeometryRendererCreateInfo
     {
         Graphics::Context& context;
+        SceneBuffer& sceneBuffer;
         glm::uvec2 extent;
     };
 
@@ -34,7 +37,10 @@ namespace exage::Renderer
 
       private:
         std::reference_wrapper<Graphics::Context> _context;
+        std::reference_wrapper<SceneBuffer> _sceneBuffer;
         glm::uvec2 _extent;
+
+        MeshSystem _meshSystem;
 
         std::shared_ptr<Graphics::FrameBuffer> _frameBuffer;
     };

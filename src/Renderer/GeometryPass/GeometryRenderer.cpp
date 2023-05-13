@@ -10,7 +10,9 @@ namespace exage::Renderer
 {
     GeometryRenderer::GeometryRenderer(const GeometryRendererCreateInfo& createInfo) noexcept
         : _context(createInfo.context)
+        , _sceneBuffer(createInfo.sceneBuffer)
         , _extent(createInfo.extent)
+        , _meshSystem({createInfo.context, createInfo.sceneBuffer})
     {
         auto& context = _context.get();
 
@@ -79,6 +81,8 @@ namespace exage::Renderer
         clearDepthStencil.depth = 1.0f;
 
         commandBuffer.beginRendering(_frameBuffer, clearValues, clearDepthStencil);
+
+        _meshSystem.render(commandBuffer, scene);
 
         commandBuffer.endRendering();
     }

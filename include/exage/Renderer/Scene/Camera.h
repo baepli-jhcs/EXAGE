@@ -2,7 +2,10 @@
 
 #include <glm/glm.hpp>
 
+#include "entt/entity/fwd.hpp"
 #include "exage/Graphics/Buffer.h"
+#include "exage/Graphics/Utils/BufferTypes.h"
+#include "exage/Renderer/Locations.h"
 #include "exage/Scene/Scene.h"
 
 namespace exage::Renderer
@@ -19,12 +22,19 @@ namespace exage::Renderer
 
     struct CameraRenderInfo
     {
-        glm::mat4 view;
-        glm::mat4 projection;
-        glm::mat4 viewProjection;
-        alignas(16) glm::vec3 position;
+        struct Data
+        {
+            glm::mat4 view;
+            glm::mat4 projection;
+            glm::mat4 viewProjection;
+            alignas(16) glm::vec3 position;
+        };
+
+        Data data;
+        std::optional<Graphics::DynamicFixedBuffer> buffer;
     };
 
     EXAGE_EXPORT void setSceneCamera(Scene& scene, Entity cameraEntity) noexcept;
     [[nodiscard]] EXAGE_EXPORT auto getSceneCamera(Scene& scene) noexcept -> Entity;
+
 }  // namespace exage::Renderer

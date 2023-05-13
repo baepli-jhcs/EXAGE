@@ -3,6 +3,7 @@
 #include "CommandBuffer.h"
 #include "Swapchain.h"
 #include "exage/Core/Core.h"
+#include "tl/expected.hpp"
 
 namespace exage::Graphics
 {
@@ -27,7 +28,7 @@ namespace exage::Graphics
         virtual void startNextFrame() noexcept = 0;
         virtual void submit(QueueSubmitInfo& submitInfo) noexcept = 0;
         [[nodiscard]] virtual auto present(QueuePresentInfo& presentInfo) noexcept
-            -> std::optional<Error> = 0;
+            -> tl::expected<void, Error>;
 
         virtual void submitTemporary(std::unique_ptr<CommandBuffer> commandBuffer) noexcept = 0;
 

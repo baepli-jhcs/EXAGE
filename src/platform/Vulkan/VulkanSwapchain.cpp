@@ -1,5 +1,6 @@
 ﻿#include "exage/platform/Vulkan/VulkanSwapchain.h"
 
+#include "exage/Graphics/Error.h"
 #include "exage/platform/Vulkan/VulkanCommandBuffer.h"
 #include "exage/platform/Vulkan/VulkanQueue.h"
 #include "exage/platform/Vulkan/VulkanTexture.h"
@@ -86,17 +87,16 @@ namespace exage::Graphics
     }
 
     VulkanSwapchain::VulkanSwapchain(VulkanSwapchain&& old) noexcept
-        : _context(old._context), _swapchain(old._swapchain), _surface(old._surface), _oldSwapchain(old._oldSwapchain), _swapchainImages(old._swapchainImages), _swapchainTransitioned(std::move(old._swapchainTransitioned)), _extent(old._extent), _format(old._format), _presentMode(old._presentMode)
+        : _context(old._context)
+        , _swapchain(old._swapchain)
+        , _surface(old._surface)
+        , _oldSwapchain(old._oldSwapchain)
+        , _swapchainImages(old._swapchainImages)
+        , _swapchainTransitioned(std::move(old._swapchainTransitioned))
+        , _extent(old._extent)
+        , _format(old._format)
+        , _presentMode(old._presentMode)
     {
-        
-        
-        
-        
-        
-        
-        
-        
-
         old._surface = nullptr;
         old._swapchain = {};
         old._oldSwapchain = nullptr;
@@ -148,23 +148,23 @@ namespace exage::Graphics
         vkb::destroy_swapchain(swapchain);
     }
 
-    auto VulkanSwapchain::acquireNextImage() noexcept -> std::optional<Error>
+    auto VulkanSwapchain::acquireNextImage() noexcept -> tl::expected<void, Error>
     {
         const VulkanQueue& vulkanQueue = _context.get().getVulkanQueue();
         const vk::SwapchainKHR swapchain = _swapchain.swapchain;
-        vk::ResultValue<uint32_t> const result = _context.get().getDevice().acquireNextImageKHR(
-            swapchain,
-            std::numeric_limits<uint64_t>::max(),
-            vulkanQueue.getCurrentPresentSemaphore(),
-            nullptr);
+        vk::ResultValue<uint32_t> const result =
+            _context.get().getDevice().acquireNextImageKHR(swapchain,
+                                                           std::numeric_limits<uint64_t>::max(),
+                                                           vulkanQueue.getCurrentPresentSemaphore(),
+                                                           nullptr);
         if (result.result == vk::Result::eErrorOutOfDateKHR
             || result.result == vk::Result::eSuboptimalKHR)
         {
-            return GraphicsError::eSwapchainOutOfDate;
+            return tl::make_unexpected(Errors::SwapchainOutOfDate {});
         }
         checkVulkan(result.result);
         _currentImage = result.value;
-        return std::nullopt;
+        return {};
     }
 
     void VulkanSwapchain::drawImage(CommandBuffer& commandBuffer,
@@ -177,7 +177,8 @@ namespace exage::Graphics
 
         bool const transitioned = _swapchainTransitioned[_currentImage];
 
-        std::function const commandFunction = [this, vulkanTexture, transitioned](CommandBuffer& cmd)
+        std::function const commandFunction =
+            [this, vulkanTexture, transitioned](CommandBuffer& cmd)
         {
             const auto* vulkanCommandBuffer = cmd.as<VulkanCommandBuffer>();
             const vk::CommandBuffer vkCommand = vulkanCommandBuffer->getCommandBuffer();

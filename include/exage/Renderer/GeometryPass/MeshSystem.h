@@ -14,11 +14,20 @@ namespace exage::Renderer
     [[nodiscard]] auto aabbInFrustum(const AABB& aabb,
                                      const glm::mat4& modelViewProjection) noexcept -> bool;
 
+    struct MeshSystemCreateInfo
+    {
+        Graphics::Context& context;
+        SceneBuffer& sceneBuffer;
+    };
+
     class EXAGE_EXPORT MeshSystem
     {
       public:
-        MeshSystem() = default;
+        explicit MeshSystem(const MeshSystemCreateInfo& createInfo) noexcept;
         ~MeshSystem() = default;
+
+        EXAGE_DELETE_COPY(MeshSystem);
+        EXAGE_DEFAULT_MOVE(MeshSystem);
 
         void render(Graphics::CommandBuffer& commandBuffer, Scene& scene);
 
