@@ -1,0 +1,15 @@
+.idea/
+.vs/
+.vscode/
+build/
+cmake-build-*/
+prefix/
+**/.DS_Store
+CMakeLists.txt.user
+CMakeUserPresets.json
+.cache/
+conan/
+out/
+assets/exage/models/exspon/
+assets/exage/models/sponza/
+imgui.ini
