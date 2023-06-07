@@ -167,8 +167,6 @@ namespace exage::Graphics
         {
             io.FontDefault = font;
         }
-
-        buildFonts();
     }
 
     void ImGuiInstance::buildFonts() noexcept

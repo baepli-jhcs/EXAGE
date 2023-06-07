@@ -78,6 +78,12 @@ namespace exitor
         };
         _imGui = Graphics::ImGuiInstance {imGuiInfo};
 
+        _fontManager = Renderer::FontManager {*_imGui};
+
+        _fontManager->addFont("assets/exage/fonts/SourceSansPro/Regular.ttf",
+                              "Source Sans Pro Regular");
+        _fontManager->addFont("assets/exage/fonts/SourceSansPro/Bold.ttf", "Source Sans Pro Bold");
+
         Renderer::SceneBufferCreateInfo sceneBufferCreateInfo {.context = *_context};
         _sceneBuffer = Renderer::SceneBuffer {sceneBufferCreateInfo};
 
@@ -436,6 +442,8 @@ namespace exitor
 
     void Editor::drawGUI(float deltaTime) noexcept
     {
+        ImFont* font = _fontManager->getFont("Source Sans Pro Regular", 16.F);
+
         bool open = true;
 
         ImGuiWindowFlags windowFlags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking
@@ -457,6 +465,8 @@ namespace exitor
 
         ImGuiIO const& io = ImGui::GetIO();
         ImGuiStyle const& style = ImGui::GetStyle();
+
+        ImGui::PushFont(font);
 
         ImGui::Begin("DockSpace", &open, windowFlags);
 
@@ -534,11 +544,6 @@ namespace exitor
                     transform.position +=
                         transform.globalRotation.getRightVector() * cameraMovement.x;
                     transform.position += transform.globalRotation.getUpVector() * cameraMovement.y;
-
-                    fmt::print("Camera position: {}, {}, {}\n",
-                               transform.position.x,
-                               transform.position.y,
-                               transform.position.z);
                 }
 
                 // Editor camera rotation
@@ -567,12 +572,6 @@ namespace exitor
                 }
 
                 transform.rotation = Rotation3D {euler.value(), RotationType::ePitchYawRoll};
-
-                fmt::print("Camera rotation yaw: {}, pitch: {}\n",
-                           glm::degrees(euler->y),
-                           glm::degrees(euler->x));
-
-                fmt::print("Mouse delta: {}, {}\n", mouseDelta.x, mouseDelta.y);
             }
         }
 
@@ -590,10 +589,14 @@ namespace exitor
         ImGui::Text("Frame time: %f", deltaTime);
         ImGui::End();
 
-        exage::Entity selectedEntity = _hierarchyPanel.draw(_scene);
-        _componentList.draw(_scene, selectedEntity);
+        exage::Entity selectedEntity =
+            _hierarchyPanel.draw(_scene, Renderer::getSceneCamera(_scene));
+        entt::id_type type = _componentList.draw(_scene, selectedEntity);
+        _componentEditor.draw(_scene, selectedEntity, type);
 
         ImGui::End();
+
+        ImGui::PopFont();
 
         _lastMousePosition = currentMousePos;
     }

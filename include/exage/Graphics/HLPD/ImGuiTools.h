@@ -35,13 +35,13 @@ namespace exage::Graphics
 
         [[nodiscard]] auto getContext() const noexcept -> ImGuiContext* { return _imCtx; }
 
+        void buildFonts() noexcept;
+
       private:
         void cleanup() noexcept;
 
         void initGLFW(const ImGuiInitInfo& initInfo) noexcept;
         static void initVulkan(const ImGuiInitInfo& initInfo) noexcept;
-
-        void buildFonts() noexcept;
 
         std::reference_wrapper<Context> _context;
 

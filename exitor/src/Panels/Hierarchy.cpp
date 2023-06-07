@@ -9,11 +9,18 @@
 namespace exitor
 {
 
-    auto HierarchyPanel::draw(exage::Scene& scene) noexcept -> exage::Entity
+    auto HierarchyPanel::draw(exage::Scene& scene, entt::entity ignored) noexcept -> exage::Entity
     {
         ImGui::Begin("Scene Hierarchy");
 
-        scene.forEachRoot([&](exage::Entity entity) { drawEntity(scene, entity); });
+        scene.forEachRoot(
+            [&](exage::Entity entity)
+            {
+                if (entity != ignored)
+                {
+                    drawEntity(scene, ignored, entity);
+                }
+            });
 
         ImGui::End();
 
@@ -25,7 +32,9 @@ namespace exitor
         return _selectedEntity;
     }
 
-    void HierarchyPanel::drawEntity(exage::Scene& scene, exage::Entity entity) noexcept
+    void HierarchyPanel::drawEntity(exage::Scene& scene,
+                                    exage::Entity ignored,
+                                    exage::Entity entity) noexcept
     {
         const auto& relationship = scene.getComponent<exage::EntityRelationship>(entity);
 
@@ -52,7 +61,14 @@ namespace exitor
 
         if (opened)
         {
-            scene.forEachChild(entity, [&](exage::Entity child) { drawEntity(scene, child); });
+            scene.forEachChild(entity,
+                               [&](exage::Entity child)
+                               {
+                                   if (child != ignored)
+                                   {
+                                       drawEntity(scene, ignored, child);
+                                   }
+                               });
 
             ImGui::TreePop();
         }

@@ -487,6 +487,15 @@ namespace exage
         glfwSetWindowShouldClose(_window, GLFW_TRUE);
     }
 
+    auto GLFWindow::getExtent() const noexcept -> glm::uvec2
+    {
+        int width = 0;
+        int height = 0;
+        glfwGetWindowSize(_window, &width, &height);
+
+        return {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
+    }
+
     auto GLFWindow::getPosition() const noexcept -> glm::ivec2
     {
         int xpos = 0;
@@ -552,7 +561,6 @@ namespace exage
 
     void GLFWindow::resize(glm::uvec2 extent) noexcept
     {
-        _extent = extent;
         glfwSetWindowSize(_window, static_cast<int>(extent.x), static_cast<int>(extent.y));
     }
 

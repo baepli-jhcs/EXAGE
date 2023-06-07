@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include "Panels/ComponentEditor.h"
 #include "Panels/ComponentList.h"
 #include "Panels/Hierarchy.h"
 #include "exage/Core/Core.h"
@@ -13,6 +14,7 @@
 #include "exage/Renderer/Renderer.h"
 #include "exage/Renderer/Scene/AssetCache.h"
 #include "exage/Renderer/Scene/SceneBuffer.h"
+#include "exage/Renderer/Utils/Fonts.h"
 
 namespace exitor
 {
@@ -35,6 +37,7 @@ namespace exitor
 
         HierarchyPanel _hierarchyPanel;
         ComponentList _componentList;
+        ComponentEditor _componentEditor;
 
         std::unique_ptr<Window> _window;
         std::unique_ptr<Graphics::Context> _context;
@@ -43,6 +46,7 @@ namespace exitor
 
         std::optional<exage::Graphics::QueueCommandRepo> _queueCommandRepo;
         std::optional<Graphics::ImGuiInstance> _imGui;
+        std::optional<Renderer::FontManager> _fontManager;
 
         std::optional<Renderer::SceneBuffer> _sceneBuffer;
         std::optional<Renderer::Renderer> _renderer;

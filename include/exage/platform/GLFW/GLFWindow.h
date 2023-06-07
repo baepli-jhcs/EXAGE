@@ -24,9 +24,9 @@ namespace exage
 
         [[nodiscard]] auto getName() const noexcept -> std::string_view override { return _name; }
 
-        [[nodiscard]] auto getWidth() const noexcept -> uint32_t override { return _extent.x; }
-        [[nodiscard]] auto getHeight() const noexcept -> uint32_t override { return _extent.y; }
-        [[nodiscard]] auto getExtent() const noexcept -> glm::uvec2 override { return _extent; }
+        [[nodiscard]] auto getWidth() const noexcept -> uint32_t override { return getExtent().x; }
+        [[nodiscard]] auto getHeight() const noexcept -> uint32_t override { return getExtent().y; }
+        [[nodiscard]] auto getExtent() const noexcept -> glm::uvec2 override;
         [[nodiscard]] auto getPosition() const noexcept -> glm::ivec2 override;
 
         [[nodiscard]] auto isFullScreen() const noexcept -> bool override { return _fullScreen; }

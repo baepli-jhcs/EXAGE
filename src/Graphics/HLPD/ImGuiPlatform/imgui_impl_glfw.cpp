@@ -487,7 +487,7 @@ static void ImGui_ImplGlfw_UpdateKeyModifiers()
 
 namespace
 {
-    void onWindowMove(ImGuiIO& io, ImGui_ImplGlfw_Data* bd, const exage::Event& event)
+    void onWindowMove(ImGuiIO&, ImGui_ImplGlfw_Data*, const exage::Event& event)
     {
         if (ImGuiViewport* viewport = ImGui::FindViewportByPlatformHandle(
                 exage::GLFWindow::getWindowByID(event.pertainingID)))
@@ -505,7 +505,7 @@ namespace
         }
     }
 
-    void onWindowResize(ImGuiIO& io, ImGui_ImplGlfw_Data* bd, const exage::Event& event)
+    void onWindowResize(ImGuiIO&, ImGui_ImplGlfw_Data*, const exage::Event& event)
     {
         auto* window = exage::GLFWindow::getWindowByID(event.pertainingID);
         if (ImGuiViewport* viewport = ImGui::FindViewportByPlatformHandle(
@@ -524,7 +524,7 @@ namespace
         }
     }
 
-    void onWindowClose(ImGuiIO& io, ImGui_ImplGlfw_Data* bd, const exage::Event& event)
+    void onWindowClose(ImGuiIO&, ImGui_ImplGlfw_Data*, const exage::Event& event)
     {
         if (ImGuiViewport* viewport = ImGui::FindViewportByPlatformHandle(
                 exage::GLFWindow::getWindowByID(event.pertainingID)))
@@ -533,19 +533,19 @@ namespace
         }
     }
 
-    void onWindowFocus(ImGuiIO& io, ImGui_ImplGlfw_Data* bd, const exage::Event& event)
+    void onWindowFocus(ImGuiIO& io, ImGui_ImplGlfw_Data*, const exage::Event&)
     {
         io.AddFocusEvent(true);
     }
 
-    void onWindowLostFocus(ImGuiIO& io, ImGui_ImplGlfw_Data* bd, const exage::Event& event)
+    void onWindowLostFocus(ImGuiIO& io, ImGui_ImplGlfw_Data*, const exage::Event&)
     {
         io.AddFocusEvent(false);
     }
 
     void onMouseButtonPressed(ImGuiIO& io,
-                              ImGui_ImplGlfw_Data* bd,
-                              const exage::Event& event,
+                              ImGui_ImplGlfw_Data*,
+                              const exage::Event&,
                               const exage::Events::MouseButtonPressed& data)
     {
         if (data.button.code < ImGuiMouseButton_COUNT)
@@ -556,8 +556,8 @@ namespace
     }
 
     void onMouseButtonReleased(ImGuiIO& io,
-                               ImGui_ImplGlfw_Data* bd,
-                               const exage::Event& event,
+                               ImGui_ImplGlfw_Data*,
+                               const exage::Event&,
                                const exage::Events::MouseButtonReleased& data)
     {
         if (data.button.code < ImGuiMouseButton_COUNT)
@@ -586,16 +586,16 @@ namespace
     }
 
     void onMouseScrolled(ImGuiIO& io,
-                         ImGui_ImplGlfw_Data* bd,
-                         const exage::Event& event,
+                         ImGui_ImplGlfw_Data*,
+                         const exage::Event&,
                          const exage::Events::MouseScrolled& data)
     {
         io.AddMouseWheelEvent(static_cast<float>(data.offset.x), static_cast<float>(data.offset.y));
     }
 
     void onKeyPressed(ImGuiIO& io,
-                      ImGui_ImplGlfw_Data* bd,
-                      const exage::Event& event,
+                      ImGui_ImplGlfw_Data*,
+                      const exage::Event&,
                       const exage::Events::KeyPressed& data)
     {
         ImGui_ImplGlfw_UpdateKeyModifiers();
@@ -603,8 +603,8 @@ namespace
     }
 
     void onKeyReleased(ImGuiIO& io,
-                       ImGui_ImplGlfw_Data* bd,
-                       const exage::Event& event,
+                       ImGui_ImplGlfw_Data*,
+                       const exage::Event&,
                        const exage::Events::KeyReleased& data)
     {
         ImGui_ImplGlfw_UpdateKeyModifiers();
@@ -612,8 +612,8 @@ namespace
     }
 
     void onCodepointInput(ImGuiIO& io,
-                          ImGui_ImplGlfw_Data* bd,
-                          const exage::Event& event,
+                          ImGui_ImplGlfw_Data*,
+                          const exage::Event&,
                           const exage::Events::CodepointInput& data)
     {
         if (data.codepoint > 0 && data.codepoint < 0x10000)
@@ -639,12 +639,12 @@ namespace
         }
     }
 
-    void onMonitorConnected(ImGuiIO& io, ImGui_ImplGlfw_Data* bd, const exage::Event& event)
+    void onMonitorConnected(ImGuiIO&, ImGui_ImplGlfw_Data* bd, const exage::Event&)
     {
         bd->WantUpdateMonitors = true;
     }
 
-    void onMonitorDisconnected(ImGuiIO& io, ImGui_ImplGlfw_Data* bd, const exage::Event& event)
+    void onMonitorDisconnected(ImGuiIO&, ImGui_ImplGlfw_Data* bd, const exage::Event&)
     {
         bd->WantUpdateMonitors = true;
     }

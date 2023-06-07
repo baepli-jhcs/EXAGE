@@ -15,10 +15,11 @@ namespace exitor
         EXAGE_DEFAULT_COPY(HierarchyPanel);
         EXAGE_DEFAULT_MOVE(HierarchyPanel);
 
-        auto draw(exage::Scene& scene) noexcept -> exage::Entity;
+        auto draw(exage::Scene& scene, exage::Entity ignored = entt::null) noexcept
+            -> exage::Entity;
 
       private:
-        void drawEntity(exage::Scene& scene, exage::Entity entity) noexcept;
+        void drawEntity(exage::Scene& scene, exage::Entity ignored, exage::Entity entity) noexcept;
 
         exage::Entity _selectedEntity = entt::null;
     };

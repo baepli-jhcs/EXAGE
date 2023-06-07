@@ -10,7 +10,7 @@ if (PROJECT_IS_TOP_LEVEL)
   find_package(EXAGE REQUIRED)
 endif()
 
-add_executable(EXitor src/main.cpp src/Editor.cpp src/Panels/Hierarchy.cpp src/Panels/ComponentList.cpp)
+add_executable(EXitor src/main.cpp src/Editor.cpp src/Panels/Hierarchy.cpp src/Panels/ComponentList.cpp src/Panels/ComponentEditor.cpp)
 
 target_include_directories(EXitor PRIVATE src)
 

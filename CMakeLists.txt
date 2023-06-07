@@ -53,6 +53,7 @@ add_library(
     src/Renderer/Scene/SceneBuffer.cpp
     src/Renderer/Scene/Loader/Converter.cpp
     src/Renderer/Scene/Loader/Loader.cpp
+    src/Renderer/Utils/Fonts.cpp
     src/Scene/Entity.cpp
     src/Scene/Hierarchy.cpp
     src/Scene/Rotation3D.cpp

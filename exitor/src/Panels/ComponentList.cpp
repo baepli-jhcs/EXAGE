@@ -32,33 +32,37 @@ namespace exitor
                 continue;
             }
 
-            ImGui::Separator();
-
-            if (id == entt::type_id<exage::Transform3D>().index())
+            if (id == entt::type_hash<exage::Transform3D, void>::value())
             {
                 bool selected = _selectedTypeID == id;
                 if (ImGui::Selectable("3D Transform", selected))
                 {
                     _selectedTypeID = id;
                 }
+
+                ImGui::Separator();
             }
 
-            else if (id == entt::type_id<exage::Renderer::Camera>().index())
+            else if (id == entt::type_hash<exage::Renderer::Camera, void>::value())
             {
                 bool selected = _selectedTypeID == id;
                 if (ImGui::Selectable("Camera", selected))
                 {
                     _selectedTypeID = id;
                 }
+
+                ImGui::Separator();
             }
 
-            else if (id == entt::type_id<exage::Renderer::MeshComponent>().index())
+            else if (id == entt::type_hash<exage::Renderer::MeshComponent, void>::value())
             {
                 bool selected = _selectedTypeID == id;
                 if (ImGui::Selectable("Mesh", selected))
                 {
                     _selectedTypeID = id;
                 }
+
+                ImGui::Separator();
             }
 
             // In future, will use reflection to get the name of the component for plugins
