@@ -5,7 +5,6 @@
 #include "exage/Graphics/Texture.h"
 #include "exage/platform/Vulkan/VulkanContext.h"
 #include "exage/utils/classes.h"
-#include "vulkan/vulkan_enums.hpp"
 
 namespace exage::Graphics
 {

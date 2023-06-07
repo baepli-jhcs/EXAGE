@@ -47,10 +47,6 @@ namespace exage::Graphics
                 return vk::Format::eR8G8Unorm;
             case Format::eRG16:
                 return vk::Format::eR16G16Unorm;
-            case Format::eRGB8:
-                return vk::Format::eR8G8B8Unorm;
-            case Format::eRGB16:
-                return vk::Format::eR16G16B16Unorm;
             case Format::eRGBA8:
                 return vk::Format::eR8G8B8A8Unorm;
             case Format::eRGBA16:
@@ -60,8 +56,6 @@ namespace exage::Graphics
                 return vk::Format::eR16Sfloat;
             case Format::eRG16f:
                 return vk::Format::eR16G16Sfloat;
-            case Format::eRGB16f:
-                return vk::Format::eR16G16B16Sfloat;
             case Format::eRGBA16f:
                 return vk::Format::eR16G16B16A16Sfloat;
 
@@ -69,8 +63,6 @@ namespace exage::Graphics
                 return vk::Format::eR32Sfloat;
             case Format::eRG32f:
                 return vk::Format::eR32G32Sfloat;
-            case Format::eRGB32f:
-                return vk::Format::eR32G32B32Sfloat;
             case Format::eRGBA32f:
                 return vk::Format::eR32G32B32A32Sfloat;
 
@@ -81,6 +73,24 @@ namespace exage::Graphics
 
             case Format::eBGRA8:
                 return vk::Format::eB8G8R8A8Unorm;
+
+            // Compressed Formats
+            case Format::eBC1RGBA8:
+                return vk::Format::eBc1RgbaUnormBlock;
+            case Format::eBC3RGBA8:
+                return vk::Format::eBc3UnormBlock;
+            case Format::eBC4R8:
+                return vk::Format::eBc4UnormBlock;
+            case Format::eBC5RG8:
+                return vk::Format::eBc5UnormBlock;
+            case Format::eBC7RGBA8:
+                return vk::Format::eBc7UnormBlock;
+            case Format::eASTC4x4RGBA8:
+                return vk::Format::eAstc4x4UnormBlock;
+            case Format::eASTC6x6RGBA8:
+                return vk::Format::eAstc6x6UnormBlock;
+            case Format::eETC2RGBA8:
+                return vk::Format::eEtc2R8G8B8A8UnormBlock;
 
             default:
                 return vk::Format::eUndefined;
@@ -678,52 +688,42 @@ namespace exage::Graphics
         return vk::BlendOp::eAdd;
     }
 
-    [[nodiscard]] constexpr auto toExageFormat(vk::Format format) noexcept -> std::optional<Format>
+    [[nodiscard]] constexpr auto vulkanFormatToChannelsAndBits(vk::Format format) noexcept
+        -> std::pair<uint8_t, uint8_t>  // channels, bits
     {
         switch (format)
         {
             case vk ::Format ::eR8Unorm:
-                return Format ::eR8;
+                return {1, 8};
             case vk ::Format ::eR16Unorm:
-                return Format ::eR16;
+                return {1, 16};
             case vk ::Format ::eR8G8Unorm:
-                return Format ::eRG8;
+                return {2, 8};
             case vk ::Format ::eR16G16Unorm:
-                return Format ::eRG16;
-            case vk ::Format ::eR8G8B8Unorm:
-                return Format ::eRGB8;
-            case vk ::Format ::eR16G16B16Unorm:
-                return Format ::eRGB16;
+                return {2, 16};
             case vk ::Format ::eR8G8B8A8Unorm:
-                return Format ::eRGBA8;
+                return {4, 8};
             case vk ::Format ::eR16G16B16A16Unorm:
-                return Format ::eRGBA16;
+                return {4, 16};
             case vk ::Format ::eR16Sfloat:
-                return Format ::eR16f;
+                return {1, 16};
             case vk ::Format ::eR16G16Sfloat:
-                return Format ::eRG16f;
-            case vk ::Format ::eR16G16B16Sfloat:
-                return Format ::eRGB16f;
+                return {2, 16};
             case vk ::Format ::eR16G16B16A16Sfloat:
-                return Format ::eRGBA16f;
+                return {4, 16};
             case vk ::Format ::eR32Sfloat:
-                return Format ::eR32f;
+                return {1, 32};
             case vk ::Format ::eR32G32Sfloat:
-                return Format ::eRG32f;
-            case vk ::Format ::eR32G32B32Sfloat:
-                return Format ::eRGB32f;
+                return {2, 32};
             case vk ::Format ::eR32G32B32A32Sfloat:
-                return Format ::eRGBA32f;
-            case vk ::Format ::eD24UnormS8Uint:
-                return Format ::eDepth24Stencil8;
-            case vk ::Format ::eD32SfloatS8Uint:
-                return Format ::eDepth32Stencil8;
+                return {4, 32};
             case vk ::Format ::eB8G8R8A8Unorm:
-                return Format ::eBGRA8;
+                return {4, 8};
             default:
                 break;
-        };
-        return std ::nullopt;
+        }
+
+        return {0, 0};
     }
 
 }  // namespace exage::Graphics

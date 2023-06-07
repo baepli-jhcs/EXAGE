@@ -1,7 +1,5 @@
 ﻿#include "exage/platform/Vulkan/VulkanBuffer.h"
 
-#include "vulkan/vulkan_enums.hpp"
-
 namespace exage::Graphics
 {
     VulkanBuffer::VulkanBuffer(VulkanContext& context, const BufferCreateInfo& createInfo) noexcept

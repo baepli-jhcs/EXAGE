@@ -12,23 +12,29 @@ namespace exage::Graphics
     {
         eR8,
         eR16,
+        eR16f,
+        eR32f,
         eRG8,
         eRG16,
-        eRGB8,
-        eRGB16,
+        eRG16f,
+        eRG32f,
         eRGBA8,
         eRGBA16,
-        eR16f,
-        eRG16f,
-        eRGB16f,
         eRGBA16f,
-        eR32f,
-        eRG32f,
-        eRGB32f,
         eRGBA32f,
         eDepth24Stencil8,
         eDepth32Stencil8,
         eBGRA8,
+
+        // Compressed Formats
+        eBC1RGBA8,
+        eBC3RGBA8,
+        eBC4R8,
+        eBC5RG8,
+        eBC7RGBA8,
+        eASTC4x4RGBA8,
+        eASTC6x6RGBA8,
+        eETC2RGBA8,
     };
 
     struct SamplerCreateInfo;
@@ -183,8 +189,6 @@ namespace exage::Graphics
         Sampler::Filter filter = Sampler::Filter::eLinear;
         Sampler::MipmapMode mipmapMode = Sampler::MipmapMode::eLinear;
         float lodBias = 0.0F;
-
-        TextureID _id {};
     };
 
     struct TextureCreateInfo

@@ -4,6 +4,7 @@
 #include "exage/Core/Window.h"
 #include "exage/Graphics/Error.h"
 #include "exage/utils/classes.h"
+#include "exage/utils/flags.h"
 
 namespace exage::Graphics
 {
@@ -54,6 +55,15 @@ namespace exage::Graphics
         bool depthZeroToOne = false;
     };
 
+    enum class FormatFeatureFlags : uint32_t
+    {
+        eStorageImage = 1 << 0,
+        eColorAttachment = 1 << 1,
+    };
+
+    using FormatFeatures = Flags<FormatFeatureFlags>;
+    EXAGE_ENABLE_FLAGS(FormatFeatures)
+
     class Context
     {
       public:
@@ -89,6 +99,8 @@ namespace exage::Graphics
             -> std::shared_ptr<Pipeline> = 0;
 
         [[nodiscard]] virtual auto getHardwareSupport() const noexcept -> HardwareSupport = 0;
+        [[nodiscard]] virtual auto getFormatSupport(Format format) const noexcept
+            -> std::pair<bool, FormatFeatures> = 0;  // supported, features
 
         EXAGE_BASE_API(API, Context);
         [[nodiscard]] static auto create(ContextCreateInfo& createInfo) noexcept

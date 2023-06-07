@@ -4,27 +4,20 @@
 #include <glm/gtx/euler_angles.hpp>
 #include <glm/gtx/transform.hpp>
 
-#include "exage/Scene/Hierarchy.h"
-
 namespace exage
 {
-    inline auto calculateTransformMatrix(Transform3D transform) noexcept -> glm::mat4
+    constexpr float SMALL_NUMBER = 0.00000001F;
+    constexpr glm::vec3 X_AXIS = glm::vec3(1, 0, 0);
+    constexpr glm::vec3 Y_AXIS = glm::vec3(0, 1, 0);
+    constexpr glm::vec3 Z_AXIS = glm::vec3(0, 0, -1);
+
+    inline auto getQuaternionRotation(glm::vec3 yawPitchRoll) -> glm::quat
     {
-        glm::mat4 scaleMatrix = glm::scale(transform.scale);
+        glm::quat yaw = glm::angleAxis(yawPitchRoll.y, glm::vec3(0, 1, 0));
+        glm::quat pitch = glm::angleAxis(yawPitchRoll.x, glm::vec3(1, 0, 0));
+        glm::quat roll = glm::angleAxis(yawPitchRoll.z, glm::vec3(0, 0, 1));
 
-        glm::mat4 rotationMatrix = glm::mat4(1.0f);
-        if (glm::quat* quat = std::get_if<glm::quat>(&transform.rotation); quat != nullptr)
-        {
-            rotationMatrix = glm::toMat4(*quat);
-        }
-        else if (glm::vec3* vec = std::get_if<glm::vec3>(&transform.rotation); vec != nullptr)
-        {
-            rotationMatrix = glm::toMat4(glm::quat {*vec});
-        }
-
-        glm::mat4 translationMatrix = glm::translate(transform.position);
-
-        return translationMatrix * rotationMatrix * scaleMatrix;
+        return yaw * pitch * roll;
     }
 
     inline auto getForwardVector(glm::quat rotation, glm::vec3 forward = glm::vec3(0, 0, 1))
@@ -44,16 +37,19 @@ namespace exage
         return glm::inverse(rotation) * up;
     }
 
-    inline auto getViewMatrix(glm::vec3 position, glm::quat rotation) -> glm::mat4
+    inline auto getViewMatrix(glm::vec3 position,
+                              glm::quat rotation,
+                              glm::vec3 up = glm::vec3(0, 1, 0)) -> glm::mat4
     {
         glm::vec3 forward = getForwardVector(rotation);
-        return glm::lookAt(
-            position, position + forward, getUpVector(rotation, glm::vec3 {0, -1, 0}));
+        return glm::lookAt(position, position + forward, getUpVector(rotation, up));
     }
 
-    inline auto getViewMatrix(glm::vec3 position, glm::vec3 rotation) -> glm::mat4
+    inline auto getViewMatrix(glm::vec3 position,
+                              glm::vec3 yawPitchRoll,
+                              glm::vec3 up = glm::vec3(0, 1, 0)) -> glm::mat4
     {
-        glm::mat3 rotationMatrix = glm::eulerAngleYXZ(rotation.y, rotation.x, rotation.z);
-        return getViewMatrix(position, glm::quat(rotationMatrix));
+        glm::quat rotation = getQuaternionRotation(yawPitchRoll);
+        return getViewMatrix(position, rotation, up);
     }
 }  // namespace exage

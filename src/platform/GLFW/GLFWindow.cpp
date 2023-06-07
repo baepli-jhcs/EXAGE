@@ -1,6 +1,13 @@
 ﻿#ifndef GLFW_INCLUDE_NONE
 #    define GLFW_INCLUDE_NONE
+#    include <mutex>
+#    include <unordered_set>
+
+#    include <stdint.h>
+
+#    include "exage/Core/Event.h"
 #    include "exage/Core/Window.h"
+#    include "exage/Input/KeyCode.h"
 #endif
 
 #ifdef EXAGE_WINDOWS
@@ -24,230 +31,406 @@ namespace exage
     {
         auto toKeyCode(int key) -> KeyCode
         {
-            switch (key)
+            KeyCode keyCode {};
+            if (key == GLFW_KEY_UNKNOWN || key > GLFW_KEY_LAST)
             {
-                case GLFW_KEY_SPACE:
-                    return KeyCode::eSpace;
-                case GLFW_KEY_APOSTROPHE:
-                    return KeyCode::eApostrophe;
-                case GLFW_KEY_COMMA:
-                    return KeyCode::eComma;
-                case GLFW_KEY_MINUS:
-                    return KeyCode::eMinus;
-                case GLFW_KEY_PERIOD:
-                    return KeyCode::ePeriod;
-                case GLFW_KEY_SLASH:
-                    return KeyCode::eSlash;
-                case GLFW_KEY_0:
-                    return KeyCode::e0;
-                case GLFW_KEY_1:
-                    return KeyCode::e1;
-                case GLFW_KEY_2:
-                    return KeyCode::e2;
-                case GLFW_KEY_3:
-                    return KeyCode::e3;
-                case GLFW_KEY_4:
-                    return KeyCode::e4;
-                case GLFW_KEY_5:
-                    return KeyCode::e5;
-                case GLFW_KEY_6:
-                    return KeyCode::e6;
-                case GLFW_KEY_7:
-                    return KeyCode::e7;
-                case GLFW_KEY_8:
-                    return KeyCode::e8;
-                case GLFW_KEY_9:
-                    return KeyCode::e9;
-                case GLFW_KEY_SEMICOLON:
-                    return KeyCode::eSemicolon;
-                case GLFW_KEY_EQUAL:
-                    return KeyCode::eEqual;
-                case GLFW_KEY_A:
-                    return KeyCode::eA;
-                case GLFW_KEY_B:
-                    return KeyCode::eB;
-                case GLFW_KEY_C:
-                    return KeyCode::eC;
-                case GLFW_KEY_D:
-                    return KeyCode::eD;
-                case GLFW_KEY_E:
-                    return KeyCode::eE;
-                case GLFW_KEY_F:
-                    return KeyCode::eF;
-                case GLFW_KEY_G:
-                    return KeyCode::eG;
-                case GLFW_KEY_H:
-                    return KeyCode::eH;
-                case GLFW_KEY_I:
-                    return KeyCode::eI;
-                case GLFW_KEY_J:
-                    return KeyCode::eJ;
-                case GLFW_KEY_K:
-                    return KeyCode::eK;
-                case GLFW_KEY_L:
-                    return KeyCode::eL;
-                case GLFW_KEY_M:
-                    return KeyCode::eM;
-                case GLFW_KEY_N:
-                    return KeyCode::eN;
-                case GLFW_KEY_O:
-                    return KeyCode::eO;
-                case GLFW_KEY_P:
-                    return KeyCode::eP;
-                case GLFW_KEY_Q:
-                    return KeyCode::eQ;
-                case GLFW_KEY_R:
-                    return KeyCode::eR;
-                case GLFW_KEY_S:
-                    return KeyCode::eS;
-                case GLFW_KEY_T:
-                    return KeyCode::eT;
-                case GLFW_KEY_U:
-                    return KeyCode::eU;
-                case GLFW_KEY_V:
-                    return KeyCode::eV;
-                case GLFW_KEY_W:
-                    return KeyCode::eW;
-                case GLFW_KEY_X:
-                    return KeyCode::eX;
-                case GLFW_KEY_Y:
-                    return KeyCode::eY;
-                case GLFW_KEY_Z:
-                    return KeyCode::eZ;
-                case GLFW_KEY_LEFT_BRACKET:
-                    return KeyCode::eLeftBracket;
-                case GLFW_KEY_BACKSLASH:
-                    return KeyCode::eBackslash;
-                case GLFW_KEY_RIGHT_BRACKET:
-                    return KeyCode::eRightBracket;
-                case GLFW_KEY_GRAVE_ACCENT:
-                    return KeyCode::eGraveAccent;
-                case GLFW_KEY_WORLD_1:
-                    return KeyCode::eWorld1;
-                case GLFW_KEY_WORLD_2:
-                    return KeyCode::eWorld2;
-                case GLFW_KEY_ESCAPE:
-                    return KeyCode::eEscape;
-                case GLFW_KEY_ENTER:
-                    return KeyCode::eEnter;
-                case GLFW_KEY_TAB:
-                    return KeyCode::eTab;
-                case GLFW_KEY_BACKSPACE:
-                    return KeyCode::eBackspace;
-                case GLFW_KEY_INSERT:
-                    return KeyCode::eInsert;
-                case GLFW_KEY_DELETE:
-                    return KeyCode::eDelete;
-                case GLFW_KEY_RIGHT:
-                    return KeyCode::eRight;
-                case GLFW_KEY_LEFT:
-                    return KeyCode::eLeft;
-                case GLFW_KEY_UP:
-                    return KeyCode::eUp;
-                case GLFW_KEY_DOWN:
-                    return KeyCode::eDown;
-                case GLFW_KEY_PAGE_UP:
-                    return KeyCode::ePageUp;
-                case GLFW_KEY_PAGE_DOWN:
-                    return KeyCode::ePageDown;
-                case GLFW_KEY_HOME:
-                    return KeyCode::eHome;
-                case GLFW_KEY_END:
-                    return KeyCode::eEnd;
-                case GLFW_KEY_CAPS_LOCK:
-                    return KeyCode::eCapsLock;
-                case GLFW_KEY_SCROLL_LOCK:
-                    return KeyCode::eScrollLock;
-                case GLFW_KEY_NUM_LOCK:
-                    return KeyCode::eNumLock;
-                case GLFW_KEY_PRINT_SCREEN:
-                    return KeyCode::ePrintScreen;
-                case GLFW_KEY_PAUSE:
-                    return KeyCode::ePause;
-                case GLFW_KEY_F1:
-                    return KeyCode::eF1;
-                case GLFW_KEY_F2:
-                    return KeyCode::eF2;
-                case GLFW_KEY_F3:
-                    return KeyCode::eF3;
-                case GLFW_KEY_F4:
-                    return KeyCode::eF4;
-                case GLFW_KEY_F5:
-                    return KeyCode::eF5;
-                case GLFW_KEY_F6:
-                    return KeyCode::eF6;
-                case GLFW_KEY_F7:
-                    return KeyCode::eF7;
-                case GLFW_KEY_F8:
-                    return KeyCode::eF8;
-                case GLFW_KEY_F9:
-                    return KeyCode::eF9;
-                case GLFW_KEY_F10:
-                    return KeyCode::eF10;
-                case GLFW_KEY_F11:
-                    return KeyCode::eF11;
-                case GLFW_KEY_F12:
-                    return KeyCode::eF12;
-                case GLFW_KEY_KP_0:
-                    return KeyCode::eKP0;
-                case GLFW_KEY_KP_1:
-                    return KeyCode::eKP1;
-                case GLFW_KEY_KP_2:
-                    return KeyCode::eKP2;
-                case GLFW_KEY_KP_3:
-                    return KeyCode::eKP3;
-                case GLFW_KEY_KP_4:
-                    return KeyCode::eKP4;
-                case GLFW_KEY_KP_5:
-                    return KeyCode::eKP5;
-                case GLFW_KEY_KP_6:
-                    return KeyCode::eKP6;
-                case GLFW_KEY_KP_7:
-                    return KeyCode::eKP7;
-                case GLFW_KEY_KP_8:
-                    return KeyCode::eKP8;
-                case GLFW_KEY_KP_9:
-                    return KeyCode::eKP9;
-                case GLFW_KEY_KP_DECIMAL:
-                    return KeyCode::eKPDecimal;
-                case GLFW_KEY_KP_DIVIDE:
-                    return KeyCode::eKPDivide;
-                case GLFW_KEY_KP_MULTIPLY:
-                    return KeyCode::eKPMultiply;
-                case GLFW_KEY_KP_SUBTRACT:
-                    return KeyCode::eKPSubtract;
-                case GLFW_KEY_KP_ADD:
-                    return KeyCode::eKPAdd;
-                case GLFW_KEY_KP_ENTER:
-                    return KeyCode::eKPEnter;
-                case GLFW_KEY_KP_EQUAL:
-                    return KeyCode::eKPEqual;
-                case GLFW_KEY_LEFT_SHIFT:
-                    return KeyCode::eLeftShift;
-                case GLFW_KEY_LEFT_CONTROL:
-                    return KeyCode::eLeftControl;
-                case GLFW_KEY_LEFT_ALT:
-                    return KeyCode::eLeftAlt;
-                case GLFW_KEY_LEFT_SUPER:
-                    return KeyCode::eLeftSuper;
-                case GLFW_KEY_RIGHT_SHIFT:
-                    return KeyCode::eRightShift;
-                case GLFW_KEY_RIGHT_CONTROL:
-                    return KeyCode::eRightControl;
-                case GLFW_KEY_RIGHT_ALT:
-                    return KeyCode::eRightAlt;
-                case GLFW_KEY_RIGHT_SUPER:
-                    return KeyCode::eRightSuper;
-                case GLFW_KEY_MENU:
-                    return KeyCode::eMenu;
-                default:
-                    return KeyCode::eUnknown;
+                keyCode.code = KeyCode::eUnknown;
             }
+
+            keyCode.code = static_cast<KeyCode::Codes>(key);
+            return keyCode;
+        }
+
+        auto toMouseButton(int button) -> MouseButton
+        {
+            return {static_cast<MouseButton::Codes>(button)};
+        }
+
+        std::atomic_uint32_t idCounter = 0;  // NOLINT
+        std::unordered_map<uint32_t, GLFWindow*> windows;  // NOLINT
+        std::unordered_map<GLFWwindow*, GLFWindow*> glfwWindows;  // NOLINT
+        std::mutex windowsMutex;  // NOLINT
+
+        auto nextID() noexcept -> uint32_t
+        {
+            return idCounter++;
+        }
+
+        auto getWindow(uint32_t id) noexcept -> GLFWindow*
+        {
+            std::lock_guard lock(windowsMutex);
+            auto it = windows.find(id);
+
+            if (it != windows.end())
+            {
+                return it->second;
+            }
+
+            return nullptr;
+        }
+
+        auto getWindow(GLFWwindow* glfwWindow) noexcept -> GLFWindow*
+        {
+            std::lock_guard lock(windowsMutex);
+            auto it = glfwWindows.find(glfwWindow);
+
+            if (it != glfwWindows.end())
+            {
+                return it->second;
+            }
+
+            return nullptr;
+        }
+
+        std::vector<Event> events;  // NOLINT
+
+        void pushEvent(Event event) noexcept
+        {
+            events.push_back(std::move(event));
+        }
+
+        void windowPositionCallback(GLFWwindow* window, int xpos, int ypos) noexcept
+        {
+            auto* win = getWindow(window);
+
+            if (win == nullptr)
+            {
+                return;
+            }
+
+            Events::WindowMoved event {};
+            event.position = {xpos, ypos};
+
+            pushEvent({win->getID(), event});
+        }
+
+        void windowSizeCallback(GLFWwindow* window, int width, int height) noexcept
+        {
+            auto* win = getWindow(window);
+
+            if (win == nullptr)
+            {
+                return;
+            }
+
+            Events::WindowResized event {};
+            event.extent = {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
+
+            pushEvent({win->getID(), event});
+        }
+
+        void windowCloseCallback(GLFWwindow* window) noexcept
+        {
+            auto* win = getWindow(window);
+
+            if (win == nullptr)
+            {
+                return;
+            }
+
+            Events::WindowClosed event {};
+
+            pushEvent({win->getID(), event});
+        }
+
+        void windowFocusCallback(GLFWwindow* window, int focused) noexcept
+        {
+            auto* win = getWindow(window);
+
+            if (win == nullptr)
+            {
+                return;
+            }
+
+            if (focused == GLFW_TRUE)
+            {
+                Events::WindowFocused event {};
+                pushEvent({win->getID(), event});
+            }
+            else
+            {
+                Events::WindowLostFocus event {};
+                pushEvent({win->getID(), event});
+            }
+        }
+
+        void windowIconifyCallback(GLFWwindow* window, int iconified) noexcept
+        {
+            auto* win = getWindow(window);
+
+            if (win == nullptr)
+            {
+                return;
+            }
+
+            if (iconified == GLFW_TRUE)
+            {
+                Events::WindowIconified event {};
+                pushEvent({win->getID(), event});
+            }
+            else
+            {
+                Events::WindowRestored event {};
+                pushEvent({win->getID(), event});
+            }
+        }
+
+        void windowMaximizeCallback(GLFWwindow* window, int maximized) noexcept
+        {
+            auto* win = getWindow(window);
+
+            if (win == nullptr)
+            {
+                return;
+            }
+
+            if (maximized == GLFW_TRUE)
+            {
+                Events::WindowMaximized event {};
+                pushEvent({win->getID(), event});
+            }
+            else
+            {
+                Events::WindowUnmaximized event {};
+                pushEvent({win->getID(), event});
+            }
+        }
+
+        void mouseButtonCallback(GLFWwindow* window, int button, int action, int /*mods*/) noexcept
+        {
+            auto* win = getWindow(window);
+
+            if (win == nullptr)
+            {
+                return;
+            }
+
+            switch (action)
+            {
+                case GLFW_PRESS:
+                {
+                    Events::MouseButtonPressed event {};
+                    event.button = toMouseButton(button);
+                    pushEvent({win->getID(), event});
+                    break;
+                }
+                case GLFW_RELEASE:
+                {
+                    Events::MouseButtonReleased event {};
+                    event.button = toMouseButton(button);
+                    pushEvent({win->getID(), event});
+                    break;
+                }
+                default:
+                    break;
+            }
+        }
+
+        void cursorPosCallback(GLFWwindow* window, double xpos, double ypos) noexcept
+        {
+            auto* win = getWindow(window);
+
+            if (win == nullptr)
+            {
+                return;
+            }
+
+            Events::MouseMoved event {};
+            event.position = {static_cast<int>(xpos), static_cast<int>(ypos)};
+
+            pushEvent({win->getID(), event});
+        }
+
+        void scrollCallback(GLFWwindow* window, double x, double y) noexcept
+        {
+            auto* win = getWindow(window);
+
+            if (win == nullptr)
+            {
+                return;
+            }
+
+            Events::MouseScrolled event {};
+            event.offset = {static_cast<float>(x), static_cast<float>(y)};
+
+            pushEvent({win->getID(), event});
+        }
+
+        void cursorEnterCallback(GLFWwindow* window, int entered)
+        {
+            auto* win = getWindow(window);
+
+            if (win == nullptr)
+            {
+                return;
+            }
+
+            if (entered == GLFW_TRUE)
+            {
+                Events::MouseEntered event {};
+                pushEvent({win->getID(), event});
+            }
+            else
+            {
+                Events::MouseLeft event {};
+                pushEvent({win->getID(), event});
+            }
+        }
+
+        void keyCallback(
+            GLFWwindow* window, int key, int /*scancode*/, int action, int /*mods*/) noexcept
+        {
+            auto* win = getWindow(window);
+
+            if (win == nullptr)
+            {
+                return;
+            }
+
+            switch (action)
+            {
+                case GLFW_PRESS:
+                {
+                    Events::KeyPressed event {};
+                    event.key = toKeyCode(key);
+                    pushEvent({win->getID(), event});
+                    break;
+                }
+                case GLFW_RELEASE:
+                {
+                    Events::KeyReleased event {};
+                    event.key = toKeyCode(key);
+                    pushEvent({win->getID(), event});
+                    break;
+                }
+                case GLFW_REPEAT:
+                {
+                    Events::KeyRepeated event {};
+                    event.key = toKeyCode(key);
+                    pushEvent({win->getID(), event});
+                    break;
+                }
+                default:
+                    break;
+            }
+        }
+
+        void charCallback(GLFWwindow* window, unsigned int codepoint) noexcept
+        {
+            auto* win = getWindow(window);
+
+            if (win == nullptr)
+            {
+                return;
+            }
+
+            Events::CodepointInput event {};
+            event.codepoint = codepoint;
+
+            pushEvent({win->getID(), event});
+        }
+
+        void dropCallback(GLFWwindow* window, int count, const char** paths) noexcept
+        {
+            auto* win = getWindow(window);
+
+            if (win == nullptr)
+            {
+                return;
+            }
+
+            for (int i = 0; i < count; i++)
+            {
+                Events::FileDropped event {};
+                event.path = paths[i];
+
+                pushEvent({win->getID(), event});
+            }
+        }
+
+        void monitorCallback(GLFWmonitor* monitor, int connected) noexcept
+        {
+            // Search for the monitor in the list of all monitors
+            int monitorCount = 0;
+            GLFWmonitor** monitors = glfwGetMonitors(&monitorCount);
+
+            for (int i = 0; i < monitorCount; i++)
+            {
+                if (monitors[i] == monitor)
+                {
+                    // Found the monitor
+                    if (connected == GLFW_TRUE)
+                    {
+                        // Monitor connected
+                        Events::MonitorConnected event {};
+                        pushEvent({static_cast<uint32_t>(i), event});
+                    }
+                }
+            }
+
+            if (connected == GLFW_FALSE)
+            {
+                // Monitor disconnected
+                Events::MonitorDisconnected event {};
+                pushEvent({static_cast<uint32_t>(monitorCount), event});
+            }
+        }
+
+        void joystickCallback(int jid, int connected) noexcept
+        {
+            if (connected == GLFW_TRUE)
+            {
+                // Joystick connected
+                Events::JoystickConnected event {};
+                pushEvent({static_cast<uint32_t>(jid), event});
+            }
+            else
+            {
+                // Joystick disconnected
+                Events::JoystickDisconnected event {};
+                pushEvent({static_cast<uint32_t>(jid), event});
+            }
+        }
+
+        void registerWindow(uint32_t id, GLFWindow* window, GLFWwindow* glfwWindow) noexcept
+        {
+            std::lock_guard lock(windowsMutex);
+            windows[id] = window;
+            glfwWindows[glfwWindow] = window;
+
+            glfwSetWindowPosCallback(glfwWindow, windowPositionCallback);
+            glfwSetWindowSizeCallback(glfwWindow, windowSizeCallback);
+            glfwSetWindowCloseCallback(glfwWindow, windowCloseCallback);
+            glfwSetWindowFocusCallback(glfwWindow, windowFocusCallback);
+            glfwSetWindowIconifyCallback(glfwWindow, windowIconifyCallback);
+            glfwSetWindowMaximizeCallback(glfwWindow, windowMaximizeCallback);
+            glfwSetMouseButtonCallback(glfwWindow, mouseButtonCallback);
+            glfwSetCursorPosCallback(glfwWindow, cursorPosCallback);
+            glfwSetScrollCallback(glfwWindow, scrollCallback);
+            glfwSetCursorEnterCallback(glfwWindow, cursorEnterCallback);
+            glfwSetKeyCallback(glfwWindow, keyCallback);
+            glfwSetCharCallback(glfwWindow, charCallback);
+            glfwSetDropCallback(glfwWindow, dropCallback);
+        }
+
+        void unregisterWindow(uint32_t id, GLFWwindow* glfwWindow) noexcept
+        {
+            std::lock_guard lock(windowsMutex);
+            windows.erase(id);
+            glfwWindows.erase(glfwWindow);
         }
     }  // namespace
 
+    void GLFWindow::init() noexcept
+    {
+        glfwInit();
+        glfwSetMonitorCallback(monitorCallback);
+        glfwSetJoystickCallback(joystickCallback);
+    }
+
     GLFWindow::GLFWindow(const WindowInfo& info) noexcept
-        : _name(info.name)
+        : _id(nextID())
+        , _name(info.name)
         , _extent(info.extent)
         , _fullScreen(info.fullScreen)
         , _windowBordered(info.windowBordered)
@@ -256,10 +439,13 @@ namespace exage
     {
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+        glfwWindowHint(GLFW_VISIBLE, info.hidden ? GLFW_FALSE : GLFW_TRUE);
+        glfwWindowHint(GLFW_FOCUSED, info.focused ? GLFW_TRUE : GLFW_FALSE);
+        glfwWindowHint(GLFW_FOCUS_ON_SHOW, info.focusOnShow ? GLFW_TRUE : GLFW_FALSE);
 
         if (info.fullScreen)
         {
-            glfwWindowHint(GLFW_REFRESH_RATE, info.exclusiveRefreshRate);
+            glfwWindowHint(GLFW_REFRESH_RATE, static_cast<int>(_exclusiveRefreshRate));
 
             _window = glfwCreateWindow(static_cast<int>(_extent.x),
                                        static_cast<int>(_extent.y),
@@ -286,14 +472,14 @@ namespace exage
         }
 
         glfwSetWindowUserPointer(_window, this);
-
-        glfwSetWindowSizeCallback(_window, resizeCallback);
-        glfwSetKeyCallback(_window, keyCallback);
+        registerWindow(_id, this, _window);
     }
 
     GLFWindow::~GLFWindow() noexcept
     {
         glfwDestroyWindow(_window);
+
+        unregisterWindow(_id, _window);
     }
 
     void GLFWindow::close() noexcept
@@ -301,60 +487,29 @@ namespace exage
         glfwSetWindowShouldClose(_window, GLFW_TRUE);
     }
 
-    void GLFWindow::setResizeCallback(ResizeCallback callback) noexcept
+    auto GLFWindow::getPosition() const noexcept -> glm::ivec2
     {
-        _resizeCallback = std::move(callback);
+        int xpos = 0;
+        int ypos = 0;
+        glfwGetWindowPos(_window, &xpos, &ypos);
+
+        return {xpos, ypos};
     }
 
-    void GLFWindow::setKeyCallback(KeyCallback callback) noexcept
+    auto GLFWindow::isHidden() const noexcept -> bool
     {
-        _keyCallback = std::move(callback);
+        return glfwGetWindowAttrib(_window, GLFW_VISIBLE) == GLFW_FALSE;
     }
 
-    void GLFWindow::resizeCallback(GLFWwindow* window, int width, int height)
+    void GLFWindow::setHidden(bool hidden) noexcept
     {
-        auto* win = static_cast<GLFWindow*>(glfwGetWindowUserPointer(window));
-
-        if (width == 0 || height == 0)
+        if (hidden)
         {
-            return;
+            glfwHideWindow(_window);
         }
-
-        win->_extent = {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
-
-        if (win->_resizeCallback)
+        else
         {
-            win->_resizeCallback(win->_extent);
-        }
-    }
-
-    void GLFWindow::keyCallback(
-        GLFWwindow* window, int key, int /*scancode*/, int action, int /*mods*/)
-    {
-        auto* win = static_cast<GLFWindow*>(glfwGetWindowUserPointer(window));
-
-        KeyAction keyAction = KeyAction::ePress;
-
-        switch (action)
-        {
-            case GLFW_PRESS:
-                keyAction = KeyAction::ePress;
-                break;
-            case GLFW_RELEASE:
-                keyAction = KeyAction::eRelease;
-                break;
-            case GLFW_REPEAT:
-                keyAction = KeyAction::eRepeat;
-                break;
-
-            default:
-                break;
-        }
-
-        auto keyCode = toKeyCode(key);
-        if (win->_keyCallback)
-        {
-            win->_keyCallback(keyCode, keyAction);
+            glfwShowWindow(_window);
         }
     }
 
@@ -374,6 +529,11 @@ namespace exage
         }
 
         return nullptr;
+    }
+
+    auto GLFWindow::getID() const noexcept -> uint32_t
+    {
+        return _id;
     }
 
     auto GLFWindow::getNativeHandle() const noexcept -> void*
@@ -416,8 +576,13 @@ namespace exage
             int ypos = 0;
             glfwGetWindowPos(_window, &xpos, &ypos);
 
-            glfwSetWindowMonitor(
-                _window, nullptr, xpos, ypos, _extent.x, _extent.y, _exclusiveRefreshRate);
+            glfwSetWindowMonitor(_window,
+                                 nullptr,
+                                 xpos,
+                                 ypos,
+                                 static_cast<int>(_extent.x),
+                                 static_cast<int>(_extent.y),
+                                 static_cast<int>(_exclusiveRefreshRate));
         }
     }
 
@@ -465,7 +630,7 @@ namespace exage
         return glfwWindowShouldClose(_window) != 0;
     }
 
-    auto GLFWindow::isMinimized() const noexcept -> bool
+    auto GLFWindow::isIconified() const noexcept -> bool
     {
         return glfwGetWindowAttrib(_window, GLFW_ICONIFIED) == GLFW_TRUE;
     }
@@ -489,7 +654,7 @@ namespace exage
 
     auto GLFWindow::getMonitor(uint32_t index) noexcept -> Monitor
     {
-        int count = getMonitorCount();
+        int count = static_cast<int>(getMonitorCount());
         auto countU = static_cast<uint32_t>(count);
 
         debugAssert(index < countU, "Monitor index out of bounds");
@@ -507,7 +672,7 @@ namespace exage
 
     auto GLFWindow::getMonitors() noexcept -> std::vector<Monitor>
     {
-        int const count = getMonitorCount();
+        int const count = static_cast<int>(getMonitorCount());
 
         std::vector<Monitor> monitors;
         monitors.reserve(count);
@@ -519,4 +684,23 @@ namespace exage
 
         return monitors;
     }
+
+    auto GLFWindow::getWindowByID(uint32_t id) noexcept -> GLFWindow*
+    {
+        return getWindow(id);
+    }
+
+    auto GLFWindow::nextEvent() noexcept -> std::optional<Event>
+    {
+        if (events.empty())
+        {
+            return std::nullopt;
+        }
+
+        Event event = events.back();
+        events.pop_back();
+
+        return event;
+    }
+
 }  // namespace exage

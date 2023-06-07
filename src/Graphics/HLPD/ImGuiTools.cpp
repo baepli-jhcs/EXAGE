@@ -245,13 +245,27 @@ namespace exage::Graphics
         }
     }
 
+    void ImGuiInstance::processEvent(const Event& event) noexcept
+    {
+        switch (_windowAPI)
+        {
+            case WindowAPI::eGLFW:
+            {
+                ImGui_ImplGlfw_ProcessEvent(event);
+                break;
+            }
+            default:
+                break;
+        }
+    }
+
     void ImGuiInstance::initGLFW(const ImGuiInitInfo& initInfo) noexcept
     {
         auto* window = initInfo.window.as<GLFWindow>();
         switch (_api)
         {
             case API::eVulkan:
-                ImGui_ImplGlfw_InitForVulkan(window->getGLFWWindow(), /*install_callbacks=*/true);
+                ImGui_ImplGlfw_InitForVulkan(window);
                 break;
             default:
                 break;

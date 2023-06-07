@@ -1,4 +1,5 @@
 ﻿#include <fstream>
+#include <unordered_set>
 
 #include "exage/Renderer/Scene/Loader/Loader.h"
 
@@ -9,87 +10,342 @@
 #include "exage/Core/Debug.h"
 #include "exage/Graphics/Buffer.h"
 #include "exage/Graphics/Texture.h"
+#include "exage/Renderer/Scene/Loader/AssetFile.h"
+#include "exage/Renderer/Scene/Loader/Errors.h"
 #include "exage/Renderer/Scene/Material.h"
 #include "exage/Renderer/Scene/Mesh.h"
+#include "zstd.h"
 
 namespace exage::Renderer
 {
-    auto loadTexture(const std::filesystem::path& path) noexcept
-        -> tl::expected<Texture, AssetLoadError>
+    namespace
     {
-        if (!std::filesystem::exists(path))
+        [[nodiscard]] auto getUncompressedFormat(uint8_t channels, uint8_t bitsPerChannel) noexcept
+            -> Graphics::Format
         {
-            return tl::make_unexpected(FileNotFoundError {});
+            switch (bitsPerChannel)
+            {
+                case 8:
+                {
+                    switch (channels)
+                    {
+                        case 1:
+                        {
+                            return Graphics::Format::eR8;
+                        }
+
+                        case 2:
+                        {
+                            return Graphics::Format::eRG8;
+                        }
+
+                        case 4:
+                        {
+                            return Graphics::Format::eRGBA8;
+                        }
+                    }
+                }
+
+                case 16:
+                {
+                    switch (channels)
+                    {
+                        case 1:
+                        {
+                            return Graphics::Format::eR16f;
+                        }
+
+                        case 2:
+                        {
+                            return Graphics::Format::eRG16f;
+                        }
+
+                        case 4:
+                        {
+                            return Graphics::Format::eRGBA16f;
+                        }
+                    }
+                }
+
+                case 32:
+                {
+                    switch (channels)
+                    {
+                        case 1:
+                        {
+                            return Graphics::Format::eR32f;
+                        }
+
+                        case 2:
+                        {
+                            return Graphics::Format::eRG32f;
+                        }
+
+                        case 4:
+                        {
+                            return Graphics::Format::eRGBA32f;
+                        }
+                    }
+                }
+
+                default:
+                    break;
+            }
+
+            debugAssume(false, "Invalid format");  // Should have been handled by the converter
+            return Graphics::Format::eRGBA8;
         }
 
-        if (path.extension() != TEXTURE_EXTENSION)
+        [[nodiscard]] auto getCompressedFormat(
+            uint8_t channels,
+            uint8_t bitsPerChannel,
+            const std::unordered_set<Graphics::Format>& compressedTextureSupport)
+            -> Graphics::Format
+        {
+            // Priority order: ASTC > BC > ETC2
+
+            if (bitsPerChannel != 8)
+            {
+                return getUncompressedFormat(channels, bitsPerChannel);
+            }
+
+            switch (channels)
+            {
+                case 1:
+                {
+                    if (compressedTextureSupport.contains(Graphics::Format::eBC4R8))
+                    {
+                        return Graphics::Format::eBC4R8;
+                    }
+                }
+
+                case 2:
+                {
+                    if (compressedTextureSupport.contains(Graphics::Format::eBC5RG8))
+                    {
+                        return Graphics::Format::eBC5RG8;
+                    }
+                }
+
+                case 4:
+                {
+                    if (compressedTextureSupport.contains(Graphics::Format::eASTC6x6RGBA8))
+                    {
+                        return Graphics::Format::eASTC6x6RGBA8;
+                    }
+
+                    if (compressedTextureSupport.contains(Graphics::Format::eASTC4x4RGBA8))
+                    {
+                        return Graphics::Format::eASTC4x4RGBA8;
+                    }
+
+                    if (compressedTextureSupport.contains(Graphics::Format::eBC7RGBA8))
+                    {
+                        return Graphics::Format::eBC7RGBA8;
+                    }
+
+                    if (compressedTextureSupport.contains(Graphics::Format::eBC3RGBA8))
+                    {
+                        return Graphics::Format::eBC3RGBA8;
+                    }
+
+                    if (compressedTextureSupport.contains(Graphics::Format::eBC1RGBA8))
+                    {
+                        return Graphics::Format::eBC1RGBA8;
+                    }
+
+                    if (compressedTextureSupport.contains(Graphics::Format::eETC2RGBA8))
+                    {
+                        return Graphics::Format::eETC2RGBA8;
+                    }
+                }
+            }
+
+            return getUncompressedFormat(channels, bitsPerChannel);
+        }
+    }  // namespace
+
+    auto queryCompressedTextureSupport(Graphics::Context& context) noexcept
+        -> std::unordered_set<Graphics::Format>
+    {
+        constexpr std::array compressedFormats = {
+            Graphics::Format::eBC1RGBA8,
+            Graphics::Format::eBC3RGBA8,
+            Graphics::Format::eBC4R8,
+            Graphics::Format::eBC5RG8,
+            Graphics::Format::eBC7RGBA8,
+            Graphics::Format::eASTC4x4RGBA8,
+            Graphics::Format::eASTC6x6RGBA8,
+            Graphics::Format::eETC2RGBA8,
+        };
+
+        std::unordered_set<Graphics::Format> formats;
+
+        for (Graphics::Format format : compressedFormats)
+        {
+            if (context.getFormatSupport(format).first)
+            {
+                formats.insert(format);
+            }
+        }
+
+        return formats;
+    }
+
+    auto loadTexture(const std::filesystem::path& path,
+                     const std::filesystem::path& prefix) noexcept
+        -> tl::expected<Texture, AssetError>
+    {
+        std::filesystem::path fullPath = prefix / path;
+
+        tl::expected asset = loadAssetFile(fullPath);
+
+        if (!asset.has_value())
+        {
+            return tl::make_unexpected(asset.error());
+        }
+
+        nlohmann::json json = nlohmann::json::parse(asset->json);
+
+        if (json["dataType"] != "Texture")
         {
             return tl::make_unexpected(FileFormatError {});
         }
 
-        std::ifstream file(path, std::ios::binary);
+        Texture texture;
+        texture.path = path;
+        texture.mips.resize(json["mips"].size());
 
-        if (!file.is_open())
+        for (size_t i = 0; i < json["mips"].size(); i++)
         {
-            return tl::make_unexpected(FileNotFoundError {});
+            const auto& mip = json["mips"][i];
+            texture.mips[i].extent = mip["extent"];
+            texture.mips[i].offset = mip["offset"];
+            texture.mips[i].size = mip["size"];
         }
 
-        Texture texture;
-        cereal::BinaryInputArchive archive(file);
-        archive(texture);
+        texture.channels = json["channels"];
+        texture.bitsPerChannel = json["bitsPerChannel"];
+        texture.type = static_cast<Graphics::Texture::Type>(json["type"]);
+
+        size_t decompressedSize = json["rawSize"];
+        texture.data.resize(decompressedSize);
+
+        size_t result = ZSTD_decompress(
+            texture.data.data(), texture.data.size(), asset->binary.data(), asset->binary.size());
+
+        if (ZSTD_isError(result) != 0u)
+        {
+            return tl::make_unexpected(FileFormatError {});
+        }
 
         return texture;
     }
 
-    auto loadMaterial(const std::filesystem::path& path) noexcept
-        -> tl::expected<Material, AssetLoadError>
+    auto loadMaterial(const std::filesystem::path& path,
+                      const std::filesystem::path& prefix) noexcept
+        -> tl::expected<Material, AssetError>
     {
-        if (!std::filesystem::exists(path))
+        std::filesystem::path fullPath = prefix / path;
+        tl::expected asset = loadAssetFile(fullPath);
+
+        if (!asset.has_value())
         {
-            return tl::make_unexpected(FileNotFoundError {});
+            return tl::make_unexpected(asset.error());
         }
 
-        if (path.extension() != MATERIAL_EXTENSION)
+        nlohmann::json json = nlohmann::json::parse(asset->json);
+
+        if (json["dataType"] != "Material")
         {
             return tl::make_unexpected(FileFormatError {});
         }
 
-        std::ifstream file(path, std::ios::binary);
-
-        if (!file.is_open())
-        {
-            return tl::make_unexpected(FileNotFoundError {});
-        }
-
         Material material;
-        cereal::BinaryInputArchive archive(file);
-        archive(material);
+        material.path = path;
+        material.albedoColor = json["albedoColor"];
+        material.emissiveColor = json["emissiveColor"];
+        material.metallicValue = json["metallicValue"];
+        material.roughnessValue = json["roughnessValue"];
+        material.albedoUseTexture = json["albedoUseTexture"];
+        material.normalUseTexture = json["normalUseTexture"];
+        material.metallicUseTexture = json["metallicUseTexture"];
+        material.roughnessUseTexture = json["roughnessUseTexture"];
+        material.occlusionUseTexture = json["occlusionUseTexture"];
+        material.emissiveUseTexture = json["emissiveUseTexture"];
+        material.albedoTexturePath = json["albedoTexturePath"].get<std::filesystem::path>();
+        material.normalTexturePath = json["normalTexturePath"].get<std::filesystem::path>();
+        material.metallicTexturePath = json["metallicTexturePath"].get<std::filesystem::path>();
+        material.roughnessTexturePath = json["roughnessTexturePath"].get<std::filesystem::path>();
+        material.occlusionTexturePath = json["occlusionTexturePath"].get<std::filesystem::path>();
+        material.emissiveTexturePath = json["emissiveTexturePath"].get<std::filesystem::path>();
 
         return material;
     }
 
-    auto loadMesh(const std::filesystem::path& path) noexcept -> tl::expected<Mesh, AssetLoadError>
+    auto loadMesh(const std::filesystem::path& path, const std::filesystem::path& prefix) noexcept
+        -> tl::expected<Mesh, AssetError>
     {
-        if (!std::filesystem::exists(path))
+        std::filesystem::path fullPath = prefix / path;
+        tl::expected asset = loadAssetFile(fullPath);
+
+        if (!asset.has_value())
         {
-            return tl::make_unexpected(FileNotFoundError {});
+            return tl::make_unexpected(asset.error());
         }
 
-        if (path.extension() != MESH_EXTENSION)
+        nlohmann::json json = nlohmann::json::parse(asset->json);
+
+        if (json["dataType"] != "Mesh")
         {
             return tl::make_unexpected(FileFormatError {});
         }
 
-        std::ifstream file(path, std::ios::binary);
+        Mesh mesh;
+        mesh.path = path;
+        mesh.materialPath = json["materialPath"].get<std::filesystem::path>();
+        mesh.aabb.max = json["aabb"]["max"];
+        mesh.aabb.min = json["aabb"]["min"];
+        mesh.lods.resize(json["lods"].size());
 
-        if (!file.is_open())
+        for (size_t i = 0; i < mesh.lods.size(); i++)
         {
-            return tl::make_unexpected(FileNotFoundError {});
+            const auto& lod = json["lods"][i];
+            auto& meshLod = mesh.lods[i];
+            meshLod.vertexCount = lod["vertexCount"];
+            meshLod.indexCount = lod["indexCount"];
+            meshLod.vertexOffset = lod["vertexOffset"];
+            meshLod.indexOffset = lod["indexOffset"];
         }
 
-        Mesh mesh;
-        cereal::BinaryInputArchive archive(file);
-        archive(mesh);
+        size_t vertices = json["vertices"];
+        size_t indices = json["indices"];
+
+        size_t vertexCompressedSize = json["vertexCompressedSize"];
+        size_t indexCompressedSize = json["indexCompressedSize"];
+
+        mesh.vertices.resize(vertices);
+        mesh.indices.resize(indices);
+
+        size_t result = ZSTD_decompress(mesh.vertices.data(),
+                                        mesh.vertices.size() * sizeof(MeshVertex),
+                                        asset->binary.data(),
+                                        vertexCompressedSize);
+
+        if (ZSTD_isError(result) != 0u)
+        {
+            return tl::make_unexpected(FileFormatError {});
+        }
+
+        result = ZSTD_decompress(mesh.indices.data(),
+                                 mesh.indices.size() * sizeof(uint32_t),
+                                 asset->binary.data() + vertexCompressedSize,
+                                 indexCompressedSize);
+
+        if (ZSTD_isError(result) != 0u)
+        {
+            return tl::make_unexpected(FileFormatError {});
+        }
 
         return mesh;
     }
@@ -114,9 +370,26 @@ namespace exage::Renderer
 
         stagingBuffer->write(data, 0);
 
+        std::unordered_set<Graphics::Format>* supportedCompressedFormatsPtr =
+            options.supportedCompressedFormats;
+
+        std::optional<std::unordered_set<Graphics::Format>> supportedCompressedFormats =
+            std::nullopt;
+        if (options.useCompressedFormat)
+        {
+            if (supportedCompressedFormatsPtr == nullptr)
+            {
+                supportedCompressedFormats = queryCompressedTextureSupport(options.context);
+                supportedCompressedFormatsPtr = &*supportedCompressedFormats;
+            }
+        }
+
         Graphics::TextureCreateInfo textureCreateInfo;
         textureCreateInfo.extent = texture.mips[0].extent;
-        textureCreateInfo.format = texture.format;
+        textureCreateInfo.format = options.useCompressedFormat
+            ? getCompressedFormat(
+                texture.channels, texture.bitsPerChannel, *supportedCompressedFormatsPtr)
+            : getUncompressedFormat(texture.channels, texture.bitsPerChannel);
         textureCreateInfo.usage = options.usage;  // Graphics::Texture::UsageFlags::eSampled |
         // Graphics::Texture::UsageFlags::eTransferDst;
 
@@ -163,18 +436,14 @@ namespace exage::Renderer
     {
         GPUMesh gpuMesh;
         gpuMesh.path = mesh.path;
+        gpuMesh.pathHash = std::filesystem::hash_value(mesh.path);
         gpuMesh.materialPath = mesh.materialPath;
         gpuMesh.aabb = mesh.aabb;
 
-        gpuMesh.lods.resize(mesh.lods.size());
+        gpuMesh.lods = mesh.lods;
 
-        size_t vertexBufferSize = 0;
-        size_t indexBufferSize = 0;
-        for (const auto& lod : mesh.lods)
-        {
-            vertexBufferSize += lod.vertices.size() * sizeof(MeshVertex);
-            indexBufferSize += lod.indices.size() * sizeof(uint32_t);
-        }
+        size_t vertexBufferSize = mesh.vertices.size() * sizeof(MeshVertex);
+        size_t indexBufferSize = mesh.indices.size() * sizeof(uint32_t);
 
         Graphics::BufferCreateInfo vertexBufferCreateInfo;
         vertexBufferCreateInfo.size = vertexBufferSize;
@@ -189,72 +458,120 @@ namespace exage::Renderer
         gpuMesh.vertexBuffer = options.context.createBuffer(vertexBufferCreateInfo);
         gpuMesh.indexBuffer = options.context.createBuffer(indexBufferCreateInfo);
 
-        size_t vertexOffset = 0;
-        size_t indexOffset = 0;
+        std::span<const std::byte> vertexData = std::as_bytes(std::span(mesh.vertices));
+        std::span<const std::byte> indexData = std::as_bytes(std::span(mesh.indices));
 
-        for (size_t i = 0; i < mesh.lods.size(); i++)
+        if (gpuMesh.vertexBuffer->isMapped())
         {
-            const auto& lod = mesh.lods[i];
-            auto& gpuLod = gpuMesh.lods[i];
-
-            std::span<const std::byte> vertexData = std::as_bytes(std::span(lod.vertices));
-            std::span<const std::byte> indexData = std::as_bytes(std::span(lod.indices));
-
-            {
-                Graphics::BufferCreateInfo stagingBufferCreateInfo;
-                stagingBufferCreateInfo.size = vertexData.size();
-                stagingBufferCreateInfo.cached = false;
-                stagingBufferCreateInfo.mapMode = Graphics::Buffer::MapMode::eMapped;
-
-                auto stagingBuffer = options.context.createBuffer(stagingBufferCreateInfo);
-                stagingBuffer->write(vertexData, 0);
-
-                options.commandBuffer.copyBuffer(
-                    stagingBuffer, gpuMesh.vertexBuffer, 0, 0, vertexData.size());
-                options.commandBuffer.bufferBarrier(gpuMesh.vertexBuffer,
-                                                    Graphics::PipelineStageFlags::eTransfer,
-                                                    options.pipelineStage,
-                                                    Graphics::AccessFlags::eTransferWrite,
-                                                    options.access);
-            }
-
-            {
-                Graphics::BufferCreateInfo stagingBufferCreateInfo;
-                stagingBufferCreateInfo.size = indexData.size();
-                stagingBufferCreateInfo.cached = false;
-                stagingBufferCreateInfo.mapMode = Graphics::Buffer::MapMode::eMapped;
-
-                auto stagingBuffer = options.context.createBuffer(stagingBufferCreateInfo);
-                stagingBuffer->write(indexData, 0);
-
-                options.commandBuffer.copyBuffer(
-                    stagingBuffer, gpuMesh.indexBuffer, 0, 0, indexData.size());
-                options.commandBuffer.bufferBarrier(gpuMesh.indexBuffer,
-                                                    Graphics::PipelineStageFlags::eTransfer,
-                                                    options.pipelineStage,
-                                                    Graphics::AccessFlags::eTransferWrite,
-                                                    options.access);
-            }
-
-            gpuLod.vertexCount = static_cast<uint32_t>(lod.vertices.size());
-            gpuLod.indexCount = static_cast<uint32_t>(lod.indices.size());
-
-            gpuLod.vertexOffset = vertexOffset;
-            gpuLod.indexOffset = indexOffset;
-
-            vertexOffset += vertexData.size();
-            indexOffset += indexData.size();
-
-            // gpuLod.vertexOffset = options.sceneBuffer.uploadData(
-            //     vertices, options.commandBuffer, options.access, options.pipelineStage);
-            // gpuLod.vertexCount = static_cast<uint32_t>(lod.vertices.size());
-
-            // std::span<const uint32_t> indexData = lod.indices;
-
-            // gpuLod.indexOffset = options.sceneBuffer.uploadData(
-            //     indexData, options.commandBuffer, options.access, options.pipelineStage);
-            // gpuLod.indexCount = static_cast<uint32_t>(lod.indices.size());
+            gpuMesh.vertexBuffer->write(vertexData, 0);
         }
+        else
+        {
+            Graphics::BufferCreateInfo stagingBufferCreateInfo;
+            stagingBufferCreateInfo.size = vertexData.size();
+            stagingBufferCreateInfo.cached = false;
+            stagingBufferCreateInfo.mapMode = Graphics::Buffer::MapMode::eMapped;
+
+            auto stagingBuffer = options.context.createBuffer(stagingBufferCreateInfo);
+            stagingBuffer->write(vertexData, 0);
+
+            options.commandBuffer.copyBuffer(
+                stagingBuffer, gpuMesh.vertexBuffer, 0, 0, vertexData.size());
+            options.commandBuffer.bufferBarrier(gpuMesh.vertexBuffer,
+                                                Graphics::PipelineStageFlags::eTransfer,
+                                                options.pipelineStage,
+                                                Graphics::AccessFlags::eTransferWrite,
+                                                options.access);
+        }
+
+        if (gpuMesh.indexBuffer->isMapped())
+        {
+            gpuMesh.indexBuffer->write(indexData, 0);
+        }
+        else
+        {
+            Graphics::BufferCreateInfo stagingBufferCreateInfo;
+            stagingBufferCreateInfo.size = indexData.size();
+            stagingBufferCreateInfo.cached = false;
+            stagingBufferCreateInfo.mapMode = Graphics::Buffer::MapMode::eMapped;
+
+            auto stagingBuffer = options.context.createBuffer(stagingBufferCreateInfo);
+            stagingBuffer->write(indexData, 0);
+
+            options.commandBuffer.copyBuffer(
+                stagingBuffer, gpuMesh.indexBuffer, 0, 0, indexData.size());
+            options.commandBuffer.bufferBarrier(gpuMesh.indexBuffer,
+                                                Graphics::PipelineStageFlags::eTransfer,
+                                                options.pipelineStage,
+                                                Graphics::AccessFlags::eTransferWrite,
+                                                options.access);
+        }
+
+        // for (size_t i = 0; i < mesh.lods.size(); i++)
+        // {
+        //     const auto& lod = mesh.lods[i];
+        //     auto& gpuLod = gpuMesh.lods[i];
+
+        //     std::span<const std::byte> vertexData =
+        //         std::as_bytes(std::span(mesh.vertices))
+        //             .subspan(lod.vertexOffset, lod.vertexCount * sizeof(MeshVertex));
+
+        //     std::span<const std::byte> indexData =
+        //         std::as_bytes(std::span(mesh.indices))
+        //             .subspan(lod.indexOffset, lod.indexCount * sizeof(uint32_t));
+
+        //     {
+        //         Graphics::BufferCreateInfo stagingBufferCreateInfo;
+        //         stagingBufferCreateInfo.size = vertexData.size();
+        //         stagingBufferCreateInfo.cached = false;
+        //         stagingBufferCreateInfo.mapMode = Graphics::Buffer::MapMode::eMapped;
+
+        //         auto stagingBuffer = options.context.createBuffer(stagingBufferCreateInfo);
+        //         stagingBuffer->write(vertexData, 0);
+
+        //         options.commandBuffer.copyBuffer(
+        //             stagingBuffer, gpuMesh.vertexBuffer, 0, 0, vertexData.size());
+        //         options.commandBuffer.bufferBarrier(gpuMesh.vertexBuffer,
+        //                                             Graphics::PipelineStageFlags::eTransfer,
+        //                                             options.pipelineStage,
+        //                                             Graphics::AccessFlags::eTransferWrite,
+        //                                             options.access);
+        //     }
+
+        //     {
+        //         Graphics::BufferCreateInfo stagingBufferCreateInfo;
+        //         stagingBufferCreateInfo.size = indexData.size();
+        //         stagingBufferCreateInfo.cached = false;
+        //         stagingBufferCreateInfo.mapMode = Graphics::Buffer::MapMode::eMapped;
+
+        //         auto stagingBuffer = options.context.createBuffer(stagingBufferCreateInfo);
+        //         stagingBuffer->write(indexData, 0);
+
+        //         options.commandBuffer.copyBuffer(
+        //             stagingBuffer, gpuMesh.indexBuffer, 0, 0, indexData.size());
+        //         options.commandBuffer.bufferBarrier(gpuMesh.indexBuffer,
+        //                                             Graphics::PipelineStageFlags::eTransfer,
+        //                                             options.pipelineStage,
+        //                                             Graphics::AccessFlags::eTransferWrite,
+        //                                             options.access);
+        //     }
+
+        //     gpuLod.vertexCount = lod.vertexCount;
+        //     gpuLod.indexCount = lod.indexCount;
+
+        //     gpuLod.vertexOffset = lod.vertexOffset;
+        //     gpuLod.indexOffset = lod.indexOffset;
+
+        //     // gpuLod.vertexOffset = options.sceneBuffer.uploadData(
+        //     //     vertices, options.commandBuffer, options.access, options.pipelineStage);
+        //     // gpuLod.vertexCount = static_cast<uint32_t>(lod.vertices.size());
+
+        //     // std::span<const uint32_t> indexData = lod.indices;
+
+        //     // gpuLod.indexOffset = options.sceneBuffer.uploadData(
+        //     //     indexData, options.commandBuffer, options.access, options.pipelineStage);
+        //     // gpuLod.indexCount = static_cast<uint32_t>(lod.indices.size());
+        // }
 
         return gpuMesh;
     }

@@ -62,6 +62,7 @@ namespace exage::Renderer
     MeshSystem::MeshSystem(const MeshSystemCreateInfo& createInfo) noexcept
         : _context(createInfo.context)
         , _sceneBuffer(createInfo.sceneBuffer)
+        , _assetCache(createInfo.assetCache)
     {
         std::filesystem::path vertexShaderPath =
             Filesystem::getEngineShaderDirectory() / VERTEX_SHADER_PATH;
@@ -193,7 +194,8 @@ namespace exage::Renderer
         commandBuffer.setViewport(glm::uvec2 {0}, extent);
         commandBuffer.setScissor(glm::uvec2 {0}, extent);
 
-        auto view = entt::basic_view {scene.registry().storage<GPUMesh>(CURRENT_GPU_MESH)}
+        auto view =
+            entt::basic_view {scene.registry().storage<MeshComponent>(CURRENT_MESH_COMPONENT)}
             | entt::basic_view {
                 scene.registry().storage<TransformRenderInfo>(CURRENT_TRANSFORM_RENDER_INFO)};
 
@@ -244,8 +246,17 @@ namespace exage::Renderer
 
         for (auto entity : view)
         {
-            const auto& mesh = view.get<GPUMesh>(entity);
+            const auto& meshComponent = view.get<MeshComponent>(entity);
             const auto& transform = view.get<TransformRenderInfo>(entity);
+
+            auto* meshPtr = _assetCache.get().getMeshIfExists(meshComponent.pathHash);
+            if (meshPtr == nullptr)
+            {
+                fmt::print("Mesh {} not found\n", meshComponent.path.string());
+                continue;
+            }
+
+            const auto& mesh = *meshPtr;
 
             // Frustum culling using meshComponent.mesh.aabb
             // if (!aabbInFrustum(mesh.aabb, transform.data.modelViewProjection))

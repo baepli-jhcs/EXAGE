@@ -6,6 +6,7 @@
 #include "exage/Graphics/CommandBuffer.h"
 #include "exage/Graphics/Context.h"
 #include "exage/Graphics/Shader.h"
+#include "exage/Renderer/Scene/AssetCache.h"
 #include "exage/Renderer/Scene/SceneBuffer.h"
 #include "exage/Scene/Scene.h"
 
@@ -18,6 +19,7 @@ namespace exage::Renderer
     {
         Graphics::Context& context;
         SceneBuffer& sceneBuffer;
+        AssetCache& assetCache;
     };
 
     class MeshSystem
@@ -34,6 +36,7 @@ namespace exage::Renderer
       private:
         std::reference_wrapper<Graphics::Context> _context;
         std::reference_wrapper<SceneBuffer> _sceneBuffer;
+        std::reference_wrapper<AssetCache> _assetCache;
 
         std::shared_ptr<Graphics::Pipeline> _pipeline;
     };

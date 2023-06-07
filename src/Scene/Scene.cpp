@@ -74,11 +74,11 @@ namespace exage
     void Scene::calculateChildTransform(Transform3D& parentTransform, Entity entity) noexcept
     {
         auto& childTransform = getComponent<Transform3D>(entity);
-        glm::quat childRotation = childTransform.getQuatRotation();
+        glm::quat childRotation = childTransform.rotation.getQuaternion();
 
         childTransform.globalRotation = parentTransform.globalRotation * childRotation;
         childTransform.globalPosition = parentTransform.globalPosition
-            + parentTransform.globalRotation * childTransform.position;
+            + parentTransform.globalRotation.getQuaternion() * childTransform.position;
         childTransform.globalScale = parentTransform.globalScale * childTransform.scale;
 
         childTransform.matrix = calculateTransformMatrix(childTransform);
@@ -109,9 +109,8 @@ namespace exage
             auto view = _registry.view<EntityRelationship, Transform3D, RootEntity>();
             for (auto entity : view)
             {
-                auto& relationship = view.get<EntityRelationship>(entity);
                 auto& transform = view.get<Transform3D>(entity);
-                transform.globalRotation = transform.getQuatRotation();
+                transform.globalRotation = transform.rotation;
                 transform.globalPosition = transform.position;
                 transform.globalScale = transform.scale;
                 transform.matrix = calculateTransformMatrix(transform);

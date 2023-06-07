@@ -2,6 +2,7 @@
 
 #include <filesystem>
 #include <optional>
+#include <unordered_set>
 
 #include "exage/Core/Core.h"
 #include "exage/Graphics/CommandBuffer.h"
@@ -15,14 +16,20 @@
 
 namespace exage::Renderer
 {
-    [[nodiscard]] auto loadTexture(const std::filesystem::path& path) noexcept
-        -> tl::expected<Texture, AssetLoadError>;
+    [[nodiscard]] auto queryCompressedTextureSupport(Graphics::Context& context) noexcept
+        -> std::unordered_set<Graphics::Format>;
 
-    [[nodiscard]] auto loadMaterial(const std::filesystem::path& path) noexcept
-        -> tl::expected<Material, AssetLoadError>;
+    [[nodiscard]] auto loadTexture(const std::filesystem::path& path,
+                                   const std::filesystem::path& prefix) noexcept
+        -> tl::expected<Texture, AssetError>;
 
-    [[nodiscard]] auto loadMesh(const std::filesystem::path& path) noexcept
-        -> tl::expected<Mesh, AssetLoadError>;
+    [[nodiscard]] auto loadMaterial(const std::filesystem::path& path,
+                                    const std::filesystem::path& prefix) noexcept
+        -> tl::expected<Material, AssetError>;
+
+    [[nodiscard]] auto loadMesh(const std::filesystem::path& path,
+                                const std::filesystem::path& prefix) noexcept
+        -> tl::expected<Mesh, AssetError>;
 
     struct TextureUploadOptions
     {
@@ -36,6 +43,10 @@ namespace exage::Renderer
         Graphics::PipelineStage pipelineStage = Graphics::PipelineStageFlags::eFragmentShader;
 
         Graphics::SamplerCreateInfo samplerCreateInfo {};
+
+        bool useCompressedFormat = true;
+        std::unordered_set<Graphics::Format>* supportedCompressedFormats = nullptr;
+        // If supportedCompressedFormats is nullptr, the function will query the supported formats
     };
 
     struct MeshUploadOptions

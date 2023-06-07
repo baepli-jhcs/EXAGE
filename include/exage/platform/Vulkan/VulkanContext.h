@@ -51,6 +51,8 @@ namespace exage::Graphics
             -> std::shared_ptr<Pipeline> override;
 
         [[nodiscard]] auto getHardwareSupport() const noexcept -> HardwareSupport override;
+        [[nodiscard]] auto getFormatSupport(Format format) const noexcept
+            -> std::pair<bool, FormatFeatures> override;
 
         [[nodiscard]] auto createSurface(Window& window) const noexcept -> vk::SurfaceKHR;
         [[nodiscard]] auto getOrCreateDescriptorSetLayout(

@@ -2,7 +2,6 @@
 
 #include "exage/platform/Vulkan/VulkanBuffer.h"
 #include "exage/platform/Vulkan/VulkanTexture.h"
-#include "vulkan/vulkan_structs.hpp"
 
 namespace exage::Graphics
 {
@@ -65,10 +64,11 @@ namespace exage::Graphics
         storageImageDescriptorSetLayoutBinding.descriptorCount = maxTextureCount;
         storageImageDescriptorSetLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eAll;
 
-        std::array<vk::DescriptorSetLayoutBinding, 3> descriptorSetLayoutBindings {combinedImageSamplerSetLayoutBinding,
-                                                storageBufferDescriptorSetLayoutBinding,
-                                                // uniformBufferDescriptorSetLayoutBinding,
-                                                storageImageDescriptorSetLayoutBinding};
+        std::array<vk::DescriptorSetLayoutBinding, 3> descriptorSetLayoutBindings {
+            combinedImageSamplerSetLayoutBinding,
+            storageBufferDescriptorSetLayoutBinding,
+            // uniformBufferDescriptorSetLayoutBinding,
+            storageImageDescriptorSetLayoutBinding};
 
         vk::DescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo {};
         descriptorSetLayoutCreateInfo.setBindings(descriptorSetLayoutBindings);

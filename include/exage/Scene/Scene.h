@@ -69,6 +69,16 @@ namespace exage
             }
         }
 
+        template<typename F>
+        void forEachRoot(F&& func) noexcept
+        {
+            auto view = _registry.view<RootEntity>();
+            for (auto entity : view)
+            {
+                func(entity);
+            }
+        }
+
       private:
         void calculateChildTransform(Transform3D& parentTransform, Entity entity) noexcept;
 

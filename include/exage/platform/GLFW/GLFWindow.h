@@ -2,6 +2,8 @@
 
 #include <vector>
 
+#include <stdint.h>
+
 #include "exage/Core/Window.h"
 
 struct GLFWwindow;
@@ -20,14 +22,12 @@ namespace exage
 
         void close() noexcept override;
 
-        void setResizeCallback(ResizeCallback callback) noexcept override;
-        void setKeyCallback(KeyCallback callback) noexcept override;
-
         [[nodiscard]] auto getName() const noexcept -> std::string_view override { return _name; }
 
         [[nodiscard]] auto getWidth() const noexcept -> uint32_t override { return _extent.x; }
         [[nodiscard]] auto getHeight() const noexcept -> uint32_t override { return _extent.y; }
         [[nodiscard]] auto getExtent() const noexcept -> glm::uvec2 override { return _extent; }
+        [[nodiscard]] auto getPosition() const noexcept -> glm::ivec2 override;
 
         [[nodiscard]] auto isFullScreen() const noexcept -> bool override { return _fullScreen; }
         [[nodiscard]] auto isWindowBordered() const noexcept -> bool override
@@ -44,6 +44,9 @@ namespace exage
             return _exclusiveMonitor;
         }
 
+        [[nodiscard]] auto isHidden() const noexcept -> bool override;
+
+        [[nodiscard]] auto getID() const noexcept -> uint32_t override;
         [[nodiscard]] auto getNativeHandle() const noexcept -> void* override;
 
         void resize(glm::uvec2 extent) noexcept override;
@@ -52,12 +55,16 @@ namespace exage
         void setWindowBordered(bool bordered) noexcept override;
 
         void setExclusiveRefreshRate(uint32_t refreshRate) noexcept override;
-        void setExclusiveMonitor(Monitor monitorIndex) noexcept override;
+        void setExclusiveMonitor(Monitor monitor) noexcept override;
+
+        void setHidden(bool hidden) noexcept override;
 
         [[nodiscard]] auto shouldClose() const noexcept -> bool override;
-        [[nodiscard]] auto isMinimized() const noexcept -> bool override;
+        [[nodiscard]] auto isIconified() const noexcept -> bool override;
 
         [[nodiscard]] auto getGLFWWindow() const noexcept -> GLFWwindow* { return _window; }
+
+        static void init() noexcept;
 
         static void pollEvents() noexcept;
         static void waitEvents() noexcept;
@@ -66,13 +73,16 @@ namespace exage
         static auto getMonitor(uint32_t index) noexcept -> Monitor;
         static auto getMonitors() noexcept -> std::vector<Monitor>;
 
+        static auto getWindowByID(uint32_t id) noexcept -> GLFWindow*;
+
+        static auto nextEvent() noexcept -> std::optional<Event>;
+
         EXAGE_DERIVED_API(WindowAPI, eGLFW);
 
       private:
-        static void resizeCallback(GLFWwindow* window, int width, int height);
-        static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
-
         [[nodiscard]] auto exclusiveMonitor() const noexcept -> GLFWmonitor*;
+
+        uint32_t _id;
 
         GLFWwindow* _window = nullptr;
         std::string _name;
@@ -84,8 +94,5 @@ namespace exage
 
         uint32_t _exclusiveRefreshRate;
         Monitor _exclusiveMonitor;
-
-        ResizeCallback _resizeCallback;
-        KeyCallback _keyCallback;
     };
 }  // namespace exage

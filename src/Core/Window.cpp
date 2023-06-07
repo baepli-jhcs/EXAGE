@@ -43,6 +43,18 @@ namespace exage
         }
     }
 
+    auto nextEvent(WindowAPI api) noexcept -> std::optional<Event>
+    {
+        switch (api)
+        {
+            case WindowAPI::eGLFW:
+                return GLFWindow::nextEvent();
+            case WindowAPI::eSDL:
+            default:
+                return {};
+        }
+    }
+
     auto getMonitorCount(WindowAPI api) noexcept -> uint32_t
     {
         switch (api)

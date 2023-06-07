@@ -2,9 +2,11 @@
 
 #include "Editor.h"
 
+#include <fmt/format.h>
 #include <glm/trigonometric.hpp>
 
 #include "exage/Core/Debug.h"
+#include "exage/Core/Event.h"
 #include "exage/Core/Window.h"
 #include "exage/Graphics/Buffer.h"
 #include "exage/Renderer/Renderer.h"
@@ -16,6 +18,8 @@
 #include "exage/Renderer/Scene/Mesh.h"
 #include "exage/Renderer/Scene/SceneBuffer.h"
 #include "exage/Scene/Hierarchy.h"
+#include "exage/utils/math.h"
+#include "imgui.h"
 
 constexpr static auto WINDOW_API = exage::WindowAPI::eGLFW;
 constexpr static auto GRAPHICS_API = exage::Graphics::API::eVulkan;
@@ -37,8 +41,6 @@ namespace exitor
         tl::expected windowResult = Window::create(windowInfo, WINDOW_API);
         assert(windowResult.has_value());
         _window = std::move(*windowResult);
-
-        _window->setResizeCallback([this](glm::uvec2 extent) { resizeCallback(extent); });
 
         Graphics::ContextCreateInfo contextInfo {
             .api = GRAPHICS_API,
@@ -79,8 +81,10 @@ namespace exitor
         Renderer::SceneBufferCreateInfo sceneBufferCreateInfo {.context = *_context};
         _sceneBuffer = Renderer::SceneBuffer {sceneBufferCreateInfo};
 
-        Renderer::RendererCreateInfo rendererCreateInfo {
-            .context = *_context, .sceneBuffer = *_sceneBuffer, .extent = _viewportExtent};
+        Renderer::RendererCreateInfo rendererCreateInfo {.context = *_context,
+                                                         .sceneBuffer = *_sceneBuffer,
+                                                         .assetCache = _assetCache,
+                                                         .extent = _viewportExtent};
         _renderer = Renderer::Renderer {rendererCreateInfo};
 
         prepareTestScene();
@@ -100,65 +104,163 @@ namespace exitor
 
         auto& transform = _scene.addComponent<Transform3D>(cameraEntity);
         transform.position = {0.0F, 0.F, 0.0F};
-        transform.rotation = glm::vec3 {0.F, 0.F, 0.F};
+        transform.rotation = Rotation3D {{0, 0, 0}, RotationType::ePitchYawRoll};
 
         Renderer::setSceneCamera(_scene, cameraEntity);
 
-        auto importResult = Renderer::importAsset("assets/exage/models/sponza/sponza.gltf");
+        auto importResult = Renderer::importAsset2("assets/exage/models/sponza/Sponza.gltf");
         debugAssume(importResult.has_value(), "Failed to import asset");
 
-        auto saveResult = Renderer::saveAssets(*importResult, "assets/exage/models/exspon", "");
+        std::vector<Renderer::GPUTexture> gpuTextures;
+        gpuTextures.reserve(importResult->textures.size());
 
-        Renderer::AssetCache assetCache;
+        auto supportedFormats = Renderer::queryCompressedTextureSupport(*_context);
 
         auto commamdBuffer = _context->createCommandBuffer();
         commamdBuffer->begin();
 
-        for (auto& texturePtr : importResult->textures)
+        Renderer::TextureUploadOptions uploadOptions {.context = *_context,
+                                                      .commandBuffer = *commamdBuffer};
+        uploadOptions.supportedCompressedFormats = &supportedFormats;
+        uploadOptions.useCompressedFormat = false;
+
+        uploadOptions.samplerCreateInfo = {
+            .anisotropy = Graphics::Sampler::Anisotropy::e16,
+            .filter = Graphics::Sampler::Filter::eLinear,
+            .mipmapMode = Graphics::Sampler::MipmapMode::eLinear,
+        };
+
+        for (size_t i = 0; i < importResult->textures.size(); i++)
         {
-            Renderer::Texture& texture = *texturePtr;
+            auto& texturePath = importResult->textures[i];
+            std::filesystem::path texturePath2 =
+                std::filesystem::path("assets/exage/models/exspon/main/textures/")
+                / (std::to_string(i).append(Renderer::TEXTURE_EXTENSION));
+            auto textureReturn = Renderer::importTexture(texturePath);
+            if (textureReturn.has_value())
+            {
+                Renderer::Texture& texture = *textureReturn;
+                auto saveResult = Renderer::saveTexture(texture, texturePath2, "");
+                debugAssume(saveResult.has_value(), "Failed to save texture");
 
-            Renderer::TextureUploadOptions uploadOptions {.context = *_context,
-                                                          .commandBuffer = *commamdBuffer};
+                Renderer::GPUTexture gpuTexture = Renderer::uploadTexture(texture, uploadOptions);
+                gpuTextures.push_back(gpuTexture);
 
-            Renderer::GPUTexture gpuTexture = Renderer::uploadTexture(texture, uploadOptions);
-            assetCache.addTexture(gpuTexture);
+                _assetCache.addTexture(gpuTexture);
+            }
+            else
+            {
+                gpuTextures.push_back(Renderer::GPUTexture {});
+            }
         }
 
-        for (auto& materialPtr : importResult->materials)
-        {
-            Renderer::Material& material = *materialPtr;
+        std::vector<Renderer::GPUMaterial> gpuMaterials;
+        gpuMaterials.reserve(importResult->materials.size());
 
-            Renderer::GPUMaterial gpuMaterial {.path = material.path};
-            if (assetCache.hasTexture(material.albedo.texturePath))
+        for (size_t i = 0; i < importResult->materials.size(); i++)
+        {
+            auto& material = importResult->materials[i];
+
+            Renderer::Material material2 {};
+            material2.albedoColor = material.albedoColor;
+            material2.emissiveColor = material.emissiveColor;
+            material2.metallicValue = material.metallicValue;
+            material2.roughnessValue = material.roughnessValue;
+
+            if (material.albedoTextureIndex < gpuTextures.size())
             {
-                gpuMaterial.albedoTexture = assetCache.getTexture(material.albedo.texturePath);
+                if (gpuTextures[material.albedoTextureIndex].texture)
+                {
+                    material2.albedoTexturePath = gpuTextures[material.albedoTextureIndex].path;
+                    material2.albedoUseTexture = true;
+                }
             }
-            if (assetCache.hasTexture(material.emissive.texturePath))
+
+            // Normal
+            if (material.normalTextureIndex < gpuTextures.size())
             {
-                gpuMaterial.emissiveTexture = assetCache.getTexture(material.emissive.texturePath);
+                if (gpuTextures[material.normalTextureIndex].texture)
+                {
+                    material2.normalTexturePath = gpuTextures[material.normalTextureIndex].path;
+                    material2.normalUseTexture = true;
+                }
             }
-            if (assetCache.hasTexture(material.normal.texturePath))
+
+            if (material.metallicTextureIndex < gpuTextures.size())
             {
-                gpuMaterial.normalTexture = assetCache.getTexture(material.normal.texturePath);
+                if (gpuTextures[material.metallicTextureIndex].texture)
+                {
+                    material2.metallicTexturePath = gpuTextures[material.metallicTextureIndex].path;
+                    material2.metallicUseTexture = true;
+                }
             }
-            if (assetCache.hasTexture(material.metallic.texturePath))
+
+            if (material.roughnessTextureIndex < gpuTextures.size())
             {
-                gpuMaterial.metallicTexture = assetCache.getTexture(material.metallic.texturePath);
+                if (gpuTextures[material.roughnessTextureIndex].texture)
+                {
+                    material2.roughnessTexturePath =
+                        gpuTextures[material.roughnessTextureIndex].path;
+                    material2.roughnessUseTexture = true;
+                }
             }
-            if (assetCache.hasTexture(material.roughness.texturePath))
+
+            if (material.aoTextureIndex < gpuTextures.size())
+            {
+                if (gpuTextures[material.aoTextureIndex].texture)
+                {
+                    material2.occlusionTexturePath = gpuTextures[material.aoTextureIndex].path;
+                    material2.occlusionUseTexture = true;
+                }
+            }
+
+            if (material.emissiveTextureIndex < gpuTextures.size())
+            {
+                if (gpuTextures[material.emissiveTextureIndex].texture)
+                {
+                    material2.emissiveTexturePath = gpuTextures[material.emissiveTextureIndex].path;
+                    material2.emissiveUseTexture = true;
+                }
+            }
+
+            std::filesystem::path materialPath =
+                std::filesystem::path("assets/exage/models/exspon/main/materials/")
+                / (std::to_string(i).append(Renderer::MATERIAL_EXTENSION));
+
+            auto saveResult = Renderer::saveMaterial(material2, materialPath, "");
+
+            debugAssume(saveResult.has_value(), "Failed to save material");
+
+            Renderer::GPUMaterial gpuMaterial {.path = material2.path};
+            if (_assetCache.hasTexture(material2.albedoTexturePath))
+            {
+                gpuMaterial.albedoTexture = _assetCache.getTexture(material2.albedoTexturePath);
+            }
+            if (_assetCache.hasTexture(material2.emissiveTexturePath))
+            {
+                gpuMaterial.emissiveTexture = _assetCache.getTexture(material2.emissiveTexturePath);
+            }
+            if (_assetCache.hasTexture(material2.normalTexturePath))
+            {
+                gpuMaterial.normalTexture = _assetCache.getTexture(material2.normalTexturePath);
+            }
+            if (_assetCache.hasTexture(material2.metallicTexturePath))
+            {
+                gpuMaterial.metallicTexture = _assetCache.getTexture(material2.metallicTexturePath);
+            }
+            if (_assetCache.hasTexture(material2.roughnessTexturePath))
             {
                 gpuMaterial.roughnessTexture =
-                    assetCache.getTexture(material.roughness.texturePath);
+                    _assetCache.getTexture(material2.roughnessTexturePath);
             }
-            if (assetCache.hasTexture(material.occlusion.texturePath))
+            if (_assetCache.hasTexture(material2.occlusionTexturePath))
             {
                 gpuMaterial.occlusionTexture =
-                    assetCache.getTexture(material.occlusion.texturePath);
+                    _assetCache.getTexture(material2.occlusionTexturePath);
             }
 
             Renderer::GPUMaterial::Data data =
-                Renderer::materialDataFromGPUAndCPU(gpuMaterial, material);
+                Renderer::materialDataFromGPUAndCPU(gpuMaterial, material2);
 
             Graphics::BufferCreateInfo bufferCreateInfo {
                 .size = sizeof(Renderer::GPUMaterial::Data),
@@ -169,48 +271,97 @@ namespace exitor
             gpuMaterial.buffer = _context->createBuffer(bufferCreateInfo);
             gpuMaterial.buffer->write(std::as_bytes(std::span(&data, 1)), 0);
 
-            assetCache.addMaterial(gpuMaterial);
+            _assetCache.addMaterial(gpuMaterial);
+            gpuMaterials.push_back(gpuMaterial);
+
+            material = {};  // Memory cleanup
         }
 
         std::vector<Renderer::GPUMesh> gpuMeshes;
+        gpuMeshes.reserve(importResult->meshes.size());
 
-        for (auto& meshPtr : importResult->meshes)
+        Renderer::MeshUploadOptions meshUploadOptions {
+            .context = *_context,
+            .commandBuffer = *commamdBuffer,
+            .sceneBuffer = *_sceneBuffer,
+        };
+
+        for (size_t i = 0; i < importResult->meshes.size(); i++)
         {
-            Renderer::Mesh& mesh = *meshPtr;
+            auto& mesh = importResult->meshes[i];
 
-            Renderer::MeshUploadOptions uploadOptions {.context = *_context,
-                                                       .commandBuffer = *commamdBuffer,
-                                                       .sceneBuffer = *_sceneBuffer};
+            Renderer::Mesh mesh2 {};
+            mesh2.vertices = std::move(mesh.vertices);
+            mesh2.indices = std::move(mesh.indices);
+            mesh2.aabb = mesh.aabb;
+            mesh2.materialPath = gpuMaterials[mesh.materialIndex].path;
+            mesh2.lods.resize(1);
 
-            Renderer::GPUMesh gpuMesh = Renderer::uploadMesh(mesh, uploadOptions);
+            mesh2.lods[0].indexCount = static_cast<uint32_t>(mesh2.indices.size());
+            mesh2.lods[0].indexOffset = 0;
+            mesh2.lods[0].vertexCount = static_cast<uint32_t>(mesh2.vertices.size());
+            mesh2.lods[0].vertexOffset = 0;
 
-            if (assetCache.hasMaterial(mesh.materialPath))
+            std::filesystem::path meshPath =
+                std::filesystem::path("assets/exage/models/exspon/main/meshes/")
+                / (std::to_string(i).append(Renderer::MESH_EXTENSION));
+
+            auto saveResult = Renderer::saveMesh(mesh2, meshPath, "");
+            debugAssume(saveResult.has_value(), "Failed to save mesh");
+
+            Renderer::GPUMesh gpuMesh = Renderer::uploadMesh(mesh2, meshUploadOptions);
+
+            if (_assetCache.hasMaterial(mesh2.materialPath))
             {
-                gpuMesh.material = assetCache.getMaterial(mesh.materialPath);
+                gpuMesh.material = _assetCache.getMaterial(mesh2.materialPath);
             }
 
-            assetCache.addMesh(gpuMesh);
+            _assetCache.addMesh(gpuMesh);
             gpuMeshes.push_back(gpuMesh);
+
+            mesh = {};  // Memory cleanup
         }
 
         commamdBuffer->end();
         _context->getQueue().submitTemporary(std::move(commamdBuffer));
 
         Renderer::AssetSceneImportInfo sceneImportInfo {.meshes = gpuMeshes,
-                                                        .rootNodes = importResult->rootNodes};
+                                                        .rootNodes = importResult->rootNodes,
+                                                        .nodes = importResult->nodes};
         Renderer::importScene(sceneImportInfo, _scene);
     }
 
     void Editor::run() noexcept
     {
+        _timer.reset();
+
         while (!_window->shouldClose())
         {
             pollEvents(_window->getAPI());
+            {
+                std::optional event = nextEvent(_window->getAPI());
+                while (event.has_value())
+                {
+                    _imGui->processEvent(*event);
 
-            if (_window->isMinimized())
+                    if (_window->getID() == event->pertainingID)
+                    {
+                        if (auto* windowResized = std::get_if<Events::WindowResized>(&event->data))
+                        {
+                            resizeCallback(windowResized->extent);
+                        }
+                    }
+
+                    event = nextEvent(_window->getAPI());
+                }
+            }
+
+            if (_window->isIconified())
             {
                 continue;
             }
+
+            float deltaTime = _timer.nextFrame();
 
             _scene.updateHierarchy();
 
@@ -248,7 +399,7 @@ namespace exitor
             cmd.beginRendering(_frameBuffer, {clearColor}, clearDepthStencil);
             _imGui->begin();
 
-            drawGUI();
+            drawGUI(deltaTime);
 
             _imGui->end();
 
@@ -280,9 +431,10 @@ namespace exitor
     {
         _frameBuffer->resize(extent);
         _renderer->resize(extent);
+        _swapchain->resize(extent);
     }
 
-    void Editor::drawGUI() noexcept
+    void Editor::drawGUI(float deltaTime) noexcept
     {
         bool open = true;
 
@@ -318,6 +470,9 @@ namespace exitor
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
         ImGui::Begin("Viewport", &showViewport, ImGuiWindowFlags_AlwaysAutoResize);
 
+        ImVec2 currentMousePosIM = ImGui::GetMousePos();
+        glm::vec2 currentMousePos = {currentMousePosIM.x, currentMousePosIM.y};
+
         // get the size of the viewport
         ImVec2 viewportWindowSize = ImGui::GetContentRegionAvail();
         if (viewportWindowSize.x < 0.0F)
@@ -334,6 +489,91 @@ namespace exitor
 
         if (ImGui::IsWindowHovered())
         {
+            if (ImGui::IsMouseDown(ImGuiMouseButton_Right) || ImGui::IsKeyDown(ImGuiKey_LeftAlt))
+            {
+                auto camera = Renderer::getSceneCamera(_scene);
+                auto& transform = _scene.getComponent<Transform3D>(camera);
+
+                // Editor camera movement
+                glm::vec3 cameraMovement {0.0F, 0.0F, 0.0F};
+                if (ImGui::IsKeyDown(ImGuiKey_W))
+                {
+                    cameraMovement.z += 1.0F;
+                }
+                if (ImGui::IsKeyDown(ImGuiKey_S))
+                {
+                    cameraMovement.z -= 1.0F;
+                }
+
+                if (ImGui::IsKeyDown(ImGuiKey_A))
+                {
+                    cameraMovement.x -= 1.0F;
+                }
+                if (ImGui::IsKeyDown(ImGuiKey_D))
+                {
+                    cameraMovement.x += 1.0F;
+                }
+
+                if (ImGui::IsKeyDown(ImGuiKey_Q))
+                {
+                    cameraMovement.y -= 1.0F;
+                }
+                if (ImGui::IsKeyDown(ImGuiKey_E))
+                {
+                    cameraMovement.y += 1.0F;
+                }
+
+                constexpr float margin = 0.01F;
+                if (glm::length(cameraMovement) > margin)
+                {
+                    constexpr static float cameraSpeed = 10.0F;
+                    cameraMovement = glm::normalize(cameraMovement) * cameraSpeed * deltaTime;
+
+                    transform.position +=
+                        transform.globalRotation.getForwardVector() * cameraMovement.z;
+                    transform.position +=
+                        transform.globalRotation.getRightVector() * cameraMovement.x;
+                    transform.position += transform.globalRotation.getUpVector() * cameraMovement.y;
+
+                    fmt::print("Camera position: {}, {}, {}\n",
+                               transform.position.x,
+                               transform.position.y,
+                               transform.position.z);
+                }
+
+                // Editor camera rotation
+                glm::vec2 mouseDelta = currentMousePos - _lastMousePosition;
+                constexpr float mouseSensitivity = 0.01F;
+                mouseDelta *= mouseSensitivity;
+
+                std::optional<glm::vec3> euler = transform.rotation.getEuler();
+                if (!euler.has_value())
+                {
+                    euler = {glm::vec3 {0.0F}};
+                }
+
+                euler->x += mouseDelta.y;
+                euler->y += mouseDelta.x;
+
+                euler->x = std::clamp(euler->x, -glm::half_pi<float>(), glm::half_pi<float>());
+
+                if (euler->y > glm::pi<float>())
+                {
+                    euler->y -= glm::two_pi<float>();
+                }
+                else if (euler->y < -glm::pi<float>())
+                {
+                    euler->y += glm::two_pi<float>();
+                }
+
+                transform.rotation = Rotation3D {euler.value(), RotationType::ePitchYawRoll};
+
+                fmt::print("Camera rotation yaw: {}, pitch: {}\n",
+                           glm::degrees(euler->y),
+                           glm::degrees(euler->x));
+
+                fmt::print("Mouse delta: {}, {}\n", mouseDelta.x, mouseDelta.y);
+            }
         }
 
         ImGui::Image(_renderer->getFrameBuffer().getTexture(0).get(), viewportWindowSize);
@@ -345,9 +585,16 @@ namespace exitor
             _renderer->resize(viewportSize);
         }
 
-        ImGui::Begin("Render Settings");
+        ImGui::Begin("Render Info");
+        ImGui::Text("FPS: %f", 1.0F / deltaTime);
+        ImGui::Text("Frame time: %f", deltaTime);
         ImGui::End();
 
+        exage::Entity selectedEntity = _hierarchyPanel.draw(_scene);
+        _componentList.draw(_scene, selectedEntity);
+
         ImGui::End();
+
+        _lastMousePosition = currentMousePos;
     }
 }  // namespace exitor

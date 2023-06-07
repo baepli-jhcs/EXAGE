@@ -46,8 +46,12 @@ namespace exage::Renderer
     Renderer::Renderer(const RendererCreateInfo& createInfo) noexcept
         : _context(createInfo.context)
         , _sceneBuffer(createInfo.sceneBuffer)
+        , _assetCache(createInfo.assetCache)
         , _extent(createInfo.extent)
-        , _geometryRenderer({createInfo.context, createInfo.sceneBuffer, createInfo.extent})
+        , _geometryRenderer({createInfo.context,
+                             createInfo.sceneBuffer,
+                             createInfo.assetCache,
+                             createInfo.extent})
     {
         auto& context = _context.get();
 
@@ -88,7 +92,7 @@ namespace exage::Renderer
         auto& cameraTransform = transformStorage.get(camera);
 
         // View and projection matrices
-        auto view = getViewMatrix(cameraTransform.globalPosition, cameraTransform.globalRotation);
+        auto view = cameraTransform.globalRotation.getViewMatrix(cameraTransform.globalPosition);
         glm::mat4 projection {};
 
         if (context.getAPIProperties().depthZeroToOne)
@@ -224,6 +228,7 @@ namespace exage::Renderer
     {
         _extent = extent;
         _frameBuffer->resize(extent);
+        _geometryRenderer.resize(extent);
     }
 
     void copySceneForRenderer(Scene& scene) noexcept
@@ -231,11 +236,11 @@ namespace exage::Renderer
         auto& reg = scene.registry();
 
         copyComponentWithName<Transform3D>(reg, LAST_TRANSFORM_3D, CURRENT_TRANSFORM_3D);
-        copyComponentWithName<GPUMesh>(reg, LAST_GPU_MESH, CURRENT_GPU_MESH);
+        copyComponentWithName<MeshComponent>(reg, LAST_MESH_COMPONENT, CURRENT_MESH_COMPONENT);
         copyComponentWithName<Camera>(reg, LAST_CAMERA, CURRENT_CAMERA);
 
         copyComponent<Transform3D>(reg, CURRENT_TRANSFORM_3D);
-        copyComponent<GPUMesh>(reg, CURRENT_GPU_MESH);
+        copyComponent<MeshComponent>(reg, CURRENT_MESH_COMPONENT);
         copyComponent<Camera>(reg, CURRENT_CAMERA);
     }
 

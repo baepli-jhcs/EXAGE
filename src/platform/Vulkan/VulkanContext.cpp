@@ -1,5 +1,4 @@
-﻿#include <vulkan/vulkan_core.h>
-
+﻿#include "exage/Graphics/Context.h"
 #include "exage/Graphics/Error.h"
 #define VMA_IMPLEMENTATION
 #include <exage/platform/GLFW/GLFWindow.h>
@@ -22,6 +21,7 @@
 #include "exage/platform/Vulkan/VulkanShader.h"
 #include "exage/platform/Vulkan/VulkanSwapchain.h"
 #include "exage/platform/Vulkan/VulkanTexture.h"
+#include "exage/platform/Vulkan/VulkanUtils.h"
 
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 
@@ -143,6 +143,7 @@ namespace exage::Graphics
 
         vk::PhysicalDeviceFeatures requiredFeatures {};
         requiredFeatures.independentBlend = VK_TRUE;
+        requiredFeatures.samplerAnisotropy = VK_TRUE;
 
         vkb::PhysicalDeviceSelector selector(_instance);
         selector.set_minimum_version(1, 2);
@@ -169,8 +170,14 @@ namespace exage::Graphics
         _physicalDevice = phys.value();
 
         // Check if the device supports the desired extensions
-        auto extensions = vk::PhysicalDevice(_physicalDevice.physical_device)
-                              .enumerateDeviceExtensionProperties();
+        auto extensionsResult = vk::PhysicalDevice(_physicalDevice.physical_device)
+                                    .enumerateDeviceExtensionProperties();
+        if (extensionsResult.result != vk::Result::eSuccess)
+        {
+            return tl::make_unexpected(Errors::UnsupportedAPI {});
+        }
+
+        auto& extensions = extensionsResult.value;
 
         for (auto& extension : extensions)
         {
@@ -392,6 +399,38 @@ namespace exage::Graphics
     auto VulkanContext::getHardwareSupport() const noexcept -> HardwareSupport
     {
         return _hardwareSupport;
+    }
+
+    auto VulkanContext::getFormatSupport(Format format) const noexcept
+        -> std::pair<bool, FormatFeatures>
+    {
+        vk::Format vkFormat = toVulkanFormat(format);
+
+        vk::FormatProperties formatProperties = getPhysicalDevice().getFormatProperties(vkFormat);
+
+        vk::FormatFeatureFlags features = formatProperties.optimalTilingFeatures;
+
+        constexpr vk::FormatFeatureFlags coreSupport = vk::FormatFeatureFlagBits::eSampledImage
+            | vk::FormatFeatureFlagBits::eTransferSrc | vk::FormatFeatureFlagBits::eTransferDst;
+
+        // Ensure that the format is supported with the required features
+        if ((features & coreSupport) != coreSupport)
+        {
+            return {false, {}};
+        }
+
+        FormatFeatures formatFeatures {};
+        if (features & vk::FormatFeatureFlagBits::eStorageImage)
+        {
+            formatFeatures |= FormatFeatureFlags::eStorageImage;
+        }
+
+        if (features & vk::FormatFeatureFlagBits::eColorAttachment)
+        {
+            formatFeatures |= FormatFeatureFlags::eColorAttachment;
+        }
+
+        return {true, formatFeatures};
     }
 
     auto VulkanContext::createSurface(Window& window) const noexcept -> vk::SurfaceKHR

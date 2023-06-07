@@ -1,5 +1,7 @@
 ﻿#include "exage/platform/Vulkan/VulkanTexture.h"
 
+#include "exage/Core/Debug.h"
+
 namespace exage::Graphics
 {
 
@@ -171,6 +173,8 @@ namespace exage::Graphics
                   createInfo.mipLevels)
         , _context(context)
     {
+        debugAssume(_extent.x > 0 && _extent.y > 0 && _extent.z > 0, "Invalid texture extent");
+
         vk::ImageUsageFlags const usage = toVulkanImageUsageFlags(_usage);
         vk::ImageAspectFlags const aspectFlags = toVulkanImageAspectFlags(_usage);
         vk::Format const format = toVulkanFormat(_format);

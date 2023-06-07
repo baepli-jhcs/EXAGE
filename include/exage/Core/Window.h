@@ -7,6 +7,7 @@
 #include <variant>
 
 #include "exage/Core/Core.h"
+#include "exage/Core/Event.h"
 #include "exage/Input/KeyCode.h"
 #include "glm/glm.hpp"
 #include "tl/expected.hpp"
@@ -36,10 +37,10 @@ namespace exage
         bool windowBordered = true;
         uint32_t exclusiveRefreshRate;
         Monitor exclusiveMonitor;
+        bool hidden = false;
+        bool focused = true;
+        bool focusOnShow = true;
     };
-
-    using ResizeCallback = std::function<void(glm::uvec2 extent)>;
-    using KeyCallback = std::function<void(KeyCode key, KeyAction action)>;
 
     class Window
     {
@@ -52,14 +53,12 @@ namespace exage
 
         virtual void close() noexcept = 0;
 
-        virtual void setResizeCallback(ResizeCallback callback) noexcept = 0;
-        virtual void setKeyCallback(KeyCallback callback) noexcept = 0;
-
         [[nodiscard]] virtual auto getName() const noexcept -> std::string_view = 0;
 
         [[nodiscard]] virtual auto getWidth() const noexcept -> uint32_t = 0;
         [[nodiscard]] virtual auto getHeight() const noexcept -> uint32_t = 0;
         [[nodiscard]] virtual auto getExtent() const noexcept -> glm::uvec2 = 0;
+        [[nodiscard]] virtual auto getPosition() const noexcept -> glm::ivec2 = 0;
 
         [[nodiscard]] virtual auto isFullScreen() const noexcept -> bool = 0;
         [[nodiscard]] virtual auto isWindowBordered() const noexcept -> bool = 0;
@@ -67,6 +66,9 @@ namespace exage
         [[nodiscard]] virtual auto getExclusiveRefreshRate() const noexcept -> uint32_t = 0;
         [[nodiscard]] virtual auto getExclusiveMonitor() const noexcept -> Monitor = 0;
 
+        [[nodiscard]] virtual auto isHidden() const noexcept -> bool = 0;
+
+        [[nodiscard]] virtual auto getID() const noexcept -> uint32_t = 0;
         [[nodiscard]] virtual auto getNativeHandle() const noexcept -> void* = 0;
 
         virtual void resize(glm::uvec2 extent) noexcept = 0;
@@ -75,21 +77,25 @@ namespace exage
         virtual void setWindowBordered(bool bordered) noexcept = 0;
 
         virtual void setExclusiveRefreshRate(uint32_t refreshRate) noexcept = 0;
-        virtual void setExclusiveMonitor(Monitor monitorIndex) noexcept = 0;
+        virtual void setExclusiveMonitor(Monitor monitor) noexcept = 0;
+
+        virtual void setHidden(bool hidden) noexcept = 0;
 
         [[nodiscard]] virtual auto shouldClose() const noexcept -> bool = 0;
-        [[nodiscard]] virtual auto isMinimized() const noexcept -> bool = 0;
+        [[nodiscard]] virtual auto isIconified() const noexcept -> bool = 0;
 
         EXAGE_BASE_API(WindowAPI, Window);
         [[nodiscard]] static auto create(const WindowInfo& info, WindowAPI api) noexcept
             -> tl::expected<std::unique_ptr<Window>, WindowError>;
     };
 
-    auto getMonitorCount(WindowAPI api) noexcept -> uint32_t;
-    auto getMonitor(uint32_t index, WindowAPI api) noexcept -> Monitor;
-    auto getMonitors(WindowAPI api) noexcept -> std::vector<Monitor>;
+    [[nodiscard]] auto getWindowByID(uint32_t id, WindowAPI api) noexcept -> Window*;
 
-    inline auto getDefaultMonitor(WindowAPI api) noexcept -> Monitor
+    [[nodiscard]] auto getMonitorCount(WindowAPI api) noexcept -> uint32_t;
+    [[nodiscard]] auto getMonitor(uint32_t index, WindowAPI api) noexcept -> Monitor;
+    [[nodiscard]] auto getMonitors(WindowAPI api) noexcept -> std::vector<Monitor>;
+
+    [[nodiscard]] inline auto getDefaultMonitor(WindowAPI api) noexcept -> Monitor
     {
         return getMonitor(0, api);
     }
@@ -101,7 +107,9 @@ namespace exage
     };
 
     void pollEvents(WindowAPI api) noexcept;
-    void waitEvents(WindowAPI api) noexcept;
+    void waitEvent(WindowAPI api) noexcept;
+
+    [[nodiscard]] auto nextEvent(WindowAPI api) noexcept -> std::optional<Event>;
 
     //// revamp of event system
     // struct CloseEvent

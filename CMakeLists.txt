@@ -55,6 +55,7 @@ add_library(
     src/Renderer/Scene/Loader/Loader.cpp
     src/Scene/Entity.cpp
     src/Scene/Hierarchy.cpp
+    src/Scene/Rotation3D.cpp
     src/Scene/Scene.cpp
 )
 add_library(EXAGE::EXAGE ALIAS EXAGE_EXAGE)
@@ -108,6 +109,7 @@ find_package(fmt REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(glm REQUIRED)
 find_package(Ktx REQUIRED)
+find_package(nlohmann_json REQUIRED)
 find_package(Stb REQUIRED)
 find_package(shaderc REQUIRED)
 find_package(tl-expected REQUIRED)
@@ -125,6 +127,7 @@ target_link_libraries(EXAGE_EXAGE PUBLIC
     glm::glm
     ImGui
     KTX::ktx
+    nlohmann_json::nlohmann_json
     shaderc::shaderc
     stb::stb
     slot_map
@@ -135,10 +138,10 @@ target_link_libraries(EXAGE_EXAGE PUBLIC
     $<IF:$<TARGET_EXISTS:zstd::libzstd_shared>,zstd::libzstd_shared,zstd::libzstd_static>
 )
 
-target_compile_definitions(EXAGE_EXAGE PUBLIC GLM_FORCE_DEPTH_ZERO_TO_ONE)
+target_compile_definitions(EXAGE_EXAGE PUBLIC GLM_FORCE_DEPTH_ZERO_TO_ONE VULKAN_HPP_NO_EXCEPTIONS)
 
 # If Debug, add EXAGE_DEBUG define, if Release, add EXAGE_RELEASE define
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+if (CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
     target_compile_definitions(EXAGE_EXAGE PUBLIC EXAGE_DEBUG)
 endif()
 

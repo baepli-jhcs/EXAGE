@@ -1,7 +1,6 @@
 ﻿#include "exage/platform/Vulkan/VulkanPipeline.h"
 
 #include "exage/platform/Vulkan/VulkanShader.h"
-#include "vulkan/vulkan_structs.hpp"
 
 namespace exage::Graphics
 {
@@ -184,7 +183,8 @@ namespace exage::Graphics
             toVulkanFormat(createInfo.renderInfo.depthStencilFormat);
         renderingInfo.stencilAttachmentFormat = renderingInfo.depthAttachmentFormat;
 
-        std::array<vk::DynamicState, 2> dynamicStates = {vk::DynamicState::eViewport, vk::DynamicState::eScissor};
+        std::array<vk::DynamicState, 2> dynamicStates = {vk::DynamicState::eViewport,
+                                                         vk::DynamicState::eScissor};
 
         vk::PipelineDynamicStateCreateInfo dynamicState;
         dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());

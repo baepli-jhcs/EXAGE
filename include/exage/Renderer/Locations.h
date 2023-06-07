@@ -8,8 +8,8 @@ namespace exage::Renderer
     const auto CURRENT_TRANSFORM_3D = entt::hashed_string {"EXAGE_CURRENT_TRANSFORM_3D"};
     const auto LAST_TRANSFORM_3D = entt::hashed_string {"EXAGE_LAST_TRANSFORM_3D"};
 
-    const auto CURRENT_GPU_MESH = entt::hashed_string {"EXAGE_CURRENT_GPU_MESH"};
-    const auto LAST_GPU_MESH = entt::hashed_string {"EXAGE_LAST_GPU_MESH"};
+    const auto CURRENT_MESH_COMPONENT = entt::hashed_string {"EXAGE_CURRENT_GPU_MESH"};
+    const auto LAST_MESH_COMPONENT = entt::hashed_string {"EXAGE_LAST_GPU_MESH"};
 
     const auto CURRENT_CAMERA = entt::hashed_string {"EXAGE_CURRENT_CAMERA"};
     const auto LAST_CAMERA = entt::hashed_string {"EXAGE_LAST_CAMERA"};

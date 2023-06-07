@@ -16,8 +16,11 @@
 #include <ktx.h>
 #include <stb_image.h>
 #include <tl/expected.hpp>
+#include <zstd.h>
 
+#include "exage/Filesystem/Directories.h"
 #include "exage/Graphics/Texture.h"
+#include "exage/Renderer/Scene/Loader/AssetFile.h"
 #include "exage/Renderer/Scene/Loader/Errors.h"
 #include "exage/Renderer/Scene/Loader/Loader.h"
 #include "exage/Renderer/Scene/Material.h"
@@ -30,103 +33,12 @@ namespace exage::Renderer
 {
     namespace
     {
-        [[nodiscard]] auto processMaterial(
+        [[nodiscard]] auto processMaterial2(
             const std::filesystem::path& assetDirectory,
             const aiMaterial& material,
-            std::unordered_map<size_t, std::unique_ptr<Texture>>& textureCache) noexcept
-            -> tl::expected<Material, AssetImportError>;
-
-        [[nodiscard]] auto processMesh(
-            const aiMesh& mesh, const std::unordered_map<size_t, Material*>& materialCache) noexcept
-            -> tl::expected<Mesh, AssetImportError>;
-
-        [[nodiscard]] auto processNode(const aiNode& node,
-                                       const std::unordered_map<size_t, Mesh*>& meshCache,
-                                       AssetImportResult::Node* parent) noexcept
-            -> std::vector<std::unique_ptr<AssetImportResult::Node>>;
-
-        [[nodiscard]] auto processScene(const std::filesystem::path& assetPath,
-                                        const aiScene& scene) noexcept
-            -> tl::expected<AssetImportResult, AssetImportError>
-        {
-            std::vector<std::unique_ptr<Material>> materials;
-            materials.reserve(scene.mNumMaterials);
-
-            std::unordered_map<size_t, std::unique_ptr<Texture>> textureCache;
-            std::unordered_map<size_t, Material*> materialCache;
-
-            std ::filesystem::path assetDirectory = assetPath.parent_path();
-
-            for (size_t i = 0; i < scene.mNumMaterials; ++i)
-            {
-                const auto* material = scene.mMaterials[i];
-
-                tl::expected materialReturn =
-                    processMaterial(assetDirectory, *material, textureCache);
-
-                if (materialReturn.has_value())
-                {
-                    auto materialPtr =
-                        std::make_unique<Material>(std::move(materialReturn.value()));
-                    materials.push_back(std::move(materialPtr));
-                    materialCache[i] = materials.back().get();
-                }
-
-                else
-                {
-                    return tl::make_unexpected(materialReturn.error());
-                }
-            }
-
-            std::vector<std::unique_ptr<Mesh>> meshes;
-            meshes.reserve(scene.mNumMeshes);
-
-            std::unordered_map<size_t, Mesh*> meshCache;
-
-            for (size_t i = 0; i < scene.mNumMeshes; ++i)
-            {
-                const auto* mesh = scene.mMeshes[i];
-                auto meshReturn = processMesh(*mesh, materialCache);
-
-                if (meshReturn.has_value())
-                {
-                    auto meshPtr = std::make_unique<Mesh>(std::move(meshReturn.value()));
-                    meshes.push_back(std::move(meshPtr));
-                    meshCache[i] = meshes.back().get();
-                }
-
-                else
-                {
-                    return tl::make_unexpected(meshReturn.error());
-                }
-            }
-
-            AssetImportResult result;
-            result.materials = std::move(materials);
-            result.meshes = std::move(meshes);
-
-            result.textures.reserve(textureCache.size());
-
-            for (auto& [path, texture] : textureCache)
-            {
-                result.textures.push_back(std::move(texture));
-            }
-
-            const auto* root = scene.mRootNode;
-
-            if (root != nullptr)
-            {
-                result.rootNodes = processNode(*root, meshCache, nullptr);
-            }
-
-            return result;
-        }
-
-        [[nodiscard]] auto processMaterial(
-            const std::filesystem::path& assetDirectory,
-            const aiMaterial& material,
-            std::unordered_map<size_t, std::unique_ptr<Texture>>& textureCache) noexcept
-            -> tl::expected<Material, AssetImportError>
+            std::vector<std::filesystem::path>& textures,
+            std::unordered_map<std::filesystem::path, size_t, Filesystem::PathHash>&
+                textureCache) noexcept -> AssetImportResult2::Material
         {
             aiString aiAlbedoPath;
             material.GetTexture(aiTextureType_BASE_COLOR, 0, &aiAlbedoPath);
@@ -158,84 +70,51 @@ namespace exage::Renderer
             aiColor3D aiEmissiveColor {0.0F, 0.0F, 0.0F};
             material.Get(AI_MATKEY_COLOR_EMISSIVE, aiEmissiveColor);
 
-            AlbedoInfo albedoInfo;
-            albedoInfo.color = glm::vec3(aiAlbedoColor.r, aiAlbedoColor.g, aiAlbedoColor.b);
-            albedoInfo.useTexture = !albedoPath.empty();
+            AssetImportResult2::Material materialResult {};
+            materialResult.albedoColor =
+                glm::vec3(aiAlbedoColor.r, aiAlbedoColor.g, aiAlbedoColor.b);
 
-            NormalInfo normalInfo;
-            normalInfo.useTexture = !normalPath.empty();
-
-            MetallicInfo metallicInfo;
-            metallicInfo.useTexture = !metallicPath.empty();
-
-            RoughnessInfo roughnessInfo;
-            roughnessInfo.useTexture = !roughnessPath.empty();
-
-            OcclusionInfo occlusionInfo;
-            occlusionInfo.useTexture = !ambientOcclusionPath.empty();
-
-            EmissiveInfo emissiveInfo;
-            emissiveInfo.color = glm::vec3(aiEmissiveColor.r, aiEmissiveColor.g, aiEmissiveColor.b);
-            emissiveInfo.useTexture = !emissivePath.empty();
-
-            // Refactor
-            auto processTexture = [&](auto& textureInfo, auto& relativePath)
+            auto processTexture = [&](auto& textureIndex, auto& relativePath)
             {
                 std::filesystem::path texturePath = assetDirectory / relativePath;
-                if (textureInfo.useTexture)
+                if (std::filesystem::exists(texturePath))
                 {
-                    size_t textureHash = std::filesystem::hash_value(texturePath);
-                    if (textureCache.contains(textureHash))
+                    if (textureCache.contains(texturePath))
                     {
-                        textureInfo.texture = textureCache[textureHash].get();
+                        textureIndex = textureCache[texturePath];
                     }
 
                     else
                     {
-                        tl::expected textureReturn = importTexture(texturePath);
-
-                        if (textureReturn.has_value())
-                        {
-                            auto texturePtr =
-                                std::make_unique<Texture>(std::move(textureReturn.value()));
-                            textureCache[textureHash] = std::move(texturePtr);
-                            textureInfo.texture = textureCache[textureHash].get();
-                        }
-                        else
-                        {
-                            textureInfo.useTexture = false;
-                        }
+                        textureIndex = textures.size();
+                        textures.push_back(texturePath);
+                        textureCache[texturePath] = textureIndex;
                     }
+                }
+                else
+                {
+                    textureIndex = std::numeric_limits<size_t>::max();
                 }
             };
 
-            processTexture(albedoInfo, albedoPath);
-            processTexture(normalInfo, normalPath);
-            processTexture(metallicInfo, metallicPath);
-            processTexture(roughnessInfo, roughnessPath);
-            processTexture(occlusionInfo, ambientOcclusionPath);
-            processTexture(emissiveInfo, emissivePath);
-
-            Material materialResult {};
-            materialResult.albedo = albedoInfo;
-            materialResult.normal = normalInfo;
-            materialResult.metallic = metallicInfo;
-            materialResult.roughness = roughnessInfo;
-            materialResult.occlusion = occlusionInfo;
-            materialResult.emissive = emissiveInfo;
+            processTexture(materialResult.albedoTextureIndex, albedoPath);
+            processTexture(materialResult.normalTextureIndex, normalPath);
+            processTexture(materialResult.metallicTextureIndex, metallicPath);
+            processTexture(materialResult.roughnessTextureIndex, roughnessPath);
+            processTexture(materialResult.aoTextureIndex, ambientOcclusionPath);
+            processTexture(materialResult.emissiveTextureIndex, emissivePath);
 
             return materialResult;
         }
 
-        [[nodiscard]] auto processMesh(
-            const aiMesh& mesh, const std::unordered_map<size_t, Material*>& materialCache) noexcept
-            -> tl::expected<Mesh, AssetImportError>
+        [[nodiscard]] auto processMesh2(const aiMesh& mesh) noexcept -> AssetImportResult2::Mesh
         {
-            Mesh meshReturn;
+            AssetImportResult2::Mesh meshResult;
+            meshResult.materialIndex = mesh.mMaterialIndex;
 
-            meshReturn.aabb.min =
+            meshResult.aabb.min =
                 glm::vec3(mesh.mAABB.mMin.x, mesh.mAABB.mMin.y, mesh.mAABB.mMin.z);
-            meshReturn.aabb.max =
+            meshResult.aabb.max =
                 glm::vec3(mesh.mAABB.mMax.x, mesh.mAABB.mMax.y, mesh.mAABB.mMax.z);
 
             std::vector<MeshVertex> vertices;
@@ -280,65 +159,45 @@ namespace exage::Renderer
                 indices[i * 3 + 2] = face.mIndices[2];
             }
 
-            MeshLOD lod;
-            lod.vertices = std::move(vertices);
-            lod.indices = std::move(indices);
-
-            meshReturn.lods.push_back(std::move(lod));
-
-            // Find material using index
-            auto materialIt = materialCache.find(mesh.mMaterialIndex);
-            if (materialIt != materialCache.end())
-            {
-                meshReturn.material = materialIt->second;
-            }
-
-            return meshReturn;
+            meshResult.vertices = std::move(vertices);
+            meshResult.indices = std::move(indices);
+            return meshResult;
         }
 
-        [[nodiscard]] auto processNode(const aiNode& node,
-                                       const std::unordered_map<size_t, Mesh*>& meshCache,
-                                       AssetImportResult::Node* parent) noexcept
-            -> std::vector<std::unique_ptr<AssetImportResult::Node>>
+        [[nodiscard]] auto processNode2(const aiNode& node,
+                                        std::vector<AssetImportResult2::Node>& nodes,
+                                        size_t parent) noexcept -> std::vector<size_t>
         {
             Transform3D transform;
             // decompose aiMatrix4x4 into glm::vec3 and glm::quat
             const aiMatrix4x4& aiTransform = node.mTransformation;
+            aiVector3D aiScale;
+            aiQuaternion aiRotation;
+            aiVector3D aiTranslation;
 
-            transform.position = glm::vec3(aiTransform.a4, aiTransform.b4, aiTransform.c4);
+            aiTransform.Decompose(aiScale, aiRotation, aiTranslation);
 
-            // Now, length of x, y, z is scale, where x is first col
-            glm::vec3 xVec = glm::vec3(aiTransform.a1, aiTransform.b1, aiTransform.c1);
-            glm::vec3 yVec = glm::vec3(aiTransform.a2, aiTransform.b2, aiTransform.c2);
-            glm::vec3 zVec = glm::vec3(aiTransform.a3, aiTransform.b3, aiTransform.c3);
+            transform.scale = glm::vec3(aiScale.x, aiScale.y, aiScale.z);
+            transform.rotation = glm::quat(aiRotation.w, aiRotation.x, aiRotation.y, aiRotation.z);
+            transform.position = glm::vec3(aiTranslation.x, aiTranslation.y, aiTranslation.z);
 
-            transform.scale = glm::vec3(glm::length(xVec), glm::length(yVec), glm::length(zVec));
-
-            // Now, normalize x, y, z
-            xVec = glm::normalize(xVec);
-            yVec = glm::normalize(yVec);
-            zVec = glm::normalize(zVec);
-
-            // Now, calculate rotation
-            glm::mat3 rotationMatrix = glm::mat3(xVec, yVec, zVec);
-            transform.rotation = glm::quat_cast(rotationMatrix);
-
-            std::vector<std::unique_ptr<AssetImportResult::Node>> nodes;
+            std::vector<size_t> nodes2;
 
             if (node.mNumMeshes > 0)
             {
-                nodes.reserve(node.mNumMeshes);
+                nodes2.reserve(node.mNumMeshes);
 
                 for (size_t i = 0; i < node.mNumMeshes; i++)
                 {
-                    AssetImportResult::Node nodeResult;
-                    nodeResult.parent = parent;
+                    AssetImportResult2::Node nodeResult;
+                    nodeResult.parentIndex = parent;
                     nodeResult.transform = transform;
 
                     nodeResult.meshIndex = node.mMeshes[i];
 
-                    nodes.push_back(
-                        std::make_unique<AssetImportResult::Node>(std::move(nodeResult)));
+                    nodes2.push_back(nodes.size());
+
+                    nodes.push_back(std::move(nodeResult));
                 }
             }
             else
@@ -349,32 +208,69 @@ namespace exage::Renderer
                     return {};
                 }
 
-                nodes.push_back(std::make_unique<AssetImportResult::Node>(AssetImportResult::Node {
+                nodes2.push_back(nodes.size());
+
+                nodes.push_back(AssetImportResult2::Node {
                     .transform = transform,
-                    .parent = parent,
-                }));
+                    .parentIndex = parent,
+                });
             }
 
-            std::vector<std::unique_ptr<AssetImportResult::Node>> children;
+            std::vector<size_t> children;
             children.reserve(node.mNumChildren);
 
             for (size_t i = 0; i < node.mNumChildren; i++)
             {
-                auto childNodes = processNode(*node.mChildren[i], meshCache, nodes.back().get());
+                auto childNodes = processNode2(*node.mChildren[i], nodes, nodes2.back());
                 children.insert(children.end(),
                                 std::make_move_iterator(childNodes.begin()),
                                 std::make_move_iterator(childNodes.end()));
             }
 
-            nodes.back()->children = std::move(children);
+            nodes[nodes2.back()].childrenIndices = std::move(children);
 
-            return nodes;
+            return nodes2;
+        }
+
+        [[nodiscard]] auto processScene2(const std::filesystem::path& assetPath,
+                                         const aiScene& scene) noexcept -> AssetImportResult2
+        {
+            AssetImportResult2 result;
+
+            std::unordered_map<std::filesystem::path, size_t, Filesystem::PathHash> textureCache {};
+
+            std::filesystem::path assetDirectory = assetPath.parent_path();
+
+            for (size_t i = 0; i < scene.mNumMaterials; ++i)
+            {
+                const auto* material = scene.mMaterials[i];
+
+                result.materials.push_back(
+                    processMaterial2(assetDirectory, *material, result.textures, textureCache));
+            }
+
+            for (size_t i = 0; i < scene.mNumMeshes; ++i)
+            {
+                const auto* mesh = scene.mMeshes[i];
+
+                result.meshes.push_back(processMesh2(*mesh));
+            }
+
+            const auto* root = scene.mRootNode;
+
+            if (root != nullptr)
+            {
+                result.rootNodes =
+                    processNode2(*root, result.nodes, std::numeric_limits<size_t>::max());
+            }
+
+            return result;
         }
 
     }  // namespace
 
-    auto importAsset(const std::filesystem::path& assetPath) noexcept
-        -> tl::expected<AssetImportResult, AssetImportError>
+    auto importAsset2(const std::filesystem::path& assetPath) noexcept
+        -> tl::expected<AssetImportResult2, AssetError>
     {
         if (!std::filesystem::exists(assetPath))
         {
@@ -395,11 +291,11 @@ namespace exage::Renderer
             return tl::make_unexpected(FileFormatError {});
         }
 
-        return processScene(assetPath, *scene);
+        return processScene2(assetPath, *scene);
     }
 
     auto importTexture(const std::filesystem::path& texturePath) noexcept
-        -> tl::expected<Texture, TextureImportError>
+        -> tl::expected<Texture, AssetError>
     {
         // Load using stb_image or ktx depending on file extension
         if (texturePath.extension() == ".ktx")
@@ -431,13 +327,15 @@ namespace exage::Renderer
             texture.data = std::vector<std::byte>(ktxTexture_GetDataSize(ktxTexture));
 
             auto vkFormat = static_cast<vk::Format>(ktxTexture_GetVkFormat(ktxTexture));
-            std::optional<Graphics::Format> format = Graphics::toExageFormat(vkFormat);
-            if (!format)
+            auto [channels, bitsPerChannel] = Graphics::vulkanFormatToChannelsAndBits(vkFormat);
+            if (channels == 0 || bitsPerChannel == 0)
             {
                 std::cout << "Unsupported format: " << vk::to_string(vkFormat) << std::endl;
                 return tl::make_unexpected(FileFormatError {});
             }
-            texture.format = *format;
+
+            texture.channels = channels;
+            texture.bitsPerChannel = bitsPerChannel;
 
             std::memcpy(texture.data.data(), ktxTexture_GetData(ktxTexture), texture.data.size());
 
@@ -456,32 +354,30 @@ namespace exage::Renderer
             return tl::make_unexpected(FileFormatError {});
         }
 
+        if (channels == 3)
+        {
+            auto* newPixels = new stbi_uc[static_cast<size_t>(width) * height * 4];
+            for (size_t i = 0; i < width * height; i++)
+            {
+                newPixels[i * 4] = pixels[i * 3];
+                newPixels[i * 4 + 1] = pixels[i * 3 + 1];
+                newPixels[i * 4 + 2] = pixels[i * 3 + 2];
+                newPixels[i * 4 + 3] = 255;
+            }
+
+            stbi_image_free(pixels);
+            pixels = newPixels;
+            channels = 4;
+        }
+
         Texture texture;
         texture.mips.resize(1);
         texture.mips[0].extent = glm::uvec3(width, height, 1);
         texture.mips[0].offset = 0;
         texture.mips[0].size = static_cast<size_t>(width) * height * channels;
         texture.data = std::vector<std::byte>(texture.mips[0].size);
-
-        switch (channels)
-        {
-            case 1:
-                texture.format = Graphics::Format::eR8;
-                break;
-            case 2:
-                texture.format = Graphics::Format::eRG8;
-                break;
-            case 3:
-                texture.format = Graphics::Format::eRGB8;
-                break;
-            case 4:
-                texture.format = Graphics::Format::eRGBA8;
-                break;
-
-            default:
-                std::cout << "Unsupported number of channels: " << channels << std::endl;
-                return tl::make_unexpected(FileFormatError {});
-        }
+        texture.channels = static_cast<uint8_t>(channels);
+        texture.bitsPerChannel = 8;
 
         std::memcpy(texture.data.data(), pixels, texture.data.size());
 
@@ -490,118 +386,193 @@ namespace exage::Renderer
         return texture;
     }
 
-    auto saveAssets(const AssetImportResult& assets,
-                    const std::filesystem::path& saveDirectory,
-                    const std::filesystem::path& prefix) noexcept -> std::optional<DirectoryError>
+    auto saveTexture(Texture& texture) noexcept -> AssetFile
     {
-        const auto texturesDirectory = saveDirectory / "textures";
-        const auto materialsDirectory = saveDirectory / "materials";
-        const auto meshesDirectory = saveDirectory / "meshes";
+        AssetFile assetFile;
 
-        const auto saveTexturesDir = prefix / texturesDirectory;
-        const auto saveMaterialsDir = prefix / materialsDirectory;
-        const auto saveMeshesDir = prefix / meshesDirectory;
+        nlohmann::json json;
+        json["dataType"] = "Texture";
+        json["channels"] = texture.channels;
+        json["bitsPerChannel"] = texture.bitsPerChannel;
+        json["type"] = static_cast<uint32_t>(texture.type);
+        json["mips"] = nlohmann::json::array();
+        json["rawSize"] = texture.data.size();
+        json["compression"] = "zstd";
+        json["compressionLevel"] = ZSTD_defaultCLevel();
 
-        std::filesystem::create_directories(saveTexturesDir);
-        std::filesystem::create_directories(saveMaterialsDir);
-        std::filesystem::create_directories(saveMeshesDir);
-
-        if (!std::filesystem::exists(texturesDirectory)
-            || !std::filesystem::exists(materialsDirectory)
-            || !std::filesystem::exists(meshesDirectory))
+        for (size_t i = 0; i < texture.mips.size(); i++)
         {
-            return DirectoryError {};
+            Texture::Mip& mip = texture.mips[i];
+            json["mips"][i]["extent"] = mip.extent;
+            json["mips"][i]["offset"] = mip.offset;
+            json["mips"][i]["size"] = mip.size;
         }
 
-        for (size_t i = 0; i < assets.textures.size(); i++)
-        {
-            auto& texture = *assets.textures[i];
-            const auto texturePath =
-                texturesDirectory / (std::to_string(i).append(TEXTURE_EXTENSION));
+        assetFile.json = json.dump();
 
-            std::ofstream textureFile(texturePath, std::ios::binary);
-            cereal::BinaryOutputArchive archive(textureFile);
-            archive(texture);
+        std::vector<char> binary;
 
-            texture.path = texturePath.string();
-        }
+        size_t compressedSize = ZSTD_compressBound(texture.data.size());
+        binary.resize(compressedSize);
 
-        for (size_t i = 0; i < assets.materials.size(); i++)
-        {
-            auto& material = *assets.materials[i];
-            const auto materialPath =
-                materialsDirectory / (std::to_string(i).append(MATERIAL_EXTENSION));
+        compressedSize = ZSTD_compress(binary.data(),
+                                       compressedSize,
+                                       texture.data.data(),
+                                       texture.data.size(),
+                                       ZSTD_defaultCLevel());
 
-            if (material.albedo.texture != nullptr)
-            {
-                material.albedo.texturePath = material.albedo.texture->path;
-            }
+        binary.resize(compressedSize);
+        assetFile.binary = std::move(binary);
 
-            if (material.normal.texture != nullptr)
-            {
-                material.normal.texturePath = material.normal.texture->path;
-            }
-
-            if (material.metallic.texture != nullptr)
-            {
-                material.metallic.texturePath = material.metallic.texture->path;
-            }
-
-            if (material.roughness.texture != nullptr)
-            {
-                material.roughness.texturePath = material.roughness.texture->path;
-            }
-
-            if (material.occlusion.texture != nullptr)
-            {
-                material.occlusion.texturePath = material.occlusion.texture->path;
-            }
-
-            if (material.emissive.texture != nullptr)
-            {
-                material.emissive.texturePath = material.emissive.texture->path;
-            }
-
-            std::ofstream materialFile(materialPath, std::ios::binary);
-            cereal::BinaryOutputArchive archive(materialFile);
-            archive(material);
-
-            material.path = materialPath.string();
-        }
-
-        for (size_t i = 0; i < assets.meshes.size(); i++)
-        {
-            auto& mesh = *assets.meshes[i];
-            const auto meshPath = meshesDirectory / (std::to_string(i).append(MESH_EXTENSION));
-
-            if (mesh.material != nullptr)
-            {
-                mesh.materialPath = mesh.material->path;
-            }
-
-            std::ofstream meshFile(meshPath, std::ios::binary);
-            cereal::BinaryOutputArchive archive(meshFile);
-            archive(mesh);
-
-            mesh.path = meshPath.string();
-        }
-
-        return std::nullopt;
+        return assetFile;
     }
 
     auto saveTexture(Texture& texture,
                      const std::filesystem::path& savePath,
-                     const std::filesystem::path& prefix) noexcept -> std::optional<SaveError>
+                     const std::filesystem::path& prefix) noexcept -> tl::expected<void, AssetError>
     {
         const auto saveTexturePath = prefix / savePath;
 
         std::ofstream textureFile(saveTexturePath, std::ios::binary);
-        cereal::BinaryOutputArchive archive(textureFile);
-        archive(texture);
+        if (!textureFile.is_open())
+        {
+            return tl::make_unexpected(FileNotFoundError {});
+        }
 
-        texture.path = saveTexturePath.string();
+        AssetFile assetFile = saveTexture(texture);
+        saveAssetFile(textureFile, assetFile);
 
-        return std::nullopt;
+        texture.path = savePath;
+        return {};
+    }
+
+    auto saveMaterial(Material& material) noexcept -> AssetFile
+    {
+        AssetFile assetFile;
+
+        nlohmann::json json;
+        json["dataType"] = "Material";
+        json["albedoColor"] = material.albedoColor;
+        json["emissiveColor"] = material.emissiveColor;
+        json["metallicValue"] = material.metallicValue;
+        json["roughnessValue"] = material.roughnessValue;
+        json["albedoUseTexture"] = material.albedoUseTexture;
+        json["normalUseTexture"] = material.normalUseTexture;
+        json["metallicUseTexture"] = material.metallicUseTexture;
+        json["roughnessUseTexture"] = material.roughnessUseTexture;
+        json["occlusionUseTexture"] = material.occlusionUseTexture;
+        json["emissiveUseTexture"] = material.emissiveUseTexture;
+        json["albedoTexturePath"] = material.albedoTexturePath;
+        json["normalTexturePath"] = material.normalTexturePath;
+        json["metallicTexturePath"] = material.metallicTexturePath;
+        json["roughnessTexturePath"] = material.roughnessTexturePath;
+        json["occlusionTexturePath"] = material.occlusionTexturePath;
+        json["emissiveTexturePath"] = material.emissiveTexturePath;
+
+        assetFile.json = json.dump();
+
+        return assetFile;
+    }
+
+    auto saveMaterial(Material& material,
+                      const std::filesystem::path& savePath,
+                      const std::filesystem::path& prefix) noexcept
+        -> tl::expected<void, AssetError>
+    {
+        const auto saveMaterialPath = prefix / savePath;
+
+        std::ofstream materialFile(saveMaterialPath, std::ios::binary);
+        if (!materialFile.is_open())
+        {
+            return tl::make_unexpected(FileNotFoundError {});
+        }
+
+        AssetFile assetFile = saveMaterial(material);
+        saveAssetFile(materialFile, assetFile);
+
+        material.path = savePath;
+        return {};
+    }
+
+    auto saveMesh(Mesh& mesh) noexcept -> AssetFile
+    {
+        AssetFile assetFile;
+
+        nlohmann::json json;
+        json["dataType"] = "Mesh";
+        json["aabb"] = {
+            {"min", mesh.aabb.min},
+            {"max", mesh.aabb.max},
+        };
+        json["lods"] = nlohmann::json::array();
+
+        for (size_t i = 0; i < mesh.lods.size(); i++)
+        {
+            MeshDetails& lod = mesh.lods[i];
+            json["lods"][i]["vertexCount"] = lod.vertexCount;
+            json["lods"][i]["indexCount"] = lod.indexCount;
+            json["lods"][i]["vertexOffset"] = lod.vertexOffset;
+            json["lods"][i]["indexOffset"] = lod.indexOffset;
+        }
+
+        json["materialPath"] = mesh.materialPath;
+
+        json["compression"] = "zstd";
+        json["compressionLevel"] = ZSTD_defaultCLevel();
+
+        std::vector<char> binary;
+
+        size_t vertexSize = sizeof(MeshVertex) * mesh.vertices.size();
+        size_t indexSize = sizeof(uint32_t) * mesh.indices.size();
+
+        json["vertices"] = mesh.vertices.size();
+        json["indices"] = mesh.indices.size();
+
+        size_t vertexCompressedSize = ZSTD_compressBound(vertexSize);
+        size_t indexCompressedSize = ZSTD_compressBound(indexSize);
+        binary.resize(vertexCompressedSize + indexCompressedSize);
+
+        vertexCompressedSize = ZSTD_compress(binary.data(),
+                                             vertexCompressedSize,
+                                             mesh.vertices.data(),
+                                             vertexSize,
+                                             ZSTD_defaultCLevel());
+
+        indexCompressedSize = ZSTD_compress(binary.data() + vertexCompressedSize,
+                                            indexCompressedSize,
+                                            mesh.indices.data(),
+                                            indexSize,
+                                            ZSTD_defaultCLevel());
+
+        binary.resize(vertexCompressedSize + indexCompressedSize);
+
+        assetFile.binary = std::move(binary);
+
+        json["vertexCompressedSize"] = vertexCompressedSize;
+        json["indexCompressedSize"] = indexCompressedSize;
+
+        assetFile.json = json.dump();
+
+        return assetFile;
+    }
+
+    auto saveMesh(Mesh& mesh,
+                  const std::filesystem::path& savePath,
+                  const std::filesystem::path& prefix) noexcept -> tl::expected<void, AssetError>
+    {
+        const auto saveMeshPath = prefix / savePath;
+
+        std::ofstream meshFile(saveMeshPath, std::ios::binary);
+        if (!meshFile.is_open())
+        {
+            return tl::make_unexpected(FileNotFoundError {});
+        }
+
+        AssetFile assetFile = saveMesh(mesh);
+        saveAssetFile(meshFile, assetFile);
+
+        mesh.path = savePath;
+        return {};
     }
 
     namespace
@@ -609,24 +580,27 @@ namespace exage::Renderer
         void createChildren(const AssetSceneImportInfo& info,
                             Scene& scene,
                             Entity parent,
-                            std::span<std::unique_ptr<AssetImportResult::Node>> children)
+                            std::span<const size_t> children,
+                            std::span<const AssetImportResult2::Node> nodes)
         {
             for (const auto& child : children)
             {
+                const auto& node = nodes[child];
                 auto entity = scene.createEntity(parent);
-                scene.addComponent<Transform3D>(entity, child->transform);
+                scene.addComponent<Transform3D>(entity, node.transform);
 
-                GPUMesh& mesh = info.meshes[child->meshIndex];
-                scene.addComponent<GPUMesh>(entity, mesh);
+                GPUMesh& mesh = info.meshes[node.meshIndex];
+                MeshComponent meshComponent = {.path = mesh.path, .pathHash = mesh.pathHash};
+                scene.addComponent<MeshComponent>(entity, meshComponent);
 
-                createChildren(info, scene, entity, child->children);
+                createChildren(info, scene, entity, node.childrenIndices, nodes);
             }
         }
     }  // namespace
 
     void importScene(const AssetSceneImportInfo& info, Scene& scene, Entity parent) noexcept
     {
-        createChildren(info, scene, parent, info.rootNodes);
+        createChildren(info, scene, parent, info.rootNodes, info.nodes);
     }
 
 }  // namespace exage::Renderer

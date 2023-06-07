@@ -6,7 +6,6 @@
 #include "exage/platform/Vulkan/VulkanPipeline.h"
 #include "exage/platform/Vulkan/VulkanQueue.h"
 #include "exage/platform/Vulkan/VulkanTexture.h"
-#include "vulkan/vulkan_structs.hpp"
 
 namespace exage::Graphics
 {
@@ -531,13 +530,23 @@ namespace exage::Graphics
                 [this](const UserDefinedCommand& cmd) { cmd.commandFunction(*this); },
                 [this](const SetViewportCommand& cmd)
                 {
+                    // negative height to flip the viewport
                     vk::Viewport viewport {};
                     viewport.x = static_cast<float>(cmd.offset.x);
-                    viewport.y = static_cast<float>(cmd.offset.y + cmd.extent.y);
+                    viewport.y =
+                        static_cast<float>(cmd.extent.y) - static_cast<float>(cmd.offset.y);
                     viewport.width = static_cast<float>(cmd.extent.x);
                     viewport.height = -static_cast<float>(cmd.extent.y);
                     viewport.maxDepth = 1.0;
                     viewport.minDepth = 0.0;
+
+                    // vk::Viewport viewport {};
+                    // viewport.x = static_cast<float>(cmd.offset.x);
+                    // viewport.y = static_cast<float>(cmd.offset.y);
+                    // viewport.width = static_cast<float>(cmd.extent.x);
+                    // viewport.height = static_cast<float>(cmd.extent.y);
+                    // viewport.maxDepth = 1.0;
+                    // viewport.minDepth = 0.0;
 
                     _commandBuffer.setViewport(0, viewport);
                 },

@@ -11,8 +11,9 @@ namespace exage::Renderer
     GeometryRenderer::GeometryRenderer(const GeometryRendererCreateInfo& createInfo) noexcept
         : _context(createInfo.context)
         , _sceneBuffer(createInfo.sceneBuffer)
+        , _assetCache(createInfo.assetCache)
         , _extent(createInfo.extent)
-        , _meshSystem({createInfo.context, createInfo.sceneBuffer})
+        , _meshSystem({createInfo.context, createInfo.sceneBuffer, createInfo.assetCache})
     {
         auto& context = _context.get();
 

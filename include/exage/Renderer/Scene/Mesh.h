@@ -3,6 +3,7 @@
 #include <cereal/cereal.hpp>
 #include <cereal/types/string.hpp>
 #include <cereal/types/vector.hpp>
+#include <entt/core/hashed_string.hpp>
 #include <glm/glm.hpp>
 
 #include "exage/Core/Core.h"
@@ -18,60 +19,9 @@ namespace exage::Renderer
         glm::vec2 uv {};
         glm::vec3 tangent {};
         glm::vec3 bitangent {};
-
-        // Serialization
-        template<class Archive>
-        void serialize(Archive& archive)
-        {
-            archive(position, normal, uv, tangent, bitangent);
-        }
     };
 
-    struct MeshLOD
-    {
-        std::vector<MeshVertex> vertices;
-        std::vector<uint32_t> indices;
-
-        // Serialization
-        template<class Archive>
-        void serialize(Archive& archive)
-        {
-            archive(vertices, indices);
-        }
-    };
-
-    struct AABB
-    {
-        glm::vec3 min {};
-        glm::vec3 max {};
-        // Serialization
-        template<class Archive>
-        void serialize(Archive& archive)
-        {
-            archive(min, max);
-        }
-    };
-
-    struct Mesh
-    {
-        std::string path;  // Not filesystem::path because of serialization
-
-        std::vector<MeshLOD> lods;
-
-        std::string materialPath;
-        Material* material = nullptr;
-
-        AABB aabb;
-
-        // Serialization
-        template<class Archive>
-        void serialize(Archive& archive)
-        {
-            archive(path, lods, materialPath, aabb);
-        }
-    };
-
-    struct GPUMeshDetails
+    struct MeshDetails
     {
         uint32_t vertexCount;
         uint32_t indexCount;
@@ -80,26 +30,46 @@ namespace exage::Renderer
         uint32_t indexOffset;
     };
 
+    struct AABB
+    {
+        glm::vec3 min {};
+        glm::vec3 max {};
+    };
+
+    struct Mesh
+    {
+        std::filesystem::path path;
+
+        std::vector<MeshDetails> lods;
+
+        std::filesystem::path materialPath;
+
+        std::vector<MeshVertex> vertices;
+        std::vector<uint32_t> indices;
+
+        AABB aabb;
+    };
+
     struct GPUMesh
     {
-        std::string path;
+        std::filesystem::path path;
+        size_t pathHash;
 
-        std::vector<GPUMeshDetails> lods;
+        std::vector<MeshDetails> lods;
 
-        std::string materialPath;
+        std::filesystem::path materialPath;
         GPUMaterial material;
 
         std::shared_ptr<Graphics::Buffer> vertexBuffer;
         std::shared_ptr<Graphics::Buffer> indexBuffer;
 
         AABB aabb;
+    };
 
-        // Serialization
-        template<class Archive>
-        void serialize(Archive& archive)
-        {
-            archive(path, materialPath, aabb);
-        }
+    struct MeshComponent
+    {
+        std::filesystem::path path;
+        size_t pathHash;
     };
 
     constexpr std::string_view MESH_EXTENSION = ".exmesh";

@@ -16,7 +16,7 @@ namespace exage::Graphics
     class ImGuiInstance
     {
       public:
-        ImGuiInstance(const ImGuiInitInfo& initInfo) noexcept;
+        explicit ImGuiInstance(const ImGuiInitInfo& initInfo) noexcept;
         ~ImGuiInstance();
 
         EXAGE_DELETE_COPY(ImGuiInstance);
@@ -27,6 +27,8 @@ namespace exage::Graphics
         void end() noexcept;
 
         void addFont(const std::string& path, float size, bool isDefault = false) noexcept;
+
+        void processEvent(const Event& event) noexcept;
 
         void renderMainWindow(CommandBuffer& commandBuffer) noexcept;
         void renderAdditional();

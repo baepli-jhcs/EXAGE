@@ -7,11 +7,13 @@ fmt/9.1.0
 glfw/3.3.8
 glm/0.9.9.8
 ktx/4.0.0
+nlohmann_json/3.11.2
 stb/cci.20220909
 shaderc/2021.1
 tl-expected/1.1.0
 vulkan-headers/1.3.243.0
 vulkan-memory-allocator/3.0.1
+zstd/1.5.5
 
 catch2/3.3.2
 

@@ -24,4 +24,6 @@ namespace exage::Renderer
     struct SaveError
     {
     };
+
+    using AssetError = std::variant<FileNotFoundError, FileFormatError, DirectoryError, SaveError>;
 }  // namespace exage::Renderer

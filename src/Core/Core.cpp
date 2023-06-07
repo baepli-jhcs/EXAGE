@@ -1,12 +1,12 @@
 ﻿#include "exage/Core/Core.h"
 
-#include <GLFW/glfw3.h>
+#include "exage/platform/GLFW/GLFWindow.h"
 
 namespace exage
 {
     void init()
     {
         // Initialize the engine
-        glfwInit();
+        GLFWindow::init();
     }
-} // namespace exage
+}  // namespace exage

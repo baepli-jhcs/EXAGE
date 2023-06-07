@@ -9,7 +9,7 @@
 
 #include "exage/Core/Core.h"
 #include "exage/Graphics/Texture.h"
-#include "exage/utils/glm.h"
+#include "exage/utils/serialization.h"
 
 namespace exage::Renderer
 {
@@ -20,143 +20,48 @@ namespace exage::Renderer
             glm::uvec3 extent;
             uint64_t offset;
             uint64_t size;
-
-            // Serialization
-            template<class Archive>
-            void serialize(Archive& archive)
-            {
-                archive(extent, offset, size);
-            }
         };
 
-        std::string path;
+        std::filesystem::path path;
         std::vector<Mip> mips;
         std::vector<std::byte> data;
-        Graphics::Format format;
+        uint8_t channels;
+        uint8_t bitsPerChannel;
         Graphics::Texture::Type type;
-
-        // Serialization
-        template<class Archive>
-        void serialize(Archive& archive)
-        {
-            archive(path, mips, data, format, type);
-        }
     };
 
     struct GPUTexture
     {
-        std::string path;
+        std::filesystem::path path;
 
         std::shared_ptr<Graphics::Texture> texture;
     };
 
     constexpr std::string_view TEXTURE_EXTENSION = ".extex";
 
-    struct AlbedoInfo
-    {
-        bool useTexture = false;
-        glm::vec3 color = glm::vec3(1.0f);
-        std::string texturePath;
-        Texture* texture = nullptr;
-
-        // Serialization
-        template<class Archive>
-        void serialize(Archive& archive)
-        {
-            archive(useTexture, color, texturePath);
-        }
-    };
-
-    struct NormalInfo
-    {
-        bool useTexture = false;
-        std::string texturePath;
-        Texture* texture = nullptr;
-
-        // Serialization
-        template<class Archive>
-        void serialize(Archive& archive)
-        {
-            archive(useTexture, texturePath);
-        }
-    };
-
-    struct MetallicInfo
-    {
-        bool useTexture = false;
-        float value = 0.0F;
-        std::string texturePath;
-        Texture* texture = nullptr;
-
-        // Serialization
-        template<class Archive>
-        void serialize(Archive& archive)
-        {
-            archive(useTexture, value, texturePath);
-        }
-    };
-
-    struct RoughnessInfo
-    {
-        bool useTexture = false;
-        float value = 0.0f;
-        std::string texturePath;
-        Texture* texture = nullptr;
-
-        // Serialization
-        template<class Archive>
-        void serialize(Archive& archive)
-        {
-            archive(useTexture, value, texturePath);
-        }
-    };
-
-    struct OcclusionInfo
-    {
-        bool useTexture = false;
-        std::string texturePath;
-        Texture* texture = nullptr;
-
-        // Serialization
-        template<class Archive>
-        void serialize(Archive& archive)
-        {
-            archive(useTexture, texturePath);
-        }
-    };
-
-    struct EmissiveInfo
-    {
-        bool useTexture = false;
-        glm::vec3 color = glm::vec3(0.0f);
-        std::string texturePath;
-        Texture* texture = nullptr;
-
-        // Serialization
-        template<class Archive>
-        void serialize(Archive& archive)
-        {
-            archive(useTexture, color, texturePath);
-        }
-    };
-
     struct Material
     {
-        std::string path;
+        std::filesystem::path path;
 
-        AlbedoInfo albedo;
-        NormalInfo normal;
-        MetallicInfo metallic;
-        RoughnessInfo roughness;
-        OcclusionInfo occlusion;
-        EmissiveInfo emissive;
+        glm::vec3 albedoColor = glm::vec3(1.0f);
+        glm::vec3 emissiveColor = glm::vec3(0.0f);
 
-        // Serialization
-        template<class Archive>
-        void serialize(Archive& archive)
-        {
-            archive(path, albedo, normal, metallic, roughness, occlusion, emissive);
-        }
+        float metallicValue = 0.0f;
+        float roughnessValue = 0.0f;
+
+        bool albedoUseTexture = false;
+        bool normalUseTexture = false;
+        bool metallicUseTexture = false;
+        bool roughnessUseTexture = false;
+        bool occlusionUseTexture = false;
+        bool emissiveUseTexture = false;
+
+        std::filesystem::path albedoTexturePath;
+        std::filesystem::path normalTexturePath;
+        std::filesystem::path metallicTexturePath;
+        std::filesystem::path roughnessTexturePath;
+        std::filesystem::path occlusionTexturePath;
+        std::filesystem::path emissiveTexturePath;
     };
 
     struct GPUMaterial
@@ -184,7 +89,7 @@ namespace exage::Renderer
             alignas(4) uint32_t emissiveTextureIndex = 0;
         };
 
-        std::string path;
+        std::filesystem::path path;
 
         GPUTexture albedoTexture;
         GPUTexture emissiveTexture;
@@ -201,18 +106,18 @@ namespace exage::Renderer
     {
         GPUMaterial::Data data;
 
-        data.albedoColor = material.albedo.color;
-        data.emissiveColor = material.emissive.color;
+        data.albedoColor = material.albedoColor;
+        data.emissiveColor = material.emissiveColor;
 
-        data.metallicValue = material.metallic.value;
-        data.roughnessValue = material.roughness.value;
+        data.metallicValue = material.metallicValue;
+        data.roughnessValue = material.roughnessValue;
 
-        data.albedoUseTexture = material.albedo.useTexture;
-        data.normalUseTexture = material.normal.useTexture;
-        data.metallicUseTexture = material.metallic.useTexture;
-        data.roughnessUseTexture = material.roughness.useTexture;
-        data.occlusionUseTexture = material.occlusion.useTexture;
-        data.emissiveUseTexture = material.emissive.useTexture;
+        data.albedoUseTexture = material.albedoUseTexture;
+        data.normalUseTexture = material.normalUseTexture;
+        data.metallicUseTexture = material.metallicUseTexture;
+        data.roughnessUseTexture = material.roughnessUseTexture;
+        data.occlusionUseTexture = material.occlusionUseTexture;
+        data.emissiveUseTexture = material.emissiveUseTexture;
 
         if (gpu.albedoTexture.texture)
         {
