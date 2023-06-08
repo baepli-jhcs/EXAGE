@@ -734,6 +734,17 @@ bool ImGui_ImplVulkan_CreateFontsTexture(VkCommandBuffer command_buffer)
     ImGui_ImplVulkan_Data* bd = ImGui_ImplVulkan_GetBackendData();
     ImGui_ImplVulkan_InitInfo* v = &bd->VulkanInitInfo;
 
+    // If an image is already present, destroy it
+    if (bd->FontImage)
+    {
+        vkDestroyImageView(v->Device, bd->FontView, v->Allocator);
+        vkDestroyImage(v->Device, bd->FontImage, v->Allocator);
+        vkFreeMemory(v->Device, bd->FontMemory, v->Allocator);
+        bd->FontImage = VK_NULL_HANDLE;
+        bd->FontView = VK_NULL_HANDLE;
+        bd->FontMemory = VK_NULL_HANDLE;
+    }
+
     unsigned char* pixels;
     int width, height;
     io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);

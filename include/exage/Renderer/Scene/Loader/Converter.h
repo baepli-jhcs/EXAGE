@@ -5,8 +5,6 @@
 #include <optional>
 #include <vector>
 
-#include <vcruntime.h>
-
 #include "exage/Core/Core.h"
 #include "exage/Graphics/CommandBuffer.h"
 #include "exage/Renderer/Scene/AssetCache.h"

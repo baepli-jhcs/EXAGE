@@ -52,6 +52,10 @@ namespace exage::Renderer
                              createInfo.sceneBuffer,
                              createInfo.assetCache,
                              createInfo.extent})
+        , _shadowRenderer({createInfo.context,
+                           createInfo.sceneBuffer,
+                           createInfo.assetCache,
+                           createInfo.shadowResolution})
     {
         auto& context = _context.get();
 
@@ -175,6 +179,9 @@ namespace exage::Renderer
                                                Graphics::AccessFlags::eShaderRead);
         }
 
+        _shadowRenderer.prepareLightingData(scene);
+
+        _shadowRenderer.render(commandBuffer, scene);
         _geometryRenderer.render(commandBuffer, scene);
 
         commandBuffer.textureBarrier(colorTexture,

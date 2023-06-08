@@ -2,8 +2,6 @@
 
 #include <span>
 
-#include <vcruntime.h>
-
 #include "exage/Graphics/CommandBuffer.h"
 #include "exage/Graphics/Utils/BufferTypes.h"
 #include "exage/Renderer/Scene/Mesh.h"

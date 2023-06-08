@@ -1,7 +1,5 @@
 ﻿#include "exage/Renderer/GeometryPass/GeometryRenderer.h"
 
-#include <vcruntime.h>
-
 #include "exage/Graphics/CommandBuffer.h"
 #include "exage/Graphics/FrameBuffer.h"
 #include "exage/Graphics/Texture.h"

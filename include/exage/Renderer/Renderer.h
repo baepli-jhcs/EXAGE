@@ -10,6 +10,7 @@
 #include "exage/Renderer/GeometryPass/GeometryRenderer.h"
 #include "exage/Renderer/Scene/AssetCache.h"
 #include "exage/Renderer/Scene/SceneBuffer.h"
+#include "exage/Renderer/ShadowPass/ShadowRenderer.h"
 #include "exage/Scene/Scene.h"
 
 namespace exage::Renderer
@@ -20,6 +21,7 @@ namespace exage::Renderer
         SceneBuffer& sceneBuffer;
         AssetCache& assetCache;
         glm::uvec2 extent;
+        ShadowResolution shadowResolution = ShadowResolution::e1024;
     };
 
     class Renderer
@@ -48,6 +50,7 @@ namespace exage::Renderer
         glm::uvec2 _extent;
 
         GeometryRenderer _geometryRenderer;
+        ShadowRenderer _shadowRenderer;
 
         std::shared_ptr<Graphics::FrameBuffer> _frameBuffer;
     };

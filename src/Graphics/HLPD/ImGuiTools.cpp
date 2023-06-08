@@ -171,6 +171,8 @@ namespace exage::Graphics
 
     void ImGuiInstance::buildFonts() noexcept
     {
+        _context.get().waitIdle();
+
         std::unique_ptr<CommandBuffer> commandBuffer = _context.get().createCommandBuffer();
         commandBuffer->begin();
 

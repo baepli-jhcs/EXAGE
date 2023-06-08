@@ -5,7 +5,6 @@
 
 #include <cereal/archives/binary.hpp>
 #include <cereal/cereal.hpp>
-#include <vcruntime.h>
 
 #include "exage/Core/Debug.h"
 #include "exage/Graphics/Buffer.h"

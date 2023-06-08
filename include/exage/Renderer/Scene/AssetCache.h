@@ -2,8 +2,6 @@
 
 #include <filesystem>
 
-#include <vcruntime.h>
-
 #include "exage/Core/Core.h"
 #include "exage/Filesystem/Directories.h"
 #include "exage/Renderer/Scene/Material.h"

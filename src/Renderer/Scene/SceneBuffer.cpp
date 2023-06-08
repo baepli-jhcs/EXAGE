@@ -1,7 +1,5 @@
 #include "exage/Renderer/Scene/SceneBuffer.h"
 
-#include <vcruntime.h>
-
 #include "exage/Graphics/Context.h"
 #include "exage/Graphics/Utils/BufferTypes.h"
 

@@ -18,4 +18,15 @@ namespace exage::Renderer
         entt::hashed_string {"EXAGE_CURRENT_CAMERA_RENDER_INFO"};
     const auto CURRENT_TRANSFORM_RENDER_INFO =
         entt::hashed_string {"EXAGE_CURRENT_TRANSFORM_RENDER_INFO"};
+
+    const auto CURRENT_POINT_LIGHT = entt::hashed_string {"EXAGE_CURRENT_POINT_LIGHT"};
+    const auto CURRENT_DIRECTIONAL_LIGHT = entt::hashed_string {"EXAGE_CURRENT_DIRECTIONAL_LIGHT"};
+    const auto CURRENT_SPOT_LIGHT = entt::hashed_string {"EXAGE_CURRENT_SPOT_LIGHT"};
+
+    const auto CURRENT_POINT_LIGHT_RENDER_INFO =
+        entt::hashed_string {"EXAGE_CURRENT_POINT_LIGHT_RENDER_INFO"};
+    const auto CURRENT_DIRECTIONAL_LIGHT_RENDER_INFO =
+        entt::hashed_string {"EXAGE_CURRENT_DIRECTIONAL_LIGHT_RENDER_INFO"};
+    const auto CURRENT_SPOT_LIGHT_RENDER_INFO =
+        entt::hashed_string {"EXAGE_CURRENT_SPOT_LIGHT_RENDER_INFO"};
 }  // namespace exage::Renderer
