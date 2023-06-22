@@ -29,4 +29,11 @@ namespace exage::Renderer
         entt::hashed_string {"EXAGE_CURRENT_DIRECTIONAL_LIGHT_RENDER_INFO"};
     const auto CURRENT_SPOT_LIGHT_RENDER_INFO =
         entt::hashed_string {"EXAGE_CURRENT_SPOT_LIGHT_RENDER_INFO"};
+
+    const auto CURRENT_POINT_LIGHT_RENDER_ARRAY =
+        entt::hashed_string {"EXAGE_CURRENT_POINT_LIGHT_RENDER_ARRAY"};
+    const auto CURRENT_DIRECTIONAL_LIGHT_RENDER_ARRAY =
+        entt::hashed_string {"EXAGE_CURRENT_DIRECTIONAL_LIGHT_RENDER_ARRAY"};
+    const auto CURRENT_SPOT_LIGHT_RENDER_ARRAY =
+        entt::hashed_string {"EXAGE_CURRENT_SPOT_LIGHT_RENDER_ARRAY"};
 }  // namespace exage::Renderer

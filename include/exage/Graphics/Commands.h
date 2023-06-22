@@ -221,6 +221,18 @@ namespace exage::Graphics
             uint64_t offset;
         };
 
+        struct BindStorageBufferCommand
+        {
+            std::shared_ptr<Buffer> buffer;
+            uint32_t binding;
+        };
+
+        struct BindSamplerCommand
+        {
+            std::shared_ptr<Sampler> sampler;
+            uint32_t binding;
+        };
+
         struct BindSampledTextureCommand
         {
             std::shared_ptr<Texture> texture;
@@ -230,12 +242,6 @@ namespace exage::Graphics
         struct BindStorageTextureCommand
         {
             std::shared_ptr<Texture> texture;
-            uint32_t binding;
-        };
-
-        struct BindStorageBufferCommand
-        {
-            std::shared_ptr<Buffer> buffer;
             uint32_t binding;
         };
 
@@ -257,9 +263,10 @@ namespace exage::Graphics
                                         SetPushConstantCommand,
                                         BindVertexBufferCommand,
                                         BindIndexBufferCommand,
+                                        BindStorageBufferCommand,
+                                        BindSamplerCommand,
                                         BindSampledTextureCommand,
-                                        BindStorageTextureCommand,
-                                        BindStorageBufferCommand>;
+                                        BindStorageTextureCommand>;
     }  // namespace Commands
 
     using DataDependency = entt::basic_any<sizeof(std::shared_ptr<Buffer>)>;

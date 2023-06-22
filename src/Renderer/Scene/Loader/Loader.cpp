@@ -283,7 +283,7 @@ namespace exage::Renderer
     }
 
     auto loadMesh(const std::filesystem::path& path, const std::filesystem::path& prefix) noexcept
-        -> tl::expected<Mesh, AssetError>
+        -> tl::expected<StaticMesh, AssetError>
     {
         std::filesystem::path fullPath = prefix / path;
         tl::expected asset = loadAssetFile(fullPath);
@@ -295,12 +295,12 @@ namespace exage::Renderer
 
         nlohmann::json json = nlohmann::json::parse(asset->json);
 
-        if (json["dataType"] != "Mesh")
+        if (json["dataType"] != "StaticMesh")
         {
             return tl::make_unexpected(FileFormatError {});
         }
 
-        Mesh mesh;
+        StaticMesh mesh;
         mesh.path = path;
         mesh.materialPath = json["materialPath"].get<std::filesystem::path>();
         mesh.aabb.max = json["aabb"]["max"];
@@ -327,7 +327,7 @@ namespace exage::Renderer
         mesh.indices.resize(indices);
 
         size_t result = ZSTD_decompress(mesh.vertices.data(),
-                                        mesh.vertices.size() * sizeof(MeshVertex),
+                                        mesh.vertices.size() * sizeof(StaticMeshVertex),
                                         asset->binary.data(),
                                         vertexCompressedSize);
 
@@ -400,8 +400,6 @@ namespace exage::Renderer
         textureCreateInfo.type = Graphics::Texture::Type::e2D;
         textureCreateInfo.arrayLayers = 1;
 
-        textureCreateInfo.samplerCreateInfo = options.samplerCreateInfo;
-
         gpuTexture.texture = options.context.createTexture(textureCreateInfo);
 
         options.commandBuffer.textureBarrier(gpuTexture.texture,
@@ -431,9 +429,9 @@ namespace exage::Renderer
         return gpuTexture;
     }
 
-    auto uploadMesh(const Mesh& mesh, const MeshUploadOptions& options) noexcept -> GPUMesh
+    auto uploadMesh(const StaticMesh& mesh, const MeshUploadOptions& options) noexcept -> GPUStaticMesh
     {
-        GPUMesh gpuMesh;
+        GPUStaticMesh gpuMesh;
         gpuMesh.path = mesh.path;
         gpuMesh.pathHash = std::filesystem::hash_value(mesh.path);
         gpuMesh.materialPath = mesh.materialPath;
@@ -441,7 +439,7 @@ namespace exage::Renderer
 
         gpuMesh.lods = mesh.lods;
 
-        size_t vertexBufferSize = mesh.vertices.size() * sizeof(MeshVertex);
+        size_t vertexBufferSize = mesh.vertices.size() * sizeof(StaticMeshVertex);
         size_t indexBufferSize = mesh.indices.size() * sizeof(uint32_t);
 
         Graphics::BufferCreateInfo vertexBufferCreateInfo;
@@ -513,7 +511,7 @@ namespace exage::Renderer
 
         //     std::span<const std::byte> vertexData =
         //         std::as_bytes(std::span(mesh.vertices))
-        //             .subspan(lod.vertexOffset, lod.vertexCount * sizeof(MeshVertex));
+        //             .subspan(lod.vertexOffset, lod.vertexCount * sizeof(StaticMeshVertex));
 
         //     std::span<const std::byte> indexData =
         //         std::as_bytes(std::span(mesh.indices))

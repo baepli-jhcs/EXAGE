@@ -55,6 +55,7 @@ namespace exage::Graphics
     class VulkanContext;
     class VulkanBuffer;
     class VulkanTexture;
+    class VulkanSampler;
 
     class VulkanResourceManager
     {
@@ -63,10 +64,12 @@ namespace exage::Graphics
 
         constexpr static uint32_t maxBufferCount = 65536;
         constexpr static uint32_t maxTextureCount = 65536;
+        constexpr static uint32_t maxSamplerCount = 65536;
 
-        constexpr static uint32_t sampledTextureBinding = 0;
-        constexpr static uint32_t storageBufferBinding = 1;
-        constexpr static uint32_t storageTextureBinding = 2;
+        constexpr static uint32_t storageBufferBinding = 0;
+        constexpr static uint32_t samplerBinding = 1;
+        constexpr static uint32_t sampledTextureBinding = 2;
+        constexpr static uint32_t storageTextureBinding = 3;
 
         explicit VulkanResourceManager(VulkanContext& context) noexcept;
         ~VulkanResourceManager();
@@ -76,9 +79,11 @@ namespace exage::Graphics
 
         [[nodiscard]] auto bindBuffer(VulkanBuffer& buffer) noexcept -> BufferID;
         [[nodiscard]] auto bindTexture(VulkanTexture& texture) noexcept -> TextureID;
+        [[nodiscard]] auto bindSampler(VulkanSampler& sampler) noexcept -> SamplerID;
 
         void unbindBuffer(BufferID buffer) noexcept;
         void unbindTexture(TextureID texture) noexcept;
+        void unbindSampler(SamplerID sampler) noexcept;
 
         [[nodiscard]] auto getDescriptorSet() const noexcept -> vk::DescriptorSet
         {
@@ -100,5 +105,6 @@ namespace exage::Graphics
 
         ResourcePool _bufferPool {maxBufferCount};
         ResourcePool _texturePool {maxTextureCount};
+        ResourcePool _samplerPool {maxSamplerCount};
     };
 }  // namespace exage::Graphics

@@ -29,7 +29,7 @@ namespace exage::Renderer
 
     [[nodiscard]] auto loadMesh(const std::filesystem::path& path,
                                 const std::filesystem::path& prefix) noexcept
-        -> tl::expected<Mesh, AssetError>;
+        -> tl::expected<StaticMesh, AssetError>;
 
     struct TextureUploadOptions
     {
@@ -41,8 +41,6 @@ namespace exage::Renderer
         Graphics::Texture::Layout layout = Graphics::Texture::Layout::eShaderReadOnly;
         Graphics::Access access = Graphics::AccessFlags::eShaderRead;
         Graphics::PipelineStage pipelineStage = Graphics::PipelineStageFlags::eFragmentShader;
-
-        Graphics::SamplerCreateInfo samplerCreateInfo {};
 
         bool useCompressedFormat = true;
         std::unordered_set<Graphics::Format>* supportedCompressedFormats = nullptr;
@@ -62,7 +60,7 @@ namespace exage::Renderer
     [[nodiscard]] auto uploadTexture(const Texture& texture,
                                      const TextureUploadOptions& options) noexcept -> GPUTexture;
 
-    [[nodiscard]] auto uploadMesh(const Mesh& mesh, const MeshUploadOptions& options) noexcept
-        -> GPUMesh;
+    [[nodiscard]] auto uploadMesh(const StaticMesh& mesh, const MeshUploadOptions& options) noexcept
+        -> GPUStaticMesh;
 
 }  // namespace exage::Renderer

@@ -3,16 +3,7 @@
 #extension GL_GOOGLE_include_directive : enable
 
 #include "../bindless.shader"
-
-struct Camera
-{
-    mat4 view;
-    mat4 proj;
-    mat4 viewProj;
-    vec3 position;
-};
-
-DEFINE_BINDLESS_STORAGE_BUFFER(readonly, Camera);
+#include "../camera.shader"
 
 struct Transform
 {
@@ -56,6 +47,6 @@ void main()
     fragTangent = normalize(transform.normal * vec4(tangent, 0.0)).xyz;
     fragBitangent = normalize(transform.normal * vec4(bitangent, 0.0)).xyz;
 
-    gl_Position = camera.viewProj * worldPosition;
+    gl_Position = camera.viewProjection * worldPosition;
 
 }

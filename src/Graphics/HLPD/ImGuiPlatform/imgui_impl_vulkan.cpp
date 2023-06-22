@@ -97,11 +97,14 @@
 
 #include <stdio.h>
 
+#include "exage/Graphics/HLPD/ImGuiTools.h"
+
 // Visual Studio warnings
 #ifdef _MSC_VER
 #    pragma warning(disable : 4127)  // condition expression is constant
 #endif
 #include "exage/Graphics/Texture.h"
+#include "exage/platform/Vulkan/VulkanSampler.h"
 #include "exage/platform/Vulkan/VulkanTexture.h"
 
 // Reusable buffers used for rendering 1 current in-flight frame, for
@@ -683,8 +686,13 @@ void ImGui_ImplVulkan_RenderDrawData(ImDrawData* draw_data,
                 }
                 else
                 {
-                    auto* texture = static_cast<exage::Graphics::VulkanTexture*>(pcmd->TextureId);
-                    descriptor = texture->getDescriptorImageInfo();
+                    auto* imguiTexture =
+                        static_cast<exage::Graphics::ImGuiTexture*>(pcmd->TextureId);
+                    auto* texture = imguiTexture->texture->as<exage::Graphics::VulkanTexture>();
+                    auto* sampler = imguiTexture->sampler->as<exage::Graphics::VulkanSampler>();
+                    descriptor.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                    descriptor.imageView = texture->getImageView();
+                    descriptor.sampler = sampler->getSampler();
                 }
 
                 VkWriteDescriptorSet writeDescriptorSet = {};

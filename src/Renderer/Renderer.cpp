@@ -6,10 +6,13 @@
 #include "exage/Graphics/FrameBuffer.h"
 #include "exage/Graphics/Texture.h"
 #include "exage/Graphics/Utils/BufferTypes.h"
+#include "exage/Renderer/LightingPass/LightingRenderer.h"
 #include "exage/Renderer/Locations.h"
 #include "exage/Renderer/Scene/Camera.h"
+#include "exage/Renderer/Scene/Light.h"
 #include "exage/Renderer/Scene/Mesh.h"
 #include "exage/Renderer/Scene/Transform.h"
+#include "exage/Renderer/Utils/Perspective.h"
 #include "exage/Scene/Hierarchy.h"
 #include "exage/Scene/Scene.h"
 #include "exage/utils/math.h"
@@ -48,14 +51,20 @@ namespace exage::Renderer
         , _sceneBuffer(createInfo.sceneBuffer)
         , _assetCache(createInfo.assetCache)
         , _extent(createInfo.extent)
+        , _anisotropy(createInfo.anisotropy)
+        , _shadowResolution(createInfo.shadowResolution)
+        , _cascadeLevels(createInfo.cascadeLevels)
         , _geometryRenderer({createInfo.context,
                              createInfo.sceneBuffer,
                              createInfo.assetCache,
-                             createInfo.extent})
+                             createInfo.extent,
+                             createInfo.anisotropy})
         , _shadowRenderer({createInfo.context,
                            createInfo.sceneBuffer,
                            createInfo.assetCache,
-                           createInfo.shadowResolution})
+                           createInfo.shadowResolution,
+                           createInfo.cascadeLevels})
+        , _lightingRenderer({createInfo.context, createInfo.extent})
     {
         auto& context = _context.get();
 
@@ -97,24 +106,12 @@ namespace exage::Renderer
 
         // View and projection matrices
         auto view = cameraTransform.globalRotation.getViewMatrix(cameraTransform.globalPosition);
-        glm::mat4 projection {};
-
-        if (context.getAPIProperties().depthZeroToOne)
-        {
-            projection =
-                glm::perspectiveRH_ZO(cameraComponent.fov,
-                                      static_cast<float>(_extent.x) / static_cast<float>(_extent.y),
-                                      cameraComponent.near,
-                                      cameraComponent.far);
-        }
-        else
-        {
-            projection =
-                glm::perspectiveRH_NO(cameraComponent.fov,
-                                      static_cast<float>(_extent.x) / static_cast<float>(_extent.y),
-                                      cameraComponent.near,
-                                      cameraComponent.far);
-        }
+        glm::mat4 projection =
+            perspectiveProject(cameraComponent.fov,
+                               static_cast<float>(_extent.x) / static_cast<float>(_extent.y),
+                               cameraComponent.near,
+                               cameraComponent.far,
+                               context.getAPIProperties().depthZeroToOne);
 
         auto& cameraRenderInfoStorage =
             scene.registry().storage<CameraRenderInfo>(CURRENT_CAMERA_RENDER_INFO);
@@ -179,10 +176,21 @@ namespace exage::Renderer
                                                Graphics::AccessFlags::eShaderRead);
         }
 
-        _shadowRenderer.prepareLightingData(scene);
+        _shadowRenderer.prepareLightingData(scene, commandBuffer);
 
         _shadowRenderer.render(commandBuffer, scene);
         _geometryRenderer.render(commandBuffer, scene);
+
+        LightingRenderInfo lightingRenderInfo {};
+        lightingRenderInfo.position = _geometryRenderer.getFrameBuffer().getTexture(0);
+        lightingRenderInfo.normal = _geometryRenderer.getFrameBuffer().getTexture(1);
+        lightingRenderInfo.albedo = _geometryRenderer.getFrameBuffer().getTexture(2);
+        lightingRenderInfo.metallic = _geometryRenderer.getFrameBuffer().getTexture(3);
+        lightingRenderInfo.roughness = _geometryRenderer.getFrameBuffer().getTexture(4);
+        lightingRenderInfo.occlusion = _geometryRenderer.getFrameBuffer().getTexture(5);
+        lightingRenderInfo.emissive = _geometryRenderer.getFrameBuffer().getTexture(6);
+
+        _lightingRenderer.render(commandBuffer, scene, lightingRenderInfo);
 
         commandBuffer.textureBarrier(colorTexture,
                                      Graphics::Texture::Layout::eTransferDst,
@@ -192,15 +200,16 @@ namespace exage::Renderer
                                      Graphics::AccessFlags::eTransferWrite);
 
         auto albedo = _geometryRenderer.getFrameBuffer().getTexture(2);
+        auto lightingResult = _lightingRenderer.getFrameBuffer().getTexture(0);
 
-        commandBuffer.textureBarrier(albedo,
+        commandBuffer.textureBarrier(lightingResult,
                                      Graphics::Texture::Layout::eTransferSrc,
                                      Graphics::PipelineStageFlags::eColorAttachmentOutput,
                                      Graphics::PipelineStageFlags::eTransfer,
                                      Graphics::AccessFlags::eColorAttachmentWrite,
                                      Graphics::AccessFlags::eTransferRead);
 
-        commandBuffer.blit(albedo,
+        commandBuffer.blit(lightingResult,
                            colorTexture,
                            glm::uvec3 {0},
                            glm::uvec3 {0},
@@ -209,7 +218,7 @@ namespace exage::Renderer
                            0,
                            0,
                            1,
-                           albedo->getExtent(),
+                           lightingResult->getExtent(),
                            colorTexture->getExtent());
 
         commandBuffer.textureBarrier(colorTexture,
@@ -236,6 +245,7 @@ namespace exage::Renderer
         _extent = extent;
         _frameBuffer->resize(extent);
         _geometryRenderer.resize(extent);
+        _lightingRenderer.resize(extent);
     }
 
     void copySceneForRenderer(Scene& scene) noexcept
@@ -243,12 +253,17 @@ namespace exage::Renderer
         auto& reg = scene.registry();
 
         copyComponentWithName<Transform3D>(reg, LAST_TRANSFORM_3D, CURRENT_TRANSFORM_3D);
-        copyComponentWithName<MeshComponent>(reg, LAST_MESH_COMPONENT, CURRENT_MESH_COMPONENT);
+        copyComponentWithName<StaticMeshComponent>(
+            reg, LAST_MESH_COMPONENT, CURRENT_MESH_COMPONENT);
         copyComponentWithName<Camera>(reg, LAST_CAMERA, CURRENT_CAMERA);
 
         copyComponent<Transform3D>(reg, CURRENT_TRANSFORM_3D);
-        copyComponent<MeshComponent>(reg, CURRENT_MESH_COMPONENT);
+        copyComponent<StaticMeshComponent>(reg, CURRENT_MESH_COMPONENT);
         copyComponent<Camera>(reg, CURRENT_CAMERA);
+
+        copyComponent<PointLight>(reg, CURRENT_POINT_LIGHT);
+        copyComponent<DirectionalLight>(reg, CURRENT_DIRECTIONAL_LIGHT);
+        copyComponent<SpotLight>(reg, CURRENT_SPOT_LIGHT);
     }
 
 }  // namespace exage::Renderer

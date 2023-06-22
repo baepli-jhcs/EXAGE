@@ -3,57 +3,27 @@
 
 #include "exage/Renderer/GeometryPass/MeshSystem.h"
 
-#include <stdint.h>
-
 #include "exage/Core/Debug.h"
 #include "exage/Filesystem/Directories.h"
+#include "exage/Graphics/Context.h"
 #include "exage/Graphics/Pipeline.h"
 #include "exage/Graphics/Shader.h"
 #include "exage/Renderer/Locations.h"
 #include "exage/Renderer/Scene/Camera.h"
 #include "exage/Renderer/Scene/Mesh.h"
 #include "exage/Renderer/Scene/Transform.h"
+#include "exage/Renderer/Utils/Frustum.h"
 #include "fmt/core.h"
 
 namespace exage::Renderer
 {
-    auto aabbInFrustum(const AABB& aabb, const glm::mat4& modelViewProjection) noexcept -> bool
-    {
-        glm::vec4 corners[8] = {
-            {aabb.min.x, aabb.min.y, aabb.min.z, 1.0},  // x y z
-            {aabb.max.x, aabb.min.y, aabb.min.z, 1.0},  // X y z
-            {aabb.min.x, aabb.max.y, aabb.min.z, 1.0},  // x Y z
-            {aabb.max.x, aabb.max.y, aabb.min.z, 1.0},  // X Y z
-
-            {aabb.min.x, aabb.min.y, aabb.max.z, 1.0},  // x y Z
-            {aabb.max.x, aabb.min.y, aabb.max.z, 1.0},  // X y Z
-            {aabb.min.x, aabb.max.y, aabb.max.z, 1.0},  // x Y Z
-            {aabb.max.x, aabb.max.y, aabb.max.z, 1.0},  // X Y Z
-        };
-
-        bool inFrustum = false;
-
-        for (const auto& corner : corners)
-        {
-            glm::vec4 transformed = modelViewProjection * corner;
-
-            if (transformed.x >= -transformed.w && transformed.x <= transformed.w
-                && transformed.y >= -transformed.w && transformed.y <= transformed.w
-                && transformed.z >= -transformed.w && transformed.z <= transformed.w)
-            {
-                inFrustum = true;
-                break;
-            }
-        }
-
-        return inFrustum;
-    }
 
     struct BindlessPushConstant
     {
         uint32_t cameraIndex;
         uint32_t transformIndex;
         uint32_t materialIndex;
+        uint32_t samplerIndex;
     };
 
     constexpr std::string_view VERTEX_SHADER_PATH = "geometry_pass/mesh.vert";
@@ -96,30 +66,30 @@ namespace exage::Renderer
 
         Graphics::VertexDescription vertexDescription {};
         vertexDescription.inputRate = Graphics::VertexDescription::InputRate::eVertex;
-        vertexDescription.stride = sizeof(MeshVertex);
+        vertexDescription.stride = sizeof(StaticMeshVertex);
 
         Graphics::VertexAttribute positionVertexDescription {};
-        positionVertexDescription.offset = offsetof(MeshVertex, position);
+        positionVertexDescription.offset = offsetof(StaticMeshVertex, position);
         positionVertexDescription.components = 3;
         positionVertexDescription.type = Graphics::VertexAttribute::Type::eFloat;
 
         Graphics::VertexAttribute normalVertexDescription {};
-        normalVertexDescription.offset = offsetof(MeshVertex, normal);
+        normalVertexDescription.offset = offsetof(StaticMeshVertex, normal);
         normalVertexDescription.components = 3;
         normalVertexDescription.type = Graphics::VertexAttribute::Type::eFloat;
 
         Graphics::VertexAttribute uvVertexDescription {};
-        uvVertexDescription.offset = offsetof(MeshVertex, uv);
+        uvVertexDescription.offset = offsetof(StaticMeshVertex, uv);
         uvVertexDescription.components = 2;
         uvVertexDescription.type = Graphics::VertexAttribute::Type::eFloat;
 
         Graphics::VertexAttribute tangentVertexDescription {};
-        tangentVertexDescription.offset = offsetof(MeshVertex, tangent);
+        tangentVertexDescription.offset = offsetof(StaticMeshVertex, tangent);
         tangentVertexDescription.components = 3;
         tangentVertexDescription.type = Graphics::VertexAttribute::Type::eFloat;
 
         Graphics::VertexAttribute bitangentVertexDescription {};
-        bitangentVertexDescription.offset = offsetof(MeshVertex, bitangent);
+        bitangentVertexDescription.offset = offsetof(StaticMeshVertex, bitangent);
         bitangentVertexDescription.components = 3;
         bitangentVertexDescription.type = Graphics::VertexAttribute::Type::eFloat;
 
@@ -133,17 +103,7 @@ namespace exage::Renderer
         colorBlendState.blendConstants = {0.0F, 0.0F, 0.0F, 0.0F};
         colorBlendState.attachments.resize(7);
         // Position, normal, albedo, metallic, roughness, occlusion, emissive
-        colorBlendState.attachments[0].blend = true;
-        colorBlendState.attachments[0].srcColorBlendFactor =
-            Pipeline::ColorBlendAttachment::BlendFactor::eSrcAlpha;
-        colorBlendState.attachments[0].dstColorBlendFactor =
-            Pipeline::ColorBlendAttachment::BlendFactor::eOneMinusSrcAlpha;
-        colorBlendState.attachments[0].colorBlendOp =
-            Pipeline::ColorBlendAttachment::BlendOperation::eAdd;
-        colorBlendState.attachments[0].srcAlphaBlendFactor =
-            Pipeline::ColorBlendAttachment::BlendFactor::eOne;
-        colorBlendState.attachments[0].dstAlphaBlendFactor =
-            Pipeline::ColorBlendAttachment::BlendFactor::eZero;
+        colorBlendState.attachments[0].blend = false;
 
         colorBlendState.attachments[1] = colorBlendState.attachments[0];
         colorBlendState.attachments[2] = colorBlendState.attachments[0];
@@ -163,7 +123,7 @@ namespace exage::Renderer
         renderInfo.depthStencilFormat = _context.get().getHardwareSupport().depthFormat;
 
         Pipeline::RasterState rasterState {};
-        rasterState.cullMode = Pipeline::CullMode::eNone;  // TODO: Culling
+        rasterState.cullMode = Pipeline::CullMode::eBack;
         rasterState.frontFace = Pipeline::FrontFace::eCounterClockwise;
         rasterState.polygonMode = Pipeline::PolygonMode::eFill;
         rasterState.lineWidth = 1.0F;
@@ -185,6 +145,11 @@ namespace exage::Renderer
         pipelineCreateInfo.bindless = true;
 
         _pipeline = _context.get().createPipeline(pipelineCreateInfo);
+
+        Graphics::SamplerCreateInfo samplerCreateInfo {};
+        samplerCreateInfo.anisotropy = createInfo.anisotropy;
+
+        _sampler = _context.get().createSampler(samplerCreateInfo);
     }
 
     void MeshSystem::render(Graphics::CommandBuffer& commandBuffer, Scene& scene, glm::uvec2 extent)
@@ -195,7 +160,7 @@ namespace exage::Renderer
         commandBuffer.setScissor(glm::uvec2 {0}, extent);
 
         auto view =
-            entt::basic_view {scene.registry().storage<MeshComponent>(CURRENT_MESH_COMPONENT)}
+            entt::basic_view {scene.registry().storage<StaticMeshComponent>(CURRENT_MESH_COMPONENT)}
             | entt::basic_view {
                 scene.registry().storage<TransformRenderInfo>(CURRENT_TRANSFORM_RENDER_INFO)};
 
@@ -207,62 +172,78 @@ namespace exage::Renderer
         // commandBuffer.bindVertexBuffer(_sceneBuffer.get().getBuffer(), 0);
         // commandBuffer.bindIndexBuffer(_sceneBuffer.get().getBuffer(), 0);
 
-        // auto func = [&](Entity entity)
-        //{
-        //     const auto& mesh = view.get<GPUMesh>(entity);
+        BindlessPushConstant pushConstant {};
+        pushConstant.cameraIndex = cameraInfo.buffer->currentBindlessID().id;
+        pushConstant.samplerIndex = _sampler->getBindlessID().id;
+
+        // for (auto entity : view)
+        // {
+        //     const auto& meshComponent = view.get<StaticMeshComponent>(entity);
         //     const auto& transform = view.get<TransformRenderInfo>(entity);
 
-        //    // Frustum culling using meshComponent.mesh.aabb
-        //    if (!aabbInFrustum(mesh.aabb, transform.data.modelViewProjection))
-        //    {
-        //        return;
-        //    }
+        //     auto* meshPtr = _assetCache.get().getMeshIfExists(meshComponent.pathHash);
+        //     if (meshPtr == nullptr)
+        //     {
+        //         fmt::print("Mesh {} not found\n", meshComponent.path.string());
+        //         continue;
+        //     }
 
-        //    if (!mesh.material.buffer)
-        //    {
-        //        fmt::print("Mesh {} has no material\n", static_cast<uint32_t>(entity));
-        //        return;
-        //    }
+        //     const auto& mesh = *meshPtr;
 
-        //    BindlessPushConstant pushConstant {};
-        //    pushConstant.cameraIndex = cameraInfo.buffer->currentBindlessID().id;
-        //    pushConstant.transformIndex = transform.buffer->currentBindlessID().id;
-        //    pushConstant.materialIndex = mesh.material.buffer->getBindlessID().id;
+        //     Frustum frustum {transform.data.modelViewProjection};
+        //     if (!frustum.intersects(mesh.aabb))
+        //     {
+        //         continue;
+        //     }
 
-        //    uint32_t lodLevel = 0;  // TODO: LOD
+        //     if (!mesh.material.buffer)
+        //     {
+        //         fmt::print("Mesh {} has no material\n", static_cast<uint32_t>(entity));
+        //         continue;
+        //     }
 
-        //    commandBuffer.insertDataDependency(mesh.material.buffer);
-        //    pushConstant.materialIndex = mesh.material.buffer->getBindlessID().id;
+        //     pushConstant.transformIndex = transform.buffer->currentBindlessID().id;
+        //     pushConstant.materialIndex = mesh.material.buffer->getBindlessID().id;
 
-        //    commandBuffer.setPushConstant(sizeof(pushConstant),
-        //                                  reinterpret_cast<std::byte*>(&pushConstant));
+        //     uint32_t lodLevel = 0;  // TODO: LOD
 
-        //    commandBuffer.drawIndexed(mesh.lods[lodLevel].indexCount,
-        //                              mesh.lods[lodLevel].indexOffset,
-        //                              mesh.lods[lodLevel].vertexOffset,
-        //                              1,
-        //                              0);
-        //};
+        //     commandBuffer.bindVertexBuffer(mesh.vertexBuffer, 0);
+        //     commandBuffer.bindIndexBuffer(mesh.indexBuffer, 0);
 
-        for (auto entity : view)
+        //     commandBuffer.insertDataDependency(mesh.material.buffer);
+        //     pushConstant.materialIndex = mesh.material.buffer->getBindlessID().id;
+
+        //     std::span<const std::byte> pushConstantSpan =
+        //         std::as_bytes(std::span {&pushConstant, 1});
+
+        //     commandBuffer.setPushConstant(pushConstantSpan);
+
+        //     commandBuffer.drawIndexed(mesh.lods[lodLevel].indexCount,
+        //                               mesh.lods[lodLevel].indexOffset,
+        //                               mesh.lods[lodLevel].vertexOffset,
+        //                               1,
+        //                               0);
+        // }
+
+        auto func = [&](auto entity)
         {
-            const auto& meshComponent = view.get<MeshComponent>(entity);
+            const auto& meshComponent = view.get<StaticMeshComponent>(entity);
             const auto& transform = view.get<TransformRenderInfo>(entity);
 
-            auto* meshPtr = _assetCache.get().getMeshIfExists(meshComponent.pathHash);
+            const auto* meshPtr = _assetCache.get().getMeshIfExists(meshComponent.pathHash);
             if (meshPtr == nullptr)
             {
                 fmt::print("Mesh {} not found\n", meshComponent.path.string());
-                continue;
+                return;
             }
 
             const auto& mesh = *meshPtr;
 
-            // Frustum culling using meshComponent.mesh.aabb
-            // if (!aabbInFrustum(mesh.aabb, transform.data.modelViewProjection))
-            // {
-            //     return;
-            // }
+            Frustum frustum {transform.data.modelViewProjection};
+            if (!frustum.intersects(mesh.aabb))
+            {
+                return;
+            }
 
             if (!mesh.material.buffer)
             {
@@ -270,29 +251,29 @@ namespace exage::Renderer
                 return;
             }
 
-            BindlessPushConstant pushConstant {};
-            pushConstant.cameraIndex = cameraInfo.buffer->currentBindlessID().id;
             pushConstant.transformIndex = transform.buffer->currentBindlessID().id;
+
+            std::scoped_lock lock {*_mutex};
             pushConstant.materialIndex = mesh.material.buffer->getBindlessID().id;
 
             uint32_t lodLevel = 0;  // TODO: LOD
+            std::span<const std::byte> pushConstantSpan =
+                std::as_bytes(std::span {&pushConstant, 1});
 
             commandBuffer.bindVertexBuffer(mesh.vertexBuffer, 0);
             commandBuffer.bindIndexBuffer(mesh.indexBuffer, 0);
 
             commandBuffer.insertDataDependency(mesh.material.buffer);
-            pushConstant.materialIndex = mesh.material.buffer->getBindlessID().id;
 
-            commandBuffer.setPushConstant(sizeof(pushConstant),
-                                          reinterpret_cast<std::byte*>(&pushConstant));
+            commandBuffer.setPushConstant(pushConstantSpan);
 
             commandBuffer.drawIndexed(mesh.lods[lodLevel].indexCount,
                                       mesh.lods[lodLevel].indexOffset,
                                       mesh.lods[lodLevel].vertexOffset,
                                       1,
                                       0);
-        }
+        };
 
-        // std::for_each(std::execution::seq, view.begin(), view.end(), func);
+        std::for_each(std::execution::par, view.begin(), view.end(), func);
     }
 }  // namespace exage::Renderer

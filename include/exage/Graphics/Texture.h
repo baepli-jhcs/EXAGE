@@ -37,60 +37,6 @@ namespace exage::Graphics
         eETC2RGBA8,
     };
 
-    struct SamplerCreateInfo;
-
-    struct Sampler
-    {
-        virtual ~Sampler() = default;
-        EXAGE_DELETE_COPY(Sampler);
-        EXAGE_DEFAULT_MOVE(Sampler);
-
-        enum class Anisotropy : uint32_t
-        {
-            eDisabled = 0,
-            e1 = 1,
-            e2 = 2,
-            e4 = 4,
-            e8 = 8,
-            e16 = 16
-        };
-
-        enum class Filter : uint32_t
-        {
-            eNearest = 0,
-            eLinear = 1
-        };
-
-        enum class MipmapMode : uint32_t
-        {
-            eNearest = 0,
-            eLinear = 1
-        };
-
-        [[nodiscard]] auto getAnisotropy() const noexcept -> Anisotropy { return _anisotropy; }
-        [[nodiscard]] auto getFilter() const noexcept -> Filter { return _filter; }
-        [[nodiscard]] auto getMipmapMode() const noexcept -> MipmapMode { return _mipmapMode; }
-        [[nodiscard]] auto getLodBias() const noexcept -> float { return _lodBias; }
-
-        [[nodiscard]] auto getSamplerCreateInfo() const noexcept -> SamplerCreateInfo;
-
-        EXAGE_BASE_API(API, Sampler);
-
-      protected:
-        Anisotropy _anisotropy;
-        Filter _filter;
-        MipmapMode _mipmapMode;
-        float _lodBias;
-
-        Sampler(Anisotropy anisotropy, Filter filter, MipmapMode mipmapMode, float lodBias) noexcept
-            : _anisotropy(anisotropy)
-            , _filter(filter)
-            , _mipmapMode(mipmapMode)
-            , _lodBias(lodBias)
-        {
-        }
-    };
-
     using TextureExtent = glm::uvec3;
 
     class Texture
@@ -128,9 +74,6 @@ namespace exage::Graphics
 
         [[nodiscard]] auto getTextureCreateInfo() const noexcept -> TextureCreateInfo;
 
-        [[nodiscard]] virtual auto getSampler() noexcept -> Sampler& = 0;
-        [[nodiscard]] virtual auto getSampler() const noexcept -> const Sampler& = 0;
-
         enum class Type : uint32_t
         {
             e1D,
@@ -149,6 +92,7 @@ namespace exage::Graphics
             eTransferDst,
             ePresent,
             eStorage,
+            eDepthStencilReadOnly,
         };
 
         EXAGE_BASE_API(API, Texture);
@@ -183,14 +127,6 @@ namespace exage::Graphics
     };
     EXAGE_ENABLE_FLAGS(Texture::Usage)
 
-    struct SamplerCreateInfo
-    {
-        Sampler::Anisotropy anisotropy = Sampler::Anisotropy::eDisabled;
-        Sampler::Filter filter = Sampler::Filter::eLinear;
-        Sampler::MipmapMode mipmapMode = Sampler::MipmapMode::eLinear;
-        float lodBias = 0.0F;
-    };
-
     struct TextureCreateInfo
     {
         TextureExtent extent = glm::uvec3(1);
@@ -199,7 +135,5 @@ namespace exage::Graphics
         Texture::Usage usage = Texture::UsageFlags::eSampled;
         uint32_t arrayLayers = 1;
         uint32_t mipLevels = 1;
-
-        SamplerCreateInfo samplerCreateInfo {};
     };
 }  // namespace exage::Graphics

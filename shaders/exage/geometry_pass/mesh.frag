@@ -32,6 +32,7 @@ layout(push_constant) uniform PushConstant
     uint cameraIndex;
     uint transformIndex;
     uint materialIndex;
+    uint samplerIndex;
 } pc;
 
 layout(location = 0) out vec4 gPosition;
@@ -49,6 +50,7 @@ layout(location = 3) in vec3 tangent;
 layout(location = 4) in vec3 bitangent;
 
 DEFINE_BINDLESS_SAMPLED_TEXTURES();
+DEFINE_BINDLESS_SAMPLERS();
 
 DEFINE_BINDLESS_STORAGE_BUFFER(readonly, Material);
 
@@ -60,7 +62,7 @@ void main()
     
     if (material.normalUseTexture)
     {
-        vec3 normalMap = SampleBindless2DTexture(material.normalTextureIndex, uv).xyz;
+        vec3 normalMap = SampleBindless2DTexture(pc.samplerIndex, material.normalTextureIndex, uv).xyz;
         normalMap = normalize(normalMap * 2.0 - 1.0);
         normalMap = normalize(tangent * normalMap.x + bitangent * normalMap.y + normalMap.z * normal);
         gNormal = vec4(normalMap, 1.0);
@@ -72,7 +74,7 @@ void main()
 
     if (material.albedoUseTexture)
     {
-        gAlbedo = vec4(SampleBindless2DTexture(material.albedoTextureIndex, uv).xyz, 1.0);
+        gAlbedo = vec4(SampleBindless2DTexture(pc.samplerIndex, material.albedoTextureIndex, uv).xyz, 1.0);
     }
     else
     {
@@ -81,7 +83,7 @@ void main()
 
     if (material.metallicUseTexture)
     {
-        gMetallic = SampleBindless2DTexture(material.metallicTextureIndex, uv).x;
+        gMetallic = SampleBindless2DTexture(pc.samplerIndex, material.metallicTextureIndex, uv).x;
     }
     else
     {
@@ -90,7 +92,7 @@ void main()
 
     if (material.roughnessUseTexture)
     {
-        gRoughness = SampleBindless2DTexture(material.roughnessTextureIndex, uv).x;
+        gRoughness = SampleBindless2DTexture(pc.samplerIndex, material.roughnessTextureIndex, uv).x;
     }
     else
     {
@@ -99,7 +101,7 @@ void main()
 
     if (material.occlusionUseTexture)
     {
-        gAO = SampleBindless2DTexture(material.occlusionTextureIndex, uv).x;
+        gAO = SampleBindless2DTexture(pc.samplerIndex, material.occlusionTextureIndex, uv).x;
     }
     else
     {
@@ -108,7 +110,7 @@ void main()
 
     if (material.emissiveUseTexture)
     {
-        gEmissive = vec4(SampleBindless2DTexture(material.emissiveTextureIndex, uv).xyz, 1.0);
+        gEmissive = vec4(SampleBindless2DTexture(pc.samplerIndex, material.emissiveTextureIndex, uv).xyz, 1.0);
     }
     else
     {

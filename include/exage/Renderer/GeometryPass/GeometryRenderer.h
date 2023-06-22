@@ -17,6 +17,7 @@ namespace exage::Renderer
         SceneBuffer& sceneBuffer;
         AssetCache& assetCache;
         glm::uvec2 extent;
+        Graphics::Sampler::Anisotropy anisotropy = Graphics::Sampler::Anisotropy::e1;
     };
 
     class GeometryRenderer

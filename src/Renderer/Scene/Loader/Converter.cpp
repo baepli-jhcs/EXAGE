@@ -107,9 +107,10 @@ namespace exage::Renderer
             return materialResult;
         }
 
-        [[nodiscard]] auto processMesh2(const aiMesh& mesh) noexcept -> AssetImportResult2::Mesh
+        [[nodiscard]] auto processMesh2(const aiMesh& mesh) noexcept
+            -> AssetImportResult2::StaticMesh
         {
-            AssetImportResult2::Mesh meshResult;
+            AssetImportResult2::StaticMesh meshResult;
             meshResult.materialIndex = mesh.mMaterialIndex;
 
             meshResult.aabb.min =
@@ -117,12 +118,12 @@ namespace exage::Renderer
             meshResult.aabb.max =
                 glm::vec3(mesh.mAABB.mMax.x, mesh.mAABB.mMax.y, mesh.mAABB.mMax.z);
 
-            std::vector<MeshVertex> vertices;
+            std::vector<StaticMeshVertex> vertices;
             vertices.resize(mesh.mNumVertices);
 
             for (size_t i = 0; i < mesh.mNumVertices; i++)
             {
-                MeshVertex& vertex = vertices[i];
+                StaticMeshVertex& vertex = vertices[i];
 
                 vertex.position =
                     glm::vec3(mesh.mVertices[i].x, mesh.mVertices[i].y, mesh.mVertices[i].z);
@@ -494,12 +495,12 @@ namespace exage::Renderer
         return {};
     }
 
-    auto saveMesh(Mesh& mesh) noexcept -> AssetFile
+    auto saveMesh(StaticMesh& mesh) noexcept -> AssetFile
     {
         AssetFile assetFile;
 
         nlohmann::json json;
-        json["dataType"] = "Mesh";
+        json["dataType"] = "StaticMesh";
         json["aabb"] = {
             {"min", mesh.aabb.min},
             {"max", mesh.aabb.max},
@@ -522,7 +523,7 @@ namespace exage::Renderer
 
         std::vector<char> binary;
 
-        size_t vertexSize = sizeof(MeshVertex) * mesh.vertices.size();
+        size_t vertexSize = sizeof(StaticMeshVertex) * mesh.vertices.size();
         size_t indexSize = sizeof(uint32_t) * mesh.indices.size();
 
         json["vertices"] = mesh.vertices.size();
@@ -556,7 +557,7 @@ namespace exage::Renderer
         return assetFile;
     }
 
-    auto saveMesh(Mesh& mesh,
+    auto saveMesh(StaticMesh& mesh,
                   const std::filesystem::path& savePath,
                   const std::filesystem::path& prefix) noexcept -> tl::expected<void, AssetError>
     {
@@ -589,9 +590,9 @@ namespace exage::Renderer
                 auto entity = scene.createEntity(parent);
                 scene.addComponent<Transform3D>(entity, node.transform);
 
-                GPUMesh& mesh = info.meshes[node.meshIndex];
-                MeshComponent meshComponent = {.path = mesh.path, .pathHash = mesh.pathHash};
-                scene.addComponent<MeshComponent>(entity, meshComponent);
+                GPUStaticMesh& mesh = info.meshes[node.meshIndex];
+                StaticMeshComponent meshComponent = {.path = mesh.path, .pathHash = mesh.pathHash};
+                scene.addComponent<StaticMeshComponent>(entity, meshComponent);
 
                 createChildren(info, scene, entity, node.childrenIndices, nodes);
             }

@@ -8,6 +8,7 @@
 #include "exage/Graphics/Context.h"
 #include "exage/Graphics/Utils/BufferTypes.h"
 #include "exage/Renderer/GeometryPass/GeometryRenderer.h"
+#include "exage/Renderer/LightingPass/LightingRenderer.h"
 #include "exage/Renderer/Scene/AssetCache.h"
 #include "exage/Renderer/Scene/SceneBuffer.h"
 #include "exage/Renderer/ShadowPass/ShadowRenderer.h"
@@ -21,7 +22,9 @@ namespace exage::Renderer
         SceneBuffer& sceneBuffer;
         AssetCache& assetCache;
         glm::uvec2 extent;
+        Graphics::Sampler::Anisotropy anisotropy = Graphics::Sampler::Anisotropy::e1;
         ShadowResolution shadowResolution = ShadowResolution::e1024;
+        CascadeLevels cascadeLevels = CascadeLevels::e4;
     };
 
     class Renderer
@@ -49,8 +52,13 @@ namespace exage::Renderer
         std::reference_wrapper<AssetCache> _assetCache;
         glm::uvec2 _extent;
 
+        Graphics::Sampler::Anisotropy _anisotropy;
+        ShadowResolution _shadowResolution;
+        CascadeLevels _cascadeLevels;
+
         GeometryRenderer _geometryRenderer;
         ShadowRenderer _shadowRenderer;
+        LightingRenderer _lightingRenderer;
 
         std::shared_ptr<Graphics::FrameBuffer> _frameBuffer;
     };

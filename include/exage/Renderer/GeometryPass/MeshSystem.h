@@ -5,6 +5,7 @@
 #include "exage/Core/Core.h"
 #include "exage/Graphics/CommandBuffer.h"
 #include "exage/Graphics/Context.h"
+#include "exage/Graphics/Sampler.h"
 #include "exage/Graphics/Shader.h"
 #include "exage/Renderer/Scene/AssetCache.h"
 #include "exage/Renderer/Scene/SceneBuffer.h"
@@ -12,14 +13,13 @@
 
 namespace exage::Renderer
 {
-    [[nodiscard]] auto aabbInFrustum(const AABB& aabb,
-                                     const glm::mat4& modelViewProjection) noexcept -> bool;
 
     struct MeshSystemCreateInfo
     {
         Graphics::Context& context;
         SceneBuffer& sceneBuffer;
         AssetCache& assetCache;
+        Graphics::Sampler::Anisotropy anisotropy = Graphics::Sampler::Anisotropy::e1;
     };
 
     class MeshSystem
@@ -39,5 +39,8 @@ namespace exage::Renderer
         std::reference_wrapper<AssetCache> _assetCache;
 
         std::shared_ptr<Graphics::Pipeline> _pipeline;
+        std::shared_ptr<Graphics::Sampler> _sampler;
+
+        std::unique_ptr<std::mutex> _mutex = std::make_unique<std::mutex>();
     };
 }  // namespace exage::Renderer

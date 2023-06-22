@@ -50,4 +50,10 @@ namespace exage::Graphics
 
         ImGuiContext* _imCtx;
     };
+
+    struct ImGuiTexture
+    {
+        std::shared_ptr<Texture> texture;
+        std::shared_ptr<Sampler> sampler;
+    };
 }  // namespace exage::Graphics

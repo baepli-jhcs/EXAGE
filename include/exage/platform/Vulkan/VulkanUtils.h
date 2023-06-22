@@ -4,6 +4,7 @@
 #include "exage/Graphics/Buffer.h"
 #include "exage/Graphics/Commands.h"
 #include "exage/Graphics/Pipeline.h"
+#include "exage/Graphics/Sampler.h"
 #include "exage/Graphics/Swapchain.h"
 #include "exage/Graphics/Texture.h"
 #include "fmt/format.h"
@@ -114,9 +115,32 @@ namespace exage::Graphics
         }
     }
 
-    [[nodiscard]] constexpr auto toVulkanImageViewType(Texture::Type type) noexcept
+    [[nodiscard]] constexpr auto toVulkanImageViewType(Texture::Type type, uint32_t layers) noexcept
         -> vk::ImageViewType
     {
+        if (layers > 1)
+        {
+            switch (type)
+            {
+                case Texture::Type::e1D:
+                    return vk::ImageViewType::e1DArray;
+                case Texture::Type::e2D:
+                    return vk::ImageViewType::e2DArray;
+                case Texture::Type::e3D:
+                    return vk::ImageViewType::e3D;
+                case Texture::Type::eCube:
+                    if (layers == 6)
+                    {
+                        return vk::ImageViewType::eCube;
+                    }
+                    else
+                    {
+                        return vk::ImageViewType::eCubeArray;
+                    }
+                default:
+                    return vk::ImageViewType::e1DArray;
+            }
+        }
         switch (type)
         {
             case Texture::Type::e1D:
@@ -231,6 +255,8 @@ namespace exage::Graphics
                 return vk::ImageLayout::ePresentSrcKHR;
             case Texture::Layout::eStorage:
                 return vk::ImageLayout::eGeneral;
+            case Texture::Layout::eDepthStencilReadOnly:
+                return vk::ImageLayout::eDepthStencilReadOnlyOptimal;
             default:
                 return vk::ImageLayout::eUndefined;
         }

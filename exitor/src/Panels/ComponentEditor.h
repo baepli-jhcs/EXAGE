@@ -16,8 +16,10 @@ namespace exitor
                   entt::id_type selectedTypeID) noexcept -> void;
 
       private:
-        auto drawTransform3D(exage::Scene& scene, exage::Entity selectedEntity) noexcept -> void;
-        auto drawCamera(exage::Scene& scene, exage::Entity selectedEntity) noexcept -> void;
-        auto drawMesh(exage::Scene& scene, exage::Entity selectedEntity) noexcept -> void;
+        void drawTransform3D(exage::Scene& scene, exage::Entity selectedEntity) noexcept;
+        void drawCamera(exage::Scene& scene, exage::Entity selectedEntity) noexcept;
+        void drawMesh(exage::Scene& scene, exage::Entity selectedEntity) noexcept;
+        void drawDirectionalLight(exage::Scene& scene, exage::Entity selectedEntity) noexcept;
+        void drawPointLight(exage::Scene& scene, exage::Entity selectedEntity) noexcept;
     };
 }  // namespace exitor

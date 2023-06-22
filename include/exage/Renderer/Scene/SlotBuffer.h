@@ -139,5 +139,5 @@ namespace exage::Renderer
     };
 
     using IndexBuffer = GPUSlotBuffer<uint32_t>;
-    using MeshVertexBuffer = GPUSlotBuffer<MeshVertex>;
+    using MeshVertexBuffer = GPUSlotBuffer<StaticMeshVertex>;
 }  // namespace exage::Renderer

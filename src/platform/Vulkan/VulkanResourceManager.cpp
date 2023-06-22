@@ -1,6 +1,7 @@
 ﻿#include "exage/platform/Vulkan/VulkanResourceManager.h"
 
 #include "exage/platform/Vulkan/VulkanBuffer.h"
+#include "exage/platform/Vulkan/VulkanSampler.h"
 #include "exage/platform/Vulkan/VulkanTexture.h"
 
 namespace exage::Graphics
@@ -19,13 +20,16 @@ namespace exage::Graphics
         vk::DescriptorPoolSize const bufferDescriptorPoolSize {vk::DescriptorType::eStorageBuffer,
                                                                maxBufferCount};
 
-        vk::DescriptorPoolSize const combinedImageSamplerDescriptorPoolSize {
-            vk::DescriptorType::eCombinedImageSampler, maxTextureCount};
+        vk::DescriptorPoolSize const samplerDescriptorPoolSize {vk::DescriptorType::eSampler,
+                                                                maxSamplerCount};
+
+        vk::DescriptorPoolSize const sampledImageDescriptorPoolSize {
+            vk::DescriptorType::eSampledImage, maxTextureCount};
 
         vk::DescriptorPoolSize const storageImageDescriptorPoolSize {
             vk::DescriptorType::eStorageImage, maxTextureCount};
 
-        std::array descriptorPoolSizes {combinedImageSamplerDescriptorPoolSize,
+        std::array descriptorPoolSizes {sampledImageDescriptorPoolSize,
                                         bufferDescriptorPoolSize,
                                         storageImageDescriptorPoolSize};
 
@@ -38,18 +42,23 @@ namespace exage::Graphics
         checkVulkan(_context.get().getDevice().createDescriptorPool(
             &descriptorPoolCreateInfo, nullptr, &_descriptorPool));
 
-        vk::DescriptorSetLayoutBinding combinedImageSamplerSetLayoutBinding {};
-        combinedImageSamplerSetLayoutBinding.binding = sampledTextureBinding;
-        combinedImageSamplerSetLayoutBinding.descriptorType =
-            vk::DescriptorType::eCombinedImageSampler;
-        combinedImageSamplerSetLayoutBinding.descriptorCount = maxTextureCount;
-        combinedImageSamplerSetLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eAll;
-
         vk::DescriptorSetLayoutBinding storageBufferDescriptorSetLayoutBinding {};
         storageBufferDescriptorSetLayoutBinding.binding = storageBufferBinding;
         storageBufferDescriptorSetLayoutBinding.descriptorType = vk::DescriptorType::eStorageBuffer;
         storageBufferDescriptorSetLayoutBinding.descriptorCount = maxBufferCount;
         storageBufferDescriptorSetLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eAll;
+
+        vk::DescriptorSetLayoutBinding samplerDescriptorSetLayoutBinding {};
+        samplerDescriptorSetLayoutBinding.binding = samplerBinding;
+        samplerDescriptorSetLayoutBinding.descriptorType = vk::DescriptorType::eSampler;
+        samplerDescriptorSetLayoutBinding.descriptorCount = maxSamplerCount;
+        samplerDescriptorSetLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eAll;
+
+        vk::DescriptorSetLayoutBinding sampledImageSetLayoutBinding {};
+        sampledImageSetLayoutBinding.binding = sampledTextureBinding;
+        sampledImageSetLayoutBinding.descriptorType = vk::DescriptorType::eSampledImage;
+        sampledImageSetLayoutBinding.descriptorCount = maxTextureCount;
+        sampledImageSetLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eAll;
 
         // vk::DescriptorSetLayoutBinding uniformBufferDescriptorSetLayoutBinding {};
         // uniformBufferDescriptorSetLayoutBinding.binding = uniformBufferBinding;
@@ -64,10 +73,11 @@ namespace exage::Graphics
         storageImageDescriptorSetLayoutBinding.descriptorCount = maxTextureCount;
         storageImageDescriptorSetLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eAll;
 
-        std::array<vk::DescriptorSetLayoutBinding, 3> descriptorSetLayoutBindings {
-            combinedImageSamplerSetLayoutBinding,
+        std::array<vk::DescriptorSetLayoutBinding, 4> descriptorSetLayoutBindings {
             storageBufferDescriptorSetLayoutBinding,
             // uniformBufferDescriptorSetLayoutBinding,
+            samplerDescriptorSetLayoutBinding,
+            sampledImageSetLayoutBinding,
             storageImageDescriptorSetLayoutBinding};
 
         vk::DescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo {};
@@ -75,12 +85,13 @@ namespace exage::Graphics
         descriptorSetLayoutCreateInfo.flags =
             vk::DescriptorSetLayoutCreateFlagBits::eUpdateAfterBindPool;
 
-        std::array<vk::DescriptorBindingFlags, 3> descriptorBindingFlags {};
+        std::array<vk::DescriptorBindingFlags, 4> descriptorBindingFlags {};
         descriptorBindingFlags[0] = vk::DescriptorBindingFlagBits::eUpdateAfterBind
             | vk::DescriptorBindingFlagBits::ePartiallyBound
             | vk::DescriptorBindingFlagBits::eUpdateUnusedWhilePending;
         descriptorBindingFlags[1] = descriptorBindingFlags[0];
         descriptorBindingFlags[2] = descriptorBindingFlags[0];
+        descriptorBindingFlags[3] = descriptorBindingFlags[0];
 
         vk::DescriptorSetLayoutBindingFlagsCreateInfo descriptorSetLayoutBindingFlagsCreateInfo {};
         descriptorSetLayoutBindingFlagsCreateInfo.setBindingFlags(descriptorBindingFlags);
@@ -151,15 +162,22 @@ namespace exage::Graphics
 
         bool sampledImage = texture.getUsage().any(Texture::UsageFlags::eSampled);
         vk::WriteDescriptorSet sampledImageWriteDescriptorSet {};
-        vk::DescriptorImageInfo sampledImageInfo = texture.getDescriptorImageInfo();
+        vk::DescriptorImageInfo sampledImageInfo = {
+            nullptr, texture.getImageView(), vk::ImageLayout::eUndefined};
         if (sampledImage)
         {
             sampledImageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+
+            if (texture.getFormat() == Format::eDepth24Stencil8
+                || texture.getFormat() == Format::eDepth32Stencil8)
+            {
+                sampledImageInfo.imageLayout = vk::ImageLayout::eDepthStencilReadOnlyOptimal;
+            }
+
             sampledImageWriteDescriptorSet.dstSet = _descriptorSet;
             sampledImageWriteDescriptorSet.dstBinding = sampledTextureBinding;
             sampledImageWriteDescriptorSet.dstArrayElement = index;
-            sampledImageWriteDescriptorSet.descriptorType =
-                vk::DescriptorType::eCombinedImageSampler;
+            sampledImageWriteDescriptorSet.descriptorType = vk::DescriptorType::eSampledImage;
             sampledImageWriteDescriptorSet.descriptorCount = 1;
             sampledImageWriteDescriptorSet.pImageInfo = &sampledImageInfo;
         }
@@ -197,6 +215,31 @@ namespace exage::Graphics
         return TextureID {index};
     }
 
+    auto VulkanResourceManager::bindSampler(VulkanSampler& sampler) noexcept -> SamplerID
+    {
+        if (!_support)
+        {
+            return SamplerID {};
+        }
+
+        vk::DescriptorImageInfo descriptorImageInfo {};
+        descriptorImageInfo.sampler = sampler.getSampler();
+
+        uint32_t const index = _samplerPool.allocate();
+
+        vk::WriteDescriptorSet writeDescriptorSet {};
+        writeDescriptorSet.dstSet = _descriptorSet;
+        writeDescriptorSet.dstBinding = samplerBinding;
+        writeDescriptorSet.dstArrayElement = index;
+        writeDescriptorSet.descriptorType = vk::DescriptorType::eSampler;
+        writeDescriptorSet.descriptorCount = 1;
+        writeDescriptorSet.pImageInfo = &descriptorImageInfo;
+
+        _context.get().getDevice().updateDescriptorSets(1, &writeDescriptorSet, 0, nullptr);
+
+        return SamplerID {index};
+    }
+
     void VulkanResourceManager::unbindBuffer(BufferID buffer) noexcept
     {
         if (!_support)
@@ -215,6 +258,16 @@ namespace exage::Graphics
         }
 
         _texturePool.free(texture.id);
+    }
+
+    void VulkanResourceManager::unbindSampler(SamplerID sampler) noexcept
+    {
+        if (!_support)
+        {
+            return;
+        }
+
+        _samplerPool.free(sampler.id);
     }
 
 }  // namespace exage::Graphics

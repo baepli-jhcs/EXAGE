@@ -9,6 +9,7 @@
 namespace exage::Graphics
 {
     struct SwapchainCreateInfo;
+    struct SamplerCreateInfo;
     struct TextureCreateInfo;
     struct FrameBufferCreateInfo;
     struct BufferCreateInfo;
@@ -33,6 +34,7 @@ namespace exage::Graphics
     class FrameBuffer;
     class Queue;
     class Swapchain;
+    class Sampler;
     class Texture;
     class Buffer;
     class Shader;
@@ -85,6 +87,8 @@ namespace exage::Graphics
             -> std::unique_ptr<Swapchain> = 0;
         [[nodiscard]] virtual auto createCommandBuffer() noexcept
             -> std::unique_ptr<CommandBuffer> = 0;
+        [[nodiscard]] virtual auto createSampler(const SamplerCreateInfo& createInfo) noexcept
+            -> std::shared_ptr<Sampler> = 0;
         [[nodiscard]] virtual auto createTexture(const TextureCreateInfo& createInfo) noexcept
             -> std::shared_ptr<Texture> = 0;
         [[nodiscard]] virtual auto createFrameBuffer(glm::uvec2 extent) noexcept

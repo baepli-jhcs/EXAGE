@@ -37,6 +37,8 @@ namespace exage::Graphics
             -> std::unique_ptr<Swapchain> override;
         [[nodiscard]] auto createCommandBuffer() noexcept
             -> std::unique_ptr<CommandBuffer> override;
+        [[nodiscard]] auto createSampler(const SamplerCreateInfo& createInfo) noexcept
+            -> std::shared_ptr<Sampler> override;
         [[nodiscard]] auto createTexture(const TextureCreateInfo& createInfo) noexcept
             -> std::shared_ptr<Texture> override;
         [[nodiscard]] auto createFrameBuffer(glm::uvec2 extent) noexcept

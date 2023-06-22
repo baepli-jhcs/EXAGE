@@ -18,9 +18,6 @@ namespace exage::Graphics
         colorCreateInfo.type = Texture::Type::e2D;
         colorCreateInfo.mipLevels = 1;
         colorCreateInfo.arrayLayers = 1;
-        colorCreateInfo.samplerCreateInfo.anisotropy = Sampler::Anisotropy::eDisabled;
-        colorCreateInfo.samplerCreateInfo.filter = Sampler::Filter::eNearest;
-        colorCreateInfo.samplerCreateInfo.mipmapMode = Sampler::MipmapMode::eLinear;
 
         for (auto& color : createInfo.colorAttachments)
         {
@@ -37,7 +34,7 @@ namespace exage::Graphics
             depthCreateInfo.type = Texture::Type::e2D;
             depthCreateInfo.format = createInfo.depthAttachment->format;
             depthCreateInfo.usage = createInfo.depthAttachment->usage;
-            
+
             auto texture = context.createTexture(depthCreateInfo);
             attachOrReplaceDepthStencil(texture);
         }
@@ -82,7 +79,6 @@ namespace exage::Graphics
     {
         debugAssume(texture->getExtent() == glm::uvec3 {_extent.x, _extent.y, 1},
                     "Mismatched framebuffer/texture extent");
-        debugAssume(texture->getType() == Texture::Type::e2D, "Bad texture type");
         debugAssume(texture->getUsage().any(Texture::UsageFlags::eColorAttachment),
                     "Not a color attachment");
 
@@ -93,7 +89,6 @@ namespace exage::Graphics
     {
         debugAssume(texture->getExtent() == glm::uvec3 {_extent.x, _extent.y, 1},
                     "Mismatched framebuffer/texture extent");
-        debugAssume(texture->getType() == Texture::Type::e2D, "Bad texture type");
         debugAssume(texture->getUsage().any(Texture::UsageFlags::eDepthStencilAttachment),
                     "Not a depth stencil attachment");
 

@@ -5,6 +5,7 @@
 #include "exage/platform/Vulkan/VulkanFrameBuffer.h"
 #include "exage/platform/Vulkan/VulkanPipeline.h"
 #include "exage/platform/Vulkan/VulkanQueue.h"
+#include "exage/platform/Vulkan/VulkanSampler.h"
 #include "exage/platform/Vulkan/VulkanTexture.h"
 
 namespace exage::Graphics
@@ -32,9 +33,7 @@ namespace exage::Graphics
         : _context(old._context)
         , _commandBuffer(old._commandBuffer)
         , _commands(std::move(old._commands))
-        , _commandsMutex(std::move(old._commandsMutex))
         , _dataDependencies(std::move(old._dataDependencies))
-        , _dataDependenciesMutex(std::move(old._dataDependenciesMutex))
         , _currentPipeline(std::move(old._currentPipeline))
     {
         old._commandBuffer = nullptr;
@@ -56,9 +55,7 @@ namespace exage::Graphics
 
         _commandBuffer = old._commandBuffer;
         _commands = std::move(old._commands);
-        _commandsMutex = std::move(old._commandsMutex);
         _dataDependencies = std::move(old._dataDependencies);
-        _dataDependenciesMutex = std::move(old._dataDependenciesMutex);
         _currentPipeline = std::move(old._currentPipeline);
 
         old._commandBuffer = nullptr;
@@ -86,12 +83,11 @@ namespace exage::Graphics
             processCommand(command);
         }
 
-        _commandBuffer.end();
+        checkVulkan(_commandBuffer.end());
     }
 
     void VulkanCommandBuffer::insertDataDependency(DataDependency dependency) noexcept
     {
-        std::lock_guard<std::mutex> const lock(*_dataDependenciesMutex);
         _dataDependencies.push_back(dependency);
     }
 
@@ -106,7 +102,6 @@ namespace exage::Graphics
         drawCommand.firstVertex = firstVertex;
         drawCommand.firstInstance = firstInstance;
 
-        std::lock_guard<std::mutex> const lock(*_commandsMutex);
         _commands.emplace_back(drawCommand);
     }
 
@@ -123,7 +118,6 @@ namespace exage::Graphics
         drawIndexedCommand.vertexOffset = vertexOffset;
         drawIndexedCommand.firstInstance = firstInstance;
 
-        std::lock_guard<std::mutex> const lock(*_commandsMutex);
         _commands.emplace_back(drawIndexedCommand);
     }
 
@@ -145,7 +139,6 @@ namespace exage::Graphics
 
         texture->_layout = newLayout;
 
-        std::lock_guard<std::mutex> const lock(*_commandsMutex);
         _commands.emplace_back(textureBarrierCommand);
     }
 
@@ -162,7 +155,6 @@ namespace exage::Graphics
         bufferBarrierCommand.srcAccess = srcAccess;
         bufferBarrierCommand.dstAccess = dstAccess;
 
-        std::lock_guard<std::mutex> const lock(*_commandsMutex);
         _commands.emplace_back(bufferBarrierCommand);
     }
 
@@ -191,7 +183,6 @@ namespace exage::Graphics
         blitCommand.srcExtent = srcExtent;
         blitCommand.dstExtent = dstExtent;
 
-        std::lock_guard<std::mutex> const lock(*_commandsMutex);
         _commands.emplace_back(blitCommand);
     }
 
@@ -201,7 +192,6 @@ namespace exage::Graphics
         setViewportCommand.offset = offset;
         setViewportCommand.extent = extent;
 
-        std::lock_guard<std::mutex> const lock(*_commandsMutex);
         _commands.emplace_back(setViewportCommand);
     }
 
@@ -211,7 +201,6 @@ namespace exage::Graphics
         setScissorCommand.offset = offset;
         setScissorCommand.extent = extent;
 
-        std::lock_guard<std::mutex> const lock(*_commandsMutex);
         _commands.emplace_back(setScissorCommand);
     }
 
@@ -233,7 +222,6 @@ namespace exage::Graphics
         clearTextureCommand.firstLayer = firstLayer;
         clearTextureCommand.layerCount = layerCount;
 
-        std::lock_guard<std::mutex> const lock(*_commandsMutex);
         _commands.emplace_back(clearTextureCommand);
     }
 
@@ -249,7 +237,6 @@ namespace exage::Graphics
         beginRenderingCommand.clearColors = clearColors;
         beginRenderingCommand.clearDepth = clearDepth;
 
-        std::lock_guard<std::mutex> const lock(*_commandsMutex);
         _commands.emplace_back(beginRenderingCommand);
     }
 
@@ -257,7 +244,6 @@ namespace exage::Graphics
     {
         EndRenderingCommand endRenderingCommand;
 
-        std::lock_guard<std::mutex> const lock(*_commandsMutex);
         _commands.emplace_back(endRenderingCommand);
     }
 
@@ -279,7 +265,6 @@ namespace exage::Graphics
         copyBufferCommand.dstOffset = dstOffset;
         copyBufferCommand.size = size;
 
-        std::lock_guard<std::mutex> const lock(*_commandsMutex);
         _commands.emplace_back(copyBufferCommand);
     }
 
@@ -305,7 +290,6 @@ namespace exage::Graphics
         copyBufferToTextureCommand.layerCount = layerCount;
         copyBufferToTextureCommand.extent = extent;
 
-        std::lock_guard<std::mutex> const lock(*_commandsMutex);
         _commands.emplace_back(copyBufferToTextureCommand);
     }
 
@@ -331,7 +315,6 @@ namespace exage::Graphics
         copyTextureToBufferCommand.extent = extent;
         copyTextureToBufferCommand.dstOffset = dstOffset;
 
-        std::lock_guard<std::mutex> const lock(*_commandsMutex);
         _commands.emplace_back(copyTextureToBufferCommand);
     }
 
@@ -340,17 +323,17 @@ namespace exage::Graphics
         BindPipelineCommand bindPipelineCommand;
         bindPipelineCommand.pipeline = pipeline;
 
-        std::lock_guard<std::mutex> const lock(*_commandsMutex);
         _commands.emplace_back(bindPipelineCommand);
     }
 
-    void VulkanCommandBuffer::setPushConstant(uint32_t size, std::byte* data) noexcept
+    void VulkanCommandBuffer::setPushConstant(std::span<const std::byte> data) noexcept
     {
-        SetPushConstantCommand setPushConstantCommand {};
-        setPushConstantCommand.size = size;
-        std::memcpy(setPushConstantCommand.data, data, size);
+        debugAssume(data.size() <= 128, "Push constant data is too large");
 
-        std::lock_guard<std::mutex> const lock(*_commandsMutex);
+        SetPushConstantCommand setPushConstantCommand {};
+        setPushConstantCommand.size = static_cast<uint32_t>(data.size());
+        std::memcpy(setPushConstantCommand.data, data.data(), data.size());
+
         _commands.emplace_back(setPushConstantCommand);
     }
 
@@ -361,7 +344,6 @@ namespace exage::Graphics
         bindVertexBufferCommand.buffer = buffer;
         bindVertexBufferCommand.offset = offset;
 
-        std::lock_guard<std::mutex> const lock(*_commandsMutex);
         _commands.emplace_back(bindVertexBufferCommand);
     }
 
@@ -372,8 +354,27 @@ namespace exage::Graphics
         bindIndexBufferCommand.buffer = buffer;
         bindIndexBufferCommand.offset = offset;
 
-        std::lock_guard<std::mutex> const lock(*_commandsMutex);
         _commands.emplace_back(bindIndexBufferCommand);
+    }
+
+    void VulkanCommandBuffer::bindStorageBuffer(std::shared_ptr<Buffer> buffer,
+                                                uint32_t binding) noexcept
+    {
+        BindStorageBufferCommand bindStorageBufferCommand;
+        bindStorageBufferCommand.buffer = buffer;
+        bindStorageBufferCommand.binding = binding;
+
+        _commands.emplace_back(bindStorageBufferCommand);
+    }
+
+    void VulkanCommandBuffer::bindSampler(std::shared_ptr<Sampler> sampler,
+                                          uint32_t binding) noexcept
+    {
+        BindSamplerCommand bindSamplerCommand;
+        bindSamplerCommand.sampler = sampler;
+        bindSamplerCommand.binding = binding;
+
+        _commands.emplace_back(bindSamplerCommand);
     }
 
     void VulkanCommandBuffer::bindSampledTexture(std::shared_ptr<Texture> texture,
@@ -383,7 +384,6 @@ namespace exage::Graphics
         bindSampledTextureCommand.texture = texture;
         bindSampledTextureCommand.binding = binding;
 
-        std::lock_guard<std::mutex> const lock(*_commandsMutex);
         _commands.emplace_back(bindSampledTextureCommand);
     }
 
@@ -394,19 +394,7 @@ namespace exage::Graphics
         bindStorageTextureCommand.texture = texture;
         bindStorageTextureCommand.binding = binding;
 
-        std::lock_guard<std::mutex> const lock(*_commandsMutex);
         _commands.emplace_back(bindStorageTextureCommand);
-    }
-
-    void VulkanCommandBuffer::bindStorageBuffer(std::shared_ptr<Buffer> buffer,
-                                                uint32_t binding) noexcept
-    {
-        BindStorageBufferCommand bindStorageBufferCommand;
-        bindStorageBufferCommand.buffer = buffer;
-        bindStorageBufferCommand.binding = binding;
-
-        std::lock_guard<std::mutex> const lock(*_commandsMutex);
-        _commands.emplace_back(bindStorageBufferCommand);
     }
 
     void VulkanCommandBuffer::userDefined(
@@ -415,7 +403,6 @@ namespace exage::Graphics
         UserDefinedCommand userDefinedCommand;
         userDefinedCommand.commandFunction = commandFunction;
 
-        std::lock_guard<std::mutex> const lock(*_commandsMutex);
         _commands.emplace_back(userDefinedCommand);
     }
 
@@ -744,13 +731,13 @@ namespace exage::Graphics
                 [this](const BindSampledTextureCommand& cmd)
                 {
                     auto& texture = *cmd.texture->as<VulkanTexture>();
-                    vk::DescriptorImageInfo imageInfo =
-                        texture.getDescriptorImageInfo(vk::ImageLayout::eShaderReadOnlyOptimal);
+                    vk::DescriptorImageInfo imageInfo = {
+                        nullptr, texture.getImageView(), vk::ImageLayout::eShaderReadOnlyOptimal};
 
                     vk::WriteDescriptorSet write {};
                     write.dstBinding = cmd.binding;
                     write.dstArrayElement = 0;
-                    write.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+                    write.descriptorType = vk::DescriptorType::eSampledImage;
                     write.descriptorCount = 1;
                     write.pImageInfo = &imageInfo;
 
@@ -763,8 +750,8 @@ namespace exage::Graphics
                 [this](const BindStorageTextureCommand& cmd)
                 {
                     auto& texture = *cmd.texture->as<VulkanTexture>();
-                    vk::DescriptorImageInfo imageInfo =
-                        texture.getDescriptorImageInfo(vk::ImageLayout::eGeneral);
+                    vk::DescriptorImageInfo imageInfo = {
+                        nullptr, texture.getImageView(), vk::ImageLayout::eGeneral};
 
                     vk::WriteDescriptorSet write {};
                     write.dstBinding = cmd.binding;
@@ -800,6 +787,25 @@ namespace exage::Graphics
                                                         1,
                                                         &write);
                 },
+                [this](const BindSamplerCommand& cmd)
+                {
+                    auto& sampler = *cmd.sampler->as<VulkanSampler>();
+                    vk::DescriptorImageInfo imageInfo = {
+                        sampler.getSampler(), nullptr, vk::ImageLayout::eUndefined};
+
+                    vk::WriteDescriptorSet write {};
+                    write.dstBinding = cmd.binding;
+                    write.dstArrayElement = 0;
+                    write.descriptorType = vk::DescriptorType::eSampler;
+                    write.descriptorCount = 1;
+                    write.pImageInfo = &imageInfo;
+
+                    _commandBuffer.pushDescriptorSetKHR(vk::PipelineBindPoint::eGraphics,
+                                                        _currentPipeline->getPipelineLayout(),
+                                                        0,
+                                                        1,
+                                                        &write);
+                }
 
             },
             command);

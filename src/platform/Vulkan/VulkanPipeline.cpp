@@ -179,8 +179,9 @@ namespace exage::Graphics
 
         renderingInfo.colorAttachmentCount = static_cast<uint32_t>(colorAttachments.size());
         renderingInfo.pColorAttachmentFormats = colorAttachments.data();
-        renderingInfo.depthAttachmentFormat =
-            toVulkanFormat(createInfo.renderInfo.depthStencilFormat);
+        renderingInfo.depthAttachmentFormat = createInfo.renderInfo.depthStencilFormat
+            ? toVulkanFormat(*createInfo.renderInfo.depthStencilFormat)
+            : vk::Format::eUndefined;
         renderingInfo.stencilAttachmentFormat = renderingInfo.depthAttachmentFormat;
 
         std::array<vk::DynamicState, 2> dynamicStates = {vk::DynamicState::eViewport,

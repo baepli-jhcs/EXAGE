@@ -11,7 +11,10 @@ namespace exage::Renderer
         , _sceneBuffer(createInfo.sceneBuffer)
         , _assetCache(createInfo.assetCache)
         , _extent(createInfo.extent)
-        , _meshSystem({createInfo.context, createInfo.sceneBuffer, createInfo.assetCache})
+        , _meshSystem({createInfo.context,
+                       createInfo.sceneBuffer,
+                       createInfo.assetCache,
+                       createInfo.anisotropy})
     {
         auto& context = _context.get();
 
@@ -20,28 +23,38 @@ namespace exage::Renderer
         frameBufferCreateInfo.colorAttachments.resize(7);
         frameBufferCreateInfo.colorAttachments[0] = {
             Graphics::Format::eRGBA16f,
-            Graphics::Texture::UsageFlags::eColorAttachment};  // Position
+            Graphics::Texture::UsageFlags::eColorAttachment
+                | Graphics::Texture::UsageFlags::eSampled};  // Position
 
         frameBufferCreateInfo.colorAttachments[1] = {
-            Graphics::Format::eRGBA16f, Graphics::Texture::UsageFlags::eColorAttachment};  // Normal
+            Graphics::Format::eRGBA16f,
+            Graphics::Texture::UsageFlags::eColorAttachment
+                | Graphics::Texture::UsageFlags::eSampled};  // Normal
 
         frameBufferCreateInfo.colorAttachments[2] = {
             Graphics::Format::eRGBA16f,
             Graphics::Texture::UsageFlags::eColorAttachment
-                | Graphics::Texture::UsageFlags::eTransferSrc};  // Albedo
+                | Graphics::Texture::UsageFlags::eSampled};  // Albedo
 
         frameBufferCreateInfo.colorAttachments[3] = {
-            Graphics::Format::eR16f, Graphics::Texture::UsageFlags::eColorAttachment};  // Metallic
+            Graphics::Format::eR16f,
+            Graphics::Texture::UsageFlags::eColorAttachment
+                | Graphics::Texture::UsageFlags::eSampled};  // Metallic
 
         frameBufferCreateInfo.colorAttachments[4] = {
-            Graphics::Format::eR16f, Graphics::Texture::UsageFlags::eColorAttachment};  // Roughness
+            Graphics::Format::eR16f,
+            Graphics::Texture::UsageFlags::eColorAttachment
+                | Graphics::Texture::UsageFlags::eSampled};  // Roughness
 
         frameBufferCreateInfo.colorAttachments[5] = {
-            Graphics::Format::eR16f, Graphics::Texture::UsageFlags::eColorAttachment};  // Occlusion
+            Graphics::Format::eR16f,
+            Graphics::Texture::UsageFlags::eColorAttachment
+                | Graphics::Texture::UsageFlags::eSampled};  // Occlusion
 
         frameBufferCreateInfo.colorAttachments[6] = {
             Graphics::Format::eRGBA16f,
-            Graphics::Texture::UsageFlags::eColorAttachment};  // Emissive
+            Graphics::Texture::UsageFlags::eColorAttachment
+                | Graphics::Texture::UsageFlags::eSampled};  // Emissive
 
         frameBufferCreateInfo.depthAttachment = {
             _context.get().getHardwareSupport().depthFormat,
@@ -71,7 +84,7 @@ namespace exage::Renderer
                                      Graphics::Access {},
                                      Graphics::AccessFlags::eDepthStencilAttachmentWrite);
 
-        Graphics::ClearColor clearColor;
+        Graphics::ClearColor clearColor {};
         clearColor.clear = true;
         clearColor.color = {0.0f, 0.0f, 0.0f, 1.0f};
 

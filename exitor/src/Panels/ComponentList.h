@@ -19,5 +19,8 @@ namespace exitor
 
       private:
         entt::id_type _selectedTypeID = entt::null;
+
+        template<typename Component>
+        auto drawComponentIfMatches(entt::id_type id, const char* name) noexcept -> void;
     };
 }  // namespace exitor

@@ -195,7 +195,7 @@ namespace exage::Graphics
         struct RenderInfo
         {
             std::vector<Format> colorFormats;
-            Format depthStencilFormat;
+            std::optional<Format> depthStencilFormat;
         };
 
       protected:

@@ -1,8 +1,10 @@
 ﻿#include "exage/Graphics/Texture.h"
 
+#include "exage/Graphics/Sampler.h"
+
 namespace exage::Graphics
 {
-    auto Sampler::getSamplerCreateInfo() const noexcept -> SamplerCreateInfo 
+    auto Sampler::getSamplerCreateInfo() const noexcept -> SamplerCreateInfo
     {
         SamplerCreateInfo createInfo;
         createInfo.anisotropy = _anisotropy;
@@ -12,15 +14,17 @@ namespace exage::Graphics
         return createInfo;
     }
 
-    auto Texture::getTextureCreateInfo() const noexcept -> TextureCreateInfo 
+    auto Texture::getTextureCreateInfo() const noexcept -> TextureCreateInfo
     {
-        TextureCreateInfo createInfo
-        {
-            .extent = _extent, .format = _format, .type = _type, .usage = _usage,
-            .arrayLayers = _layerCount, .mipLevels = _mipLevelCount,
-            .samplerCreateInfo = getSampler().getSamplerCreateInfo()
+        TextureCreateInfo createInfo {
+            .extent = _extent,
+            .format = _format,
+            .type = _type,
+            .usage = _usage,
+            .arrayLayers = _layerCount,
+            .mipLevels = _mipLevelCount,
         };
-        
+
         return createInfo;
     }
 }  // namespace exage::Graphics

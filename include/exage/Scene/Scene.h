@@ -79,9 +79,12 @@ namespace exage
             }
         }
 
+        [[nodiscard]] auto dataEntity() const noexcept -> Entity { return _dataEntity; }
+
       private:
         void calculateChildTransform(Transform3D& parentTransform, Entity entity) noexcept;
 
         Registry _registry;
+        Entity _dataEntity = entt::null;  // If you want to store data in the scene, use this entity
     };
 }  // namespace exage

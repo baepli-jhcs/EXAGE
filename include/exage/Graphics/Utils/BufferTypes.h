@@ -65,8 +65,9 @@ namespace exage::Graphics
         void resize(CommandBuffer& commandBuffer,
                     size_t newSize,
                     Access access,
-                    PipelineStage pipelineStage,
-                    bool copy = true) noexcept;
+                    PipelineStage pipelineStage) noexcept;
+
+        void resize(size_t newSize) noexcept;
 
         [[nodiscard]] auto get() const noexcept -> std::shared_ptr<Buffer> { return _buffer; }
         [[nodiscard]] auto size() const noexcept -> size_t { return _buffer->getSize(); }
@@ -90,8 +91,8 @@ namespace exage::Graphics
         void read(std::span<std::byte> data, size_t offset) const noexcept;
 
         void update(CommandBuffer& commandBuffer,
-                    Access access,
-                    PipelineStage pipelineStage) noexcept;
+                    PipelineStage pipelineStage,
+                    Access access) noexcept;
 
         void resize(size_t newSize) noexcept;
 
@@ -103,6 +104,8 @@ namespace exage::Graphics
         [[nodiscard]] auto currentHost() const noexcept -> std::shared_ptr<Buffer>;
         [[nodiscard]] auto deviceBuffer() const noexcept -> std::shared_ptr<Buffer>;
 
+        [[nodiscard]] auto currentBindlessID() const noexcept -> BufferID;
+
       private:
         std::reference_wrapper<Context> _context;
         std::vector<ResizableBuffer> _hostBuffers;
@@ -110,8 +113,6 @@ namespace exage::Graphics
 
         std::vector<std::byte> _data;
         std::vector<bool> _dirty;
-
-        bool _shouldWrite = false;
     };
 
 }  // namespace exage::Graphics

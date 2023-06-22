@@ -39,15 +39,15 @@ namespace exage::Renderer
 
         std::vector<Material> materials;
 
-        struct Mesh
+        struct StaticMesh
         {
-            std::vector<MeshVertex> vertices;
+            std::vector<StaticMeshVertex> vertices;
             std::vector<uint32_t> indices;
             AABB aabb;
             size_t materialIndex = 0;
         };
 
-        std::vector<Mesh> meshes;
+        std::vector<StaticMesh> meshes;
 
         struct Node
         {
@@ -59,6 +59,38 @@ namespace exage::Renderer
 
         std::vector<Node> nodes;
         std::vector<size_t> rootNodes;
+
+        struct PointLight
+        {
+            glm::vec3 position;
+            glm::vec3 color;
+            float intensity;
+            float radius;
+        };
+
+        std::vector<PointLight> pointLights;
+
+        struct DirectionalLight
+        {
+            glm::vec3 direction;
+            glm::vec3 color;
+            float intensity;
+        };
+
+        std::vector<DirectionalLight> directionalLights;
+
+        struct SpotLight
+        {
+            glm::vec3 position;
+            glm::vec3 direction;
+            glm::vec3 color;
+            float intensity;
+            float innerCutoff;
+            float outerCutoff;
+            float radius;
+        };
+
+        std::vector<SpotLight> spotLights;
     };
 
     [[nodiscard]] auto importAsset2(const std::filesystem::path& assetPath) noexcept
@@ -69,7 +101,7 @@ namespace exage::Renderer
 
     [[nodiscard]] auto saveTexture(Texture& texture) noexcept -> AssetFile;
     [[nodiscard]] auto saveMaterial(Material& material) noexcept -> AssetFile;
-    [[nodiscard]] auto saveMesh(Mesh& mesh) noexcept -> AssetFile;
+    [[nodiscard]] auto saveMesh(StaticMesh& mesh) noexcept -> AssetFile;
 
     [[nodiscard]] auto saveTexture(Texture& texture,
                                    const std::filesystem::path& savePath,
@@ -79,17 +111,21 @@ namespace exage::Renderer
                                     const std::filesystem::path& savePath,
                                     const std::filesystem::path& prefix) noexcept
         -> tl::expected<void, AssetError>;
-    [[nodiscard]] auto saveMesh(Mesh& mesh,
+    [[nodiscard]] auto saveMesh(StaticMesh& mesh,
                                 const std::filesystem::path& savePath,
                                 const std::filesystem::path& prefix) noexcept
         -> tl::expected<void, AssetError>;
 
     struct AssetSceneImportInfo
     {
-        std::span<GPUMesh> meshes;
+        std::span<GPUStaticMesh> meshes;
 
         std::span<const size_t> rootNodes;
         std::span<const AssetImportResult2::Node> nodes;
+
+        std::span<const AssetImportResult2::PointLight> pointLights;
+        std::span<const AssetImportResult2::DirectionalLight> directionalLights;
+        std::span<const AssetImportResult2::SpotLight> spotLights;
     };
 
     void importScene(const AssetSceneImportInfo& info,

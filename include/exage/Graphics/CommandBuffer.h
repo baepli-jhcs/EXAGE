@@ -101,21 +101,29 @@ namespace exage::Graphics
 
         virtual void bindPipeline(std::shared_ptr<Pipeline> pipeline) noexcept = 0;
 
-        virtual void setPushConstant(uint32_t size, std::byte* data) noexcept = 0;
+        virtual void setPushConstant(std::span<const std::byte> data) noexcept = 0;
 
         virtual void bindVertexBuffer(std::shared_ptr<Buffer> buffer, uint64_t offset) noexcept = 0;
 
         virtual void bindIndexBuffer(std::shared_ptr<Buffer> buffer, uint64_t offset) noexcept = 0;
+
+        virtual void bindStorageBuffer(std::shared_ptr<Buffer> buffer,
+                                       uint32_t binding) noexcept = 0;
+
+        virtual void bindSampler(std::shared_ptr<Sampler> sampler, uint32_t binding) noexcept = 0;
 
         virtual void bindSampledTexture(std::shared_ptr<Texture> texture,
                                         uint32_t binding) noexcept = 0;
         virtual void bindStorageTexture(std::shared_ptr<Texture> texture,
                                         uint32_t binding) noexcept = 0;
 
-        virtual void bindStorageBuffer(std::shared_ptr<Buffer> buffer,
-                                       uint32_t binding) noexcept = 0;
-
         virtual void userDefined(std::function<void(CommandBuffer&)> commandFunction) noexcept = 0;
+
+        template<typename T>
+        void setPushConstant(const T& data) noexcept
+        {
+            setPushConstant(std::as_bytes(std::span {&data, 1}));
+        }
 
         EXAGE_BASE_API(API, CommandBuffer);
     };

@@ -37,4 +37,16 @@ namespace exage::Renderer
     void setSceneCamera(Scene& scene, Entity cameraEntity) noexcept;
     [[nodiscard]] auto getSceneCamera(Scene& scene) noexcept -> Entity;
 
+    inline auto getCameraRenderInfo(Scene& scene) noexcept -> CameraRenderInfo&
+    {
+        return scene.registry()
+            .storage<CameraRenderInfo>(CURRENT_CAMERA_RENDER_INFO)
+            .get(getSceneCamera(scene));
+    }
+
+    inline auto getCameraComponent(Scene& scene) noexcept -> Camera&
+    {
+        return scene.registry().storage<Camera>(CURRENT_CAMERA).get(getSceneCamera(scene));
+    }
+
 }  // namespace exage::Renderer

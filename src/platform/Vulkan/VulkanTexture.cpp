@@ -5,96 +5,6 @@
 namespace exage::Graphics
 {
 
-    VulkanSampler::~VulkanSampler()
-    {
-        if (_sampler)
-        {
-            _context.get().getDevice().destroySampler(_sampler);
-        }
-    }
-
-    VulkanSampler::VulkanSampler(VulkanSampler&& old) noexcept
-        : Sampler(std::move(old))
-        , _context(old._context)
-        , _sampler(old._sampler)
-    {
-        old._sampler = nullptr;
-    }
-
-    auto VulkanSampler::operator=(VulkanSampler&& old) noexcept -> VulkanSampler&
-    {
-        if (this == &old)
-        {
-            return *this;
-        }
-
-        Sampler::operator=(std::move(old));
-
-        if (_sampler)
-        {
-            _context.get().getDevice().destroySampler(_sampler);
-        }
-
-        _context = old._context;
-
-        _sampler = old._sampler;
-        old._sampler = nullptr;
-        return *this;
-    }
-
-    VulkanSampler::VulkanSampler(VulkanContext& context,
-                                 const SamplerCreateInfo& createInfo,
-                                 uint32_t mipLevelCount) noexcept
-        : Sampler(
-            createInfo.anisotropy, createInfo.filter, createInfo.mipmapMode, createInfo.lodBias)
-        , _context(context)
-    {
-        vk::Filter const filter = toVulkanFilter(_filter);
-        vk::SamplerMipmapMode const mipmapMode = toVulkanSamplerMipmapMode(_mipmapMode);
-
-        vk::SamplerCreateInfo samplerInfo;
-        samplerInfo.magFilter = filter;
-        samplerInfo.minFilter = filter;
-        samplerInfo.mipmapMode = mipmapMode;
-        samplerInfo.addressModeU = vk::SamplerAddressMode::eRepeat;
-        samplerInfo.addressModeV = vk::SamplerAddressMode::eRepeat;
-        samplerInfo.addressModeW = vk::SamplerAddressMode::eRepeat;
-        samplerInfo.anisotropyEnable =
-            static_cast<vk::Bool32>(_anisotropy != Anisotropy::eDisabled);
-
-        switch (_anisotropy)
-        {
-            case Anisotropy::eDisabled:
-            case Anisotropy::e1:
-                samplerInfo.maxAnisotropy = 1.0F;
-                break;
-            case Anisotropy::e2:
-                samplerInfo.maxAnisotropy = 2.0F;
-                break;
-            case Anisotropy::e4:
-                samplerInfo.maxAnisotropy = 4.0F;
-                break;
-            case Anisotropy::e8:
-                samplerInfo.maxAnisotropy = 8.0F;
-                break;
-            case Anisotropy::e16:
-                samplerInfo.maxAnisotropy = 16.0F;
-                break;
-        }
-        samplerInfo.borderColor = vk::BorderColor::eFloatOpaqueWhite;
-        samplerInfo.unnormalizedCoordinates = 0U;
-        samplerInfo.compareEnable = 0U;
-        samplerInfo.compareOp = vk::CompareOp::eAlways;
-        samplerInfo.mipmapMode = mipmapMode;
-        samplerInfo.mipLodBias = _lodBias;
-        samplerInfo.minLod = 0.0F;
-        samplerInfo.maxLod = static_cast<float>(mipLevelCount);
-
-        const vk::Result result =
-            _context.get().getDevice().createSampler(&samplerInfo, nullptr, &_sampler);
-        checkVulkan(result);
-    }
-
     VulkanTexture::~VulkanTexture()
     {
         cleanup();
@@ -129,7 +39,6 @@ namespace exage::Graphics
         , _allocation(old._allocation)
         , _image(old._image)
         , _imageView(old._imageView)
-        , _sampler(std::move(old._sampler))
     {
         old._id = {};
 
@@ -145,6 +54,8 @@ namespace exage::Graphics
             return *this;
         }
 
+        Texture::operator=(std::move(old));
+
         cleanup();
 
         _context = old._context;
@@ -152,7 +63,6 @@ namespace exage::Graphics
         _allocation = old._allocation;
         _image = old._image;
         _imageView = old._imageView;
-        _sampler = std::move(old._sampler);
 
         old._id = {};
 
@@ -204,7 +114,7 @@ namespace exage::Graphics
         checkVulkan(result);
 
         vk::ImageViewCreateInfo viewInfo;
-        viewInfo.viewType = toVulkanImageViewType(_type);
+        viewInfo.viewType = toVulkanImageViewType(_type, _layerCount);
         viewInfo.image = _image;
         viewInfo.components = vk::ComponentMapping();
         viewInfo.format = format;
@@ -213,8 +123,6 @@ namespace exage::Graphics
 
         result = _context.get().getDevice().createImageView(&viewInfo, nullptr, &_imageView);
         checkVulkan(result);
-
-        _sampler = VulkanSampler {_context, createInfo.samplerCreateInfo, _mipLevelCount};
 
         _id = _context.get().getResourceManager().bindTexture(*this);
     }

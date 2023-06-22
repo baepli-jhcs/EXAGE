@@ -5,19 +5,30 @@
 #include <glm/glm.hpp>
 
 #include "exage/Graphics/Texture.h"
+#include "exage/Graphics/Utils/BufferTypes.h"
+#include "exage/Renderer/Locations.h"
+#include "exage/Scene/Scene.h"
 
 namespace exage::Renderer
 {
+    constexpr auto DEFAULT_SHADOW_BIAS = 0.05F;
+
     struct PointLight
     {
         glm::vec3 color;
         float intensity;
+        float physicalRadius;
+        float attenuationRadius;
+        bool castShadow;
+        float shadowBias = DEFAULT_SHADOW_BIAS;
     };
 
     struct DirectionalLight
     {
         glm::vec3 color;
         float intensity;
+        bool castShadow;
+        float shadowBias = DEFAULT_SHADOW_BIAS;
     };
 
     struct SpotLight
@@ -26,50 +37,145 @@ namespace exage::Renderer
         float intensity;
         float innerCutoff;
         float outerCutoff;
+        float physicalRadius;
+        float attenuationRadius;
+        bool castShadow;
+        float shadowBias = DEFAULT_SHADOW_BIAS;
     };
 
     struct PointLightRenderInfo
     {
-        struct Data
-        {
-            alignas(16) glm::vec3 position;
-            alignas(16) glm::vec3 color;
-            alignas(4) float intensity;
-            alignas(4) uint32_t shadowMapIndex;
-        };
-
-        Data data;
+        uint32_t arrayIndex;
+        glm::vec3 position;
+        glm::vec3 color;
+        float intensity;
+        float physicalRadius;
+        float attenuationRadius;
         std::shared_ptr<Graphics::FrameBuffer> shadowMap;
+        int32_t shadowMapIndex = -1;
+        float shadowBias = DEFAULT_SHADOW_BIAS;
     };
 
-    struct DirectionalLightRenderInfo
+    struct PointLightRenderArray
     {
         struct Data
         {
-            alignas(16) glm::vec3 direction;
-            alignas(16) glm::vec3 color;
-            alignas(4) float intensity;
-            alignas(4) uint32_t shadowMapIndex;
+            struct ArrayItem
+            {
+                alignas(16) glm::vec3 position;
+                alignas(16) glm::vec3 color;
+                float intensity;
+                float physicalRadius;
+                float attenuationRadius;
+                float shadowBias = DEFAULT_SHADOW_BIAS;
+                int32_t shadowMapIndex = -1;
+                // Padding to 64 bytes
+            };
+
+            constexpr static auto POINT_LIGHT_ARRAY_ITEM_SIZE = sizeof(ArrayItem);
+
+            uint32_t count;
         };
 
-        Data data;
+        std::optional<Graphics::ResizableDynamicBuffer> buffer;
+    };
+
+    constexpr auto MAX_CASCADE_LEVELS = 5;
+
+    struct DirectionalLightRenderInfo
+    {
+        uint32_t arrayIndex;
+        glm::vec3 direction;
+        glm::vec3 color;
+        float intensity;
         std::shared_ptr<Graphics::FrameBuffer> shadowMap;
+        int32_t shadowMapIndex = -1;
+        float shadowBias = DEFAULT_SHADOW_BIAS;
+        uint8_t cascadeLevels;
+        glm::mat4 cascadeViewProjections[MAX_CASCADE_LEVELS];
+        float cascadeSplits[MAX_CASCADE_LEVELS];
+    };
+
+    struct DirectionalLightRenderArray
+    {
+        struct Data
+        {
+            struct ArrayItem
+            {
+                glm::mat4 cascadeViewProjections[MAX_CASCADE_LEVELS];
+                alignas(16) glm::vec3 direction;
+                float intensity;
+                alignas(16) glm::vec3 color;
+                int32_t shadowMapIndex = -1;
+                float shadowBias = DEFAULT_SHADOW_BIAS;
+                uint32_t cascadeLevels;
+                float cascadeSplits[MAX_CASCADE_LEVELS];
+                // Padding to 400 bytes
+                float padding;
+            };
+
+            constexpr static auto DIRECTIONAL_LIGHT_ARRAY_ITEM_SIZE = sizeof(ArrayItem);
+
+            uint32_t count;
+        };
+
+        std::optional<Graphics::ResizableDynamicBuffer> buffer;
     };
 
     struct SpotLightRenderInfo
     {
+        uint32_t arrayIndex;
+        std::shared_ptr<Graphics::FrameBuffer> shadowMap;
+        int32_t shadowMapIndex = -1;
+    };
+
+    struct SpotLightRenderArray
+    {
         struct Data
         {
-            alignas(16) glm::vec3 position;
-            alignas(16) glm::vec3 direction;
-            alignas(16) glm::vec3 color;
-            alignas(4) float intensity;
-            alignas(4) float innerCutoff;
-            alignas(4) float outerCutoff;
-            alignas(4) uint32_t shadowMapIndex;
+            struct ArrayItem
+            {
+                glm::vec3 position;
+                glm::vec3 direction;
+                glm::vec3 color;
+                float intensity;
+                float innerCutoff;
+                float outerCutoff;
+                float physicalRadius;
+                float attenuationRadius;
+                int32_t shadowMapIndex = -1;
+                float shadowBias = DEFAULT_SHADOW_BIAS;
+                // Padding to 72 bytes
+                float padding[2];
+            };
+
+            constexpr static auto SPOT_LIGHT_ARRAY_ITEM_SIZE = sizeof(ArrayItem);
+
+            uint32_t count;
         };
 
-        Data data;
-        std::shared_ptr<Graphics::FrameBuffer> shadowMap;
+        std::optional<Graphics::ResizableDynamicBuffer> buffer;
     };
+
+    inline auto getPointLightRenderArray(Scene& scene) noexcept -> PointLightRenderArray&
+    {
+        return scene.registry()
+            .storage<PointLightRenderArray>(CURRENT_POINT_LIGHT_RENDER_ARRAY)
+            .get(scene.dataEntity());
+    }
+
+    inline auto getDirectionalLightRenderArray(Scene& scene) noexcept
+        -> DirectionalLightRenderArray&
+    {
+        return scene.registry()
+            .storage<DirectionalLightRenderArray>(CURRENT_DIRECTIONAL_LIGHT_RENDER_ARRAY)
+            .get(scene.dataEntity());
+    }
+
+    inline auto getSpotLightRenderArray(Scene& scene) noexcept -> SpotLightRenderArray&
+    {
+        return scene.registry()
+            .storage<SpotLightRenderArray>(CURRENT_SPOT_LIGHT_RENDER_ARRAY)
+            .get(scene.dataEntity());
+    }
 }  // namespace exage::Renderer

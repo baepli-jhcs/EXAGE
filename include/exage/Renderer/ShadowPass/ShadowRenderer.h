@@ -6,6 +6,8 @@
 #include "exage/Graphics/Context.h"
 #include "exage/Renderer/Scene/AssetCache.h"
 #include "exage/Renderer/Scene/SceneBuffer.h"
+#include "exage/Renderer/ShadowPass/DirectionalShadowSystem.h"
+#include "exage/Renderer/ShadowPass/PointShadowSystem.h"
 #include "exage/Scene/Scene.h"
 
 namespace exage::Renderer
@@ -25,6 +27,7 @@ namespace exage::Renderer
         SceneBuffer& sceneBuffer;
         AssetCache& assetCache;
         ShadowResolution shadowResolution;
+        CascadeLevels cascadeLevels;
     };
 
     class ShadowRenderer
@@ -44,12 +47,18 @@ namespace exage::Renderer
             return _shadowResolution;
         }
 
-        void prepareLightingData(Scene& scene) noexcept;
+        void prepareLightingData(Scene& scene, Graphics::CommandBuffer& commandBuffer) noexcept;
 
       private:
         std::reference_wrapper<Graphics::Context> _context;
         std::reference_wrapper<SceneBuffer> _sceneBuffer;
         std::reference_wrapper<AssetCache> _assetCache;
         ShadowResolution _shadowResolution;
+        CascadeLevels _cascadeLevels;
+
+        DirectionalShadowSystem _directionalShadowSystem;
+        PointShadowSystem _pointShadowSystem;
+
+        std::vector<float> _cascadeSplits;
     };
 }  // namespace exage::Renderer

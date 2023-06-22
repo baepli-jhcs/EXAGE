@@ -25,6 +25,10 @@ namespace exage::Graphics
     {
     };
 
+    struct SamplerID : ResourceID
+    {
+    };
+
     class Buffer;
     class Texture;
 }  // namespace exage::Graphics

@@ -45,6 +45,8 @@ namespace exitor
         std::shared_ptr<Graphics::FrameBuffer> _frameBuffer;
 
         std::optional<exage::Graphics::QueueCommandRepo> _queueCommandRepo;
+        std::shared_ptr<Graphics::Sampler> _sampler;
+        Graphics::ImGuiTexture _renderTexture;
         std::optional<Graphics::ImGuiInstance> _imGui;
         std::optional<Renderer::FontManager> _fontManager;
 

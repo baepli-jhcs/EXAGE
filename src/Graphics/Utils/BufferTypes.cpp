@@ -109,8 +109,7 @@ namespace exage::Graphics
     void ResizableBuffer::resize(CommandBuffer& commandBuffer,
                                  size_t newSize,
                                  Access access,
-                                 PipelineStage pipelineStage,
-                                 bool copy) noexcept
+                                 PipelineStage pipelineStage) noexcept
     {
         _size = newSize;
         if (newSize <= _buffer->getSize())
@@ -119,51 +118,97 @@ namespace exage::Graphics
         }
 
         BufferCreateInfo createInfo {
-            .size = newSize, .mapMode = _buffer->getMapMode(), .cached = _buffer->isCached()};
-
+            .size = newSize,
+            .mapMode = _buffer->isMapped() ? Buffer::MapMode::eMapped : Buffer::MapMode::eUnmapped,
+            .cached = _buffer->isCached()};
         std::shared_ptr newBuffer = _context.get().createBuffer(createInfo);
 
-        if (copy)
-        {
-            commandBuffer.copyBuffer(_buffer, newBuffer, 0, 0, _buffer->getSize());
-            commandBuffer.bufferBarrier(newBuffer,
-                                        PipelineStageFlags::eTransfer,
-                                        pipelineStage,
-                                        AccessFlags::eTransferWrite,
-                                        access);
-        }
+        commandBuffer.copyBuffer(_buffer, newBuffer, 0, 0, _buffer->getSize());
+        commandBuffer.bufferBarrier(newBuffer,
+                                    PipelineStageFlags::eTransfer,
+                                    pipelineStage,
+                                    AccessFlags::eTransferWrite,
+                                    access);
 
         _buffer = std::move(newBuffer);
     }
+
+    void ResizableBuffer::resize(size_t newSize) noexcept
+    {
+        _size = newSize;
+        if (newSize <= _buffer->getSize())
+        {
+            return;
+        }
+
+        BufferCreateInfo createInfo {
+            .size = newSize,
+            .mapMode = _buffer->isMapped() ? Buffer::MapMode::eMapped : Buffer::MapMode::eUnmapped,
+            .cached = _buffer->isCached()};
+        std::shared_ptr newBuffer = _context.get().createBuffer(createInfo);
+
+        _buffer = std::move(newBuffer);
+    }
+
+    /*         BufferCreateInfo testBufferCreateInfo {
+            .size = createInfo.size, .mapMode = allocationFlags, .cached = createInfo.cached};
+        std::shared_ptr<Buffer> testBuffer = createInfo.context.createBuffer(testBufferCreateInfo);
+
+        size_t const framesInFlight = _queue.get().getFramesInFlight();
+
+        if (testBuffer->isMapped())
+        {
+            _hostBuffers.resize(framesInFlight);
+            _hostBuffers[0] = testBuffer;
+
+            testBufferCreateInfo.mapMode = Buffer::MapMode::eMapped;
+            for (size_t i = 1; i < framesInFlight; i++)
+            {
+                _hostBuffers[i] = createInfo.context.createBuffer(testBufferCreateInfo);
+            }
+        }
+        else
+        {
+            _deviceBuffer = testBuffer;
+
+            testBufferCreateInfo.mapMode = Buffer::MapMode::eMapped;
+            for (size_t i = 0; i < framesInFlight; i++)
+            {
+                _hostBuffers.emplace_back(createInfo.context.createBuffer(testBufferCreateInfo));
+            }
+        }*/
 
     ResizableDynamicBuffer::ResizableDynamicBuffer(const DynamicBufferCreateInfo& createInfo)
         : _context(createInfo.context)
     {
         auto allocationFlags = Buffer::MapMode::eIfOptimal;
 
-        ResizableBufferCreateInfo const hostBuffer {
-            createInfo.size,
-            allocationFlags,
-            createInfo.cached,
-            _context.get(),
-        };
+        ResizableBufferCreateInfo testBufferCreateInfo {
+            createInfo.size, allocationFlags, createInfo.cached, _context.get()};
+        ResizableBuffer testBuffer {testBufferCreateInfo};
 
         size_t const framesInFlight = _context.get().getQueue().getFramesInFlight();
 
-        for (size_t i = 0; i < framesInFlight; i++)
+        if (testBuffer.get()->isMapped())
         {
-            _hostBuffers.emplace_back(hostBuffer);
-        }
+            _hostBuffers.reserve(framesInFlight);
+            _hostBuffers.emplace_back(std::move(testBuffer));
 
-        if (!_hostBuffers[0].get()->isMapped())
+            testBufferCreateInfo.mapMode = Buffer::MapMode::eMapped;
+            for (size_t i = 1; i < framesInFlight; i++)
+            {
+                _hostBuffers.emplace_back(testBufferCreateInfo);
+            }
+        }
+        else
         {
-            ResizableBufferCreateInfo const deviceBuffer {
-                createInfo.size,
-                Buffer::MapMode::eMapped,
-                createInfo.cached,
-                _context.get(),
-            };
-            _deviceBuffer = ResizableBuffer {deviceBuffer};
+            _deviceBuffer = std::move(testBuffer);
+
+            testBufferCreateInfo.mapMode = Buffer::MapMode::eMapped;
+            for (size_t i = 0; i < framesInFlight; i++)
+            {
+                _hostBuffers.emplace_back(testBufferCreateInfo);
+            }
         }
 
         _data = std::vector<std::byte>(createInfo.size);
@@ -179,8 +224,6 @@ namespace exage::Graphics
         {
             i = true;
         }
-
-        _shouldWrite = true;
     }
 
     void ResizableDynamicBuffer::read(std::span<std::byte> data, size_t offset) const noexcept
@@ -191,20 +234,9 @@ namespace exage::Graphics
     }
 
     void ResizableDynamicBuffer::update(CommandBuffer& commandBuffer,
-                                        Access access,
-                                        PipelineStage pipelineStage) noexcept
+                                        PipelineStage pipelineStage,
+                                        Access access) noexcept
     {
-        if (_data.size() != _hostBuffers[_context.get().getQueue().currentFrame()].size())
-        {
-            _hostBuffers[_context.get().getQueue().currentFrame()].resize(
-                commandBuffer, _data.size(), access, pipelineStage);
-        }
-
-        if (_deviceBuffer && _data.size() != _deviceBuffer->size())
-        {
-            _deviceBuffer->resize(commandBuffer, _data.size(), access, pipelineStage);
-        }
-
         if (!_dirty[_context.get().getQueue().currentFrame()])
         {
             return;
@@ -213,7 +245,7 @@ namespace exage::Graphics
         _hostBuffers[_context.get().getQueue().currentFrame()].get()->write(_data, 0);
         _dirty[_context.get().getQueue().currentFrame()] = false;
 
-        if (!_shouldWrite && _deviceBuffer)
+        if (_deviceBuffer)
         {
             commandBuffer.copyBuffer(_hostBuffers[_context.get().getQueue().currentFrame()].get(),
                                      _deviceBuffer->get(),
@@ -221,13 +253,43 @@ namespace exage::Graphics
                                      0,
                                      _data.size());
 
-            _shouldWrite = false;
+            commandBuffer.bufferBarrier(_deviceBuffer->get(),
+                                        PipelineStageFlags::eTransfer,
+                                        pipelineStage,
+                                        AccessFlags::eTransferWrite,
+                                        access);
         }
     }
 
     void ResizableDynamicBuffer::resize(size_t newSize) noexcept
     {
+        if (newSize == _data.size())
+        {
+            return;
+        }
+
         _data.resize(newSize);
+
+        size_t const framesInFlight = _context.get().getQueue().getFramesInFlight();
+        for (size_t i = 0; i < framesInFlight; i++)
+        {
+            _hostBuffers[i].resize(newSize);
+        }
+
+        if (_deviceBuffer)
+        {
+            _deviceBuffer->resize(newSize);
+        }
+    }
+
+    auto ResizableDynamicBuffer::currentBindlessID() const noexcept -> BufferID
+    {
+        if (_deviceBuffer)
+        {
+            return _deviceBuffer->get()->getBindlessID();
+        }
+
+        return _hostBuffers[_context.get().getQueue().currentFrame()].get()->getBindlessID();
     }
 
 }  // namespace exage::Graphics

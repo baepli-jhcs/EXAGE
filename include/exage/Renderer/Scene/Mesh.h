@@ -12,7 +12,7 @@
 
 namespace exage::Renderer
 {
-    struct MeshVertex
+    struct StaticMeshVertex
     {
         glm::vec3 position {};
         glm::vec3 normal {};
@@ -36,7 +36,7 @@ namespace exage::Renderer
         glm::vec3 max {};
     };
 
-    struct Mesh
+    struct StaticMesh
     {
         std::filesystem::path path;
 
@@ -44,13 +44,13 @@ namespace exage::Renderer
 
         std::filesystem::path materialPath;
 
-        std::vector<MeshVertex> vertices;
+        std::vector<StaticMeshVertex> vertices;
         std::vector<uint32_t> indices;
 
         AABB aabb;
     };
 
-    struct GPUMesh
+    struct GPUStaticMesh
     {
         std::filesystem::path path;
         size_t pathHash;
@@ -66,7 +66,7 @@ namespace exage::Renderer
         AABB aabb;
     };
 
-    struct MeshComponent
+    struct StaticMeshComponent
     {
         std::filesystem::path path;
         size_t pathHash;

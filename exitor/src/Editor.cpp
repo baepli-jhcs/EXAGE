@@ -72,6 +72,13 @@ namespace exitor
         Graphics::QueueCommandRepoCreateInfo queueCommandRepoInfo {.context = *_context};
         _queueCommandRepo = exage::Graphics::QueueCommandRepo {queueCommandRepoInfo};
 
+        Graphics::SamplerCreateInfo samplerCreateInfo {};
+        samplerCreateInfo.anisotropy = Graphics::Sampler::Anisotropy::e16;
+        samplerCreateInfo.filter = Graphics::Sampler::Filter::eLinear;
+        samplerCreateInfo.mipmapMode = Graphics::Sampler::MipmapMode::eLinear;
+
+        _sampler = _context->createSampler(samplerCreateInfo);
+
         Graphics::ImGuiInitInfo imGuiInfo {
             .context = *_context,
             .window = *_window,
@@ -92,6 +99,8 @@ namespace exitor
                                                          .assetCache = _assetCache,
                                                          .extent = _viewportExtent};
         _renderer = Renderer::Renderer {rendererCreateInfo};
+
+        _renderTexture.sampler = _sampler;
 
         prepareTestScene();
     }
@@ -129,12 +138,6 @@ namespace exitor
                                                       .commandBuffer = *commamdBuffer};
         uploadOptions.supportedCompressedFormats = &supportedFormats;
         uploadOptions.useCompressedFormat = false;
-
-        uploadOptions.samplerCreateInfo = {
-            .anisotropy = Graphics::Sampler::Anisotropy::e16,
-            .filter = Graphics::Sampler::Filter::eLinear,
-            .mipmapMode = Graphics::Sampler::MipmapMode::eLinear,
-        };
 
         for (size_t i = 0; i < importResult->textures.size(); i++)
         {
@@ -283,7 +286,7 @@ namespace exitor
             material = {};  // Memory cleanup
         }
 
-        std::vector<Renderer::GPUMesh> gpuMeshes;
+        std::vector<Renderer::GPUStaticMesh> gpuMeshes;
         gpuMeshes.reserve(importResult->meshes.size());
 
         Renderer::MeshUploadOptions meshUploadOptions {
@@ -296,7 +299,7 @@ namespace exitor
         {
             auto& mesh = importResult->meshes[i];
 
-            Renderer::Mesh mesh2 {};
+            Renderer::StaticMesh mesh2 {};
             mesh2.vertices = std::move(mesh.vertices);
             mesh2.indices = std::move(mesh.indices);
             mesh2.aabb = mesh.aabb;
@@ -315,7 +318,7 @@ namespace exitor
             auto saveResult = Renderer::saveMesh(mesh2, meshPath, "");
             debugAssume(saveResult.has_value(), "Failed to save mesh");
 
-            Renderer::GPUMesh gpuMesh = Renderer::uploadMesh(mesh2, meshUploadOptions);
+            Renderer::GPUStaticMesh gpuMesh = Renderer::uploadMesh(mesh2, meshUploadOptions);
 
             if (_assetCache.hasMaterial(mesh2.materialPath))
             {
@@ -335,6 +338,20 @@ namespace exitor
                                                         .rootNodes = importResult->rootNodes,
                                                         .nodes = importResult->nodes};
         Renderer::importScene(sceneImportInfo, _scene);
+
+        auto lightEntity = _scene.createEntity();
+        auto& light = _scene.addComponent<Renderer::DirectionalLight>(lightEntity);
+        light.color = {1.0F, 1.0F, 1.0F};
+        light.intensity = 1.0F;
+        light.castShadow = true;
+        auto& transform2 = _scene.addComponent<Transform3D>(lightEntity);
+        transform2.position = {0.0F, 5.0F, -5.0F};
+        transform2.rotation = Rotation3D {{0, 0, 0}, RotationType::ePitchYawRoll};
+        auto& point = _scene.addComponent<Renderer::PointLight>(lightEntity);
+        point.color = {1.0F, 1.0F, 1.0F};
+        point.intensity = 1.0F;
+        point.castShadow = true;
+        point.physicalRadius = 1.0F;
     }
 
     void Editor::run() noexcept
@@ -575,7 +592,8 @@ namespace exitor
             }
         }
 
-        ImGui::Image(_renderer->getFrameBuffer().getTexture(0).get(), viewportWindowSize);
+        _renderTexture.texture = _renderer->getFrameBuffer().getTexture(0);
+        ImGui::Image(&_renderTexture, viewportWindowSize);
         ImGui::End();
         ImGui::PopStyleVar();
 

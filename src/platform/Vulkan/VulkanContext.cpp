@@ -18,6 +18,7 @@
 #include "exage/platform/Vulkan/VulkanPipeline.h"
 #include "exage/platform/Vulkan/VulkanQueue.h"
 #include "exage/platform/Vulkan/VulkanResourceManager.h"
+#include "exage/platform/Vulkan/VulkanSampler.h"
 #include "exage/platform/Vulkan/VulkanShader.h"
 #include "exage/platform/Vulkan/VulkanSwapchain.h"
 #include "exage/platform/Vulkan/VulkanTexture.h"
@@ -145,6 +146,26 @@ namespace exage::Graphics
         requiredFeatures.independentBlend = VK_TRUE;
         requiredFeatures.samplerAnisotropy = VK_TRUE;
 
+        vk::PhysicalDeviceVulkan12Features requiredFeatures12 {};
+        requiredFeatures12.drawIndirectCount = VK_TRUE;
+        requiredFeatures12.descriptorIndexing = VK_TRUE;
+        requiredFeatures12.bufferDeviceAddress = VK_TRUE;
+        requiredFeatures12.runtimeDescriptorArray = VK_TRUE;
+        requiredFeatures12.descriptorBindingPartiallyBound = VK_TRUE;
+        requiredFeatures12.descriptorBindingVariableDescriptorCount = VK_TRUE;
+        requiredFeatures12.descriptorBindingUpdateUnusedWhilePending = VK_TRUE;
+        requiredFeatures12.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+        requiredFeatures12.shaderStorageBufferArrayNonUniformIndexing = VK_TRUE;
+        requiredFeatures12.shaderStorageImageArrayNonUniformIndexing = VK_TRUE;
+        requiredFeatures12.shaderInputAttachmentArrayNonUniformIndexing = VK_TRUE;
+        requiredFeatures12.descriptorBindingStorageBufferUpdateAfterBind = VK_TRUE;
+        requiredFeatures12.descriptorBindingStorageImageUpdateAfterBind = VK_TRUE;
+        requiredFeatures12.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
+        requiredFeatures12.shaderOutputLayer = VK_TRUE;
+
+        vk::PhysicalDeviceDynamicRenderingFeatures dynamicRenderingFeatures {};
+        dynamicRenderingFeatures.dynamicRendering = VK_TRUE;
+
         vkb::PhysicalDeviceSelector selector(_instance);
         selector.set_minimum_version(1, 2);
         selector.set_surface(surface);
@@ -154,9 +175,9 @@ namespace exage::Graphics
                                           VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME,
                                           VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
                                           VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME});
-        selector.add_desired_extensions({VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
-                                         VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME});
         selector.set_required_features(requiredFeatures);
+        selector.set_required_features_12(requiredFeatures12);
+        selector.add_required_extension_features(dynamicRenderingFeatures);
 
 #ifdef EXAGE_DEBUG
         selector.add_desired_extension(VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME);
@@ -177,20 +198,9 @@ namespace exage::Graphics
             return tl::make_unexpected(Errors::UnsupportedAPI {});
         }
 
-        auto& extensions = extensionsResult.value;
-
-        for (auto& extension : extensions)
-        {
-            if (strcmp(extension.extensionName, VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME) == 0)
-            {
-                _hardwareSupport.bindlessBuffer = true;
-                _hardwareSupport.bindlessTexture = true;
-            }
-            if (strcmp(extension.extensionName, VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME) == 0)
-            {
-                _hardwareSupport.bufferAddress = true;
-            }
-        }
+        _hardwareSupport.bindlessBuffer = true;
+        _hardwareSupport.bindlessTexture = true;
+        _hardwareSupport.bufferAddress = true;
 
 #ifdef EXAGE_DEBUG
         std::cout << "Physical Device: " << _physicalDevice.properties.deviceName << std::endl;
@@ -198,40 +208,40 @@ namespace exage::Graphics
 
         vkb::DeviceBuilder deviceBuilder(_physicalDevice);
 
-        vk::PhysicalDeviceDescriptorIndexingFeaturesEXT descriptorIndexingFeatures {};
-        descriptorIndexingFeatures.sType =
-            vk::StructureType::ePhysicalDeviceDescriptorIndexingFeatures;
-        descriptorIndexingFeatures.shaderInputAttachmentArrayDynamicIndexing = VK_TRUE;
-        descriptorIndexingFeatures.shaderUniformTexelBufferArrayDynamicIndexing = VK_TRUE;
-        descriptorIndexingFeatures.shaderStorageTexelBufferArrayDynamicIndexing = VK_TRUE;
-        descriptorIndexingFeatures.shaderUniformBufferArrayNonUniformIndexing = VK_TRUE;
-        descriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
-        descriptorIndexingFeatures.shaderStorageBufferArrayNonUniformIndexing = VK_TRUE;
-        descriptorIndexingFeatures.shaderStorageImageArrayNonUniformIndexing = VK_TRUE;
-        descriptorIndexingFeatures.shaderInputAttachmentArrayNonUniformIndexing = VK_TRUE;
-        descriptorIndexingFeatures.shaderUniformTexelBufferArrayNonUniformIndexing = VK_TRUE;
-        descriptorIndexingFeatures.shaderStorageTexelBufferArrayNonUniformIndexing = VK_TRUE;
-        descriptorIndexingFeatures.descriptorBindingUniformBufferUpdateAfterBind = VK_TRUE;
-        descriptorIndexingFeatures.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
-        descriptorIndexingFeatures.descriptorBindingStorageImageUpdateAfterBind = VK_TRUE;
-        descriptorIndexingFeatures.descriptorBindingStorageBufferUpdateAfterBind = VK_TRUE;
-        descriptorIndexingFeatures.descriptorBindingUniformTexelBufferUpdateAfterBind = VK_TRUE;
-        descriptorIndexingFeatures.descriptorBindingStorageTexelBufferUpdateAfterBind = VK_TRUE;
-        descriptorIndexingFeatures.descriptorBindingUpdateUnusedWhilePending = VK_TRUE;
-        descriptorIndexingFeatures.descriptorBindingPartiallyBound = VK_TRUE;
-        descriptorIndexingFeatures.descriptorBindingVariableDescriptorCount = VK_TRUE;
-        descriptorIndexingFeatures.runtimeDescriptorArray = VK_TRUE;
+        // vk::PhysicalDeviceDescriptorIndexingFeaturesEXT descriptorIndexingFeatures {};
+        // descriptorIndexingFeatures.sType =
+        //     vk::StructureType::ePhysicalDeviceDescriptorIndexingFeatures;
+        // descriptorIndexingFeatures.shaderInputAttachmentArrayDynamicIndexing = VK_TRUE;
+        // descriptorIndexingFeatures.shaderUniformTexelBufferArrayDynamicIndexing = VK_TRUE;
+        // descriptorIndexingFeatures.shaderStorageTexelBufferArrayDynamicIndexing = VK_TRUE;
+        // descriptorIndexingFeatures.shaderUniformBufferArrayNonUniformIndexing = VK_TRUE;
+        // descriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+        // descriptorIndexingFeatures.shaderStorageBufferArrayNonUniformIndexing = VK_TRUE;
+        // descriptorIndexingFeatures.shaderStorageImageArrayNonUniformIndexing = VK_TRUE;
+        // descriptorIndexingFeatures.shaderInputAttachmentArrayNonUniformIndexing = VK_TRUE;
+        // descriptorIndexingFeatures.shaderUniformTexelBufferArrayNonUniformIndexing = VK_TRUE;
+        // descriptorIndexingFeatures.shaderStorageTexelBufferArrayNonUniformIndexing = VK_TRUE;
+        // descriptorIndexingFeatures.descriptorBindingUniformBufferUpdateAfterBind = VK_TRUE;
+        // descriptorIndexingFeatures.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
+        // descriptorIndexingFeatures.descriptorBindingStorageImageUpdateAfterBind = VK_TRUE;
+        // descriptorIndexingFeatures.descriptorBindingStorageBufferUpdateAfterBind = VK_TRUE;
+        // descriptorIndexingFeatures.descriptorBindingUniformTexelBufferUpdateAfterBind = VK_TRUE;
+        // descriptorIndexingFeatures.descriptorBindingStorageTexelBufferUpdateAfterBind = VK_TRUE;
+        // descriptorIndexingFeatures.descriptorBindingUpdateUnusedWhilePending = VK_TRUE;
+        // descriptorIndexingFeatures.descriptorBindingPartiallyBound = VK_TRUE;
+        // descriptorIndexingFeatures.descriptorBindingVariableDescriptorCount = VK_TRUE;
+        // descriptorIndexingFeatures.runtimeDescriptorArray = VK_TRUE;
 
-        vk::PhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeatures {};
-        dynamicRenderingFeatures.sType = vk::StructureType::ePhysicalDeviceDynamicRenderingFeatures;
-        dynamicRenderingFeatures.dynamicRendering = VK_TRUE;
-        descriptorIndexingFeatures.setPNext(&dynamicRenderingFeatures);
+        // vk::PhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeatures {};
+        // dynamicRenderingFeatures.sType =
+        // vk::StructureType::ePhysicalDeviceDynamicRenderingFeatures;
+        // dynamicRenderingFeatures.dynamicRendering = VK_TRUE;
+        // dynamicRenderingFeatures.setPNext(&descriptorIndexingFeatures);
 
-        vk::PhysicalDeviceFeatures2 physicalDeviceFeatures {};
-        physicalDeviceFeatures.features = requiredFeatures;
-        physicalDeviceFeatures.setPNext(&descriptorIndexingFeatures);
+        // vk::PhysicalDeviceFeatures2 physicalDeviceFeatures {};
+        // physicalDeviceFeatures.features = requiredFeatures;
 
-        deviceBuilder.add_pNext(&physicalDeviceFeatures);
+        // deviceBuilder.add_pNext(&physicalDeviceFeatures);
         auto device = deviceBuilder.build();
         debugAssume(device.has_value(), "Failed to create device");
         _device = device.value();
@@ -346,7 +356,7 @@ namespace exage::Graphics
 
     void VulkanContext::waitIdle() const noexcept
     {
-        getDevice().waitIdle();
+        checkVulkan(getDevice().waitIdle());
     }
 
     auto VulkanContext::createSwapchain(const SwapchainCreateInfo& createInfo) noexcept
@@ -358,6 +368,12 @@ namespace exage::Graphics
     auto VulkanContext::createCommandBuffer() noexcept -> std::unique_ptr<CommandBuffer>
     {
         return std::make_unique<VulkanCommandBuffer>(*this);
+    }
+
+    auto VulkanContext::createSampler(const SamplerCreateInfo& createInfo) noexcept
+        -> std::shared_ptr<Sampler>
+    {
+        return std::make_shared<VulkanSampler>(*this, createInfo);
     }
 
     auto VulkanContext::createTexture(const TextureCreateInfo& createInfo) noexcept
