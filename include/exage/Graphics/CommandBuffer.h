@@ -113,9 +113,11 @@ namespace exage::Graphics
         virtual void bindSampler(std::shared_ptr<Sampler> sampler, uint32_t binding) noexcept = 0;
 
         virtual void bindSampledTexture(std::shared_ptr<Texture> texture,
-                                        uint32_t binding) noexcept = 0;
+                                        uint32_t binding,
+                                        Texture::Aspect aspect) noexcept = 0;
         virtual void bindStorageTexture(std::shared_ptr<Texture> texture,
-                                        uint32_t binding) noexcept = 0;
+                                        uint32_t binding,
+                                        Texture::Aspect aspect) noexcept = 0;
 
         virtual void userDefined(std::function<void(CommandBuffer&)> commandFunction) noexcept = 0;
 

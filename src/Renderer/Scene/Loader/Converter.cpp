@@ -428,13 +428,10 @@ namespace exage::Renderer
         return assetFile;
     }
 
-    auto saveTexture(Texture& texture,
-                     const std::filesystem::path& savePath,
-                     const std::filesystem::path& prefix) noexcept -> tl::expected<void, AssetError>
+    auto saveTexture(Texture& texture, const std::filesystem::path& savePath) noexcept
+        -> tl::expected<void, AssetError>
     {
-        const auto saveTexturePath = prefix / savePath;
-
-        std::ofstream textureFile(saveTexturePath, std::ios::binary);
+        std::ofstream textureFile(savePath, std::ios::binary);
         if (!textureFile.is_open())
         {
             return tl::make_unexpected(FileNotFoundError {});
@@ -443,7 +440,6 @@ namespace exage::Renderer
         AssetFile assetFile = saveTexture(texture);
         saveAssetFile(textureFile, assetFile);
 
-        texture.path = savePath;
         return {};
     }
 
@@ -475,14 +471,10 @@ namespace exage::Renderer
         return assetFile;
     }
 
-    auto saveMaterial(Material& material,
-                      const std::filesystem::path& savePath,
-                      const std::filesystem::path& prefix) noexcept
+    auto saveMaterial(Material& material, const std::filesystem::path& savePath) noexcept
         -> tl::expected<void, AssetError>
     {
-        const auto saveMaterialPath = prefix / savePath;
-
-        std::ofstream materialFile(saveMaterialPath, std::ios::binary);
+        std::ofstream materialFile(savePath, std::ios::binary);
         if (!materialFile.is_open())
         {
             return tl::make_unexpected(FileNotFoundError {});
@@ -491,7 +483,6 @@ namespace exage::Renderer
         AssetFile assetFile = saveMaterial(material);
         saveAssetFile(materialFile, assetFile);
 
-        material.path = savePath;
         return {};
     }
 
@@ -557,13 +548,10 @@ namespace exage::Renderer
         return assetFile;
     }
 
-    auto saveMesh(StaticMesh& mesh,
-                  const std::filesystem::path& savePath,
-                  const std::filesystem::path& prefix) noexcept -> tl::expected<void, AssetError>
+    auto saveMesh(StaticMesh& mesh, const std::filesystem::path& savePath) noexcept
+        -> tl::expected<void, AssetError>
     {
-        const auto saveMeshPath = prefix / savePath;
-
-        std::ofstream meshFile(saveMeshPath, std::ios::binary);
+        std::ofstream meshFile(savePath, std::ios::binary);
         if (!meshFile.is_open())
         {
             return tl::make_unexpected(FileNotFoundError {});
@@ -572,7 +560,6 @@ namespace exage::Renderer
         AssetFile assetFile = saveMesh(mesh);
         saveAssetFile(meshFile, assetFile);
 
-        mesh.path = savePath;
         return {};
     }
 

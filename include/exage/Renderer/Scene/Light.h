@@ -21,6 +21,12 @@ namespace exage::Renderer
         float attenuationRadius;
         bool castShadow;
         float shadowBias = DEFAULT_SHADOW_BIAS;
+
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(color, intensity, physicalRadius, attenuationRadius, castShadow, shadowBias);
+        }
     };
 
     struct DirectionalLight
@@ -29,6 +35,12 @@ namespace exage::Renderer
         float intensity;
         bool castShadow;
         float shadowBias = DEFAULT_SHADOW_BIAS;
+
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(color, intensity, castShadow, shadowBias);
+        }
     };
 
     struct SpotLight
@@ -41,6 +53,19 @@ namespace exage::Renderer
         float attenuationRadius;
         bool castShadow;
         float shadowBias = DEFAULT_SHADOW_BIAS;
+
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(color,
+                    intensity,
+                    innerCutoff,
+                    outerCutoff,
+                    physicalRadius,
+                    attenuationRadius,
+                    castShadow,
+                    shadowBias);
+        }
     };
 
     struct PointLightRenderInfo

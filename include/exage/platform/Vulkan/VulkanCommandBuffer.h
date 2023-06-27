@@ -3,6 +3,7 @@
 
 #include "exage/Graphics/CommandBuffer.h"
 #include "exage/Graphics/Commands.h"
+#include "exage/Graphics/Texture.h"
 #include "exage/platform/Vulkan/VulkanContext.h"
 
 namespace exage::Graphics
@@ -112,9 +113,11 @@ namespace exage::Graphics
         void bindSampler(std::shared_ptr<Sampler> sampler, uint32_t binding) noexcept override;
 
         void bindSampledTexture(std::shared_ptr<Texture> texture,
-                                uint32_t binding) noexcept override;
+                                uint32_t binding,
+                                Texture::Aspect) noexcept override;
         void bindStorageTexture(std::shared_ptr<Texture> texture,
-                                uint32_t binding) noexcept override;
+                                uint32_t binding,
+                                Texture::Aspect aspect) noexcept override;
 
         void userDefined(std::function<void(CommandBuffer&)> commandFunction) noexcept override;
 

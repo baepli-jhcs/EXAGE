@@ -25,4 +25,7 @@ namespace exage::Filesystem
             return std::filesystem::hash_value(path);
         }
     };
+
+    [[nodiscard]] auto getApplicationDataPath() noexcept
+        -> const std::filesystem::path&;  // returns Local AppData or equivalent
 }  // namespace exage::Filesystem

@@ -18,6 +18,13 @@ namespace exage::Renderer
 
         float exposure = 1.0f;
         float gamma = 2.2f;
+
+        // Serialization
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(fov, near, far, exposure, gamma);
+        }
     };
 
     struct CameraRenderInfo

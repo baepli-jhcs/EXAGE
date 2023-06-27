@@ -3,6 +3,7 @@
 #include "exage/Core/Core.h"
 #include "exage/Core/Window.h"
 #include "exage/Graphics/Context.h"
+#include "exage/Graphics/Texture.h"
 #include "imgui.h"
 
 namespace exage::Graphics
@@ -55,5 +56,6 @@ namespace exage::Graphics
     {
         std::shared_ptr<Texture> texture;
         std::shared_ptr<Sampler> sampler;
+        Texture::Aspect aspect = Texture::Aspect::eColor;
     };
 }  // namespace exage::Graphics

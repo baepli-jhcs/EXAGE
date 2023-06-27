@@ -103,17 +103,12 @@ namespace exage::Renderer
     [[nodiscard]] auto saveMaterial(Material& material) noexcept -> AssetFile;
     [[nodiscard]] auto saveMesh(StaticMesh& mesh) noexcept -> AssetFile;
 
-    [[nodiscard]] auto saveTexture(Texture& texture,
-                                   const std::filesystem::path& savePath,
-                                   const std::filesystem::path& prefix) noexcept
+    [[nodiscard]] auto saveTexture(Texture& texture, const std::filesystem::path& savePath) noexcept
         -> tl::expected<void, AssetError>;
     [[nodiscard]] auto saveMaterial(Material& material,
-                                    const std::filesystem::path& savePath,
-                                    const std::filesystem::path& prefix) noexcept
+                                    const std::filesystem::path& savePath) noexcept
         -> tl::expected<void, AssetError>;
-    [[nodiscard]] auto saveMesh(StaticMesh& mesh,
-                                const std::filesystem::path& savePath,
-                                const std::filesystem::path& prefix) noexcept
+    [[nodiscard]] auto saveMesh(StaticMesh& mesh, const std::filesystem::path& savePath) noexcept
         -> tl::expected<void, AssetError>;
 
     struct AssetSceneImportInfo

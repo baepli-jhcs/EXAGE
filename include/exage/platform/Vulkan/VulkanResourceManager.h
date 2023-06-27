@@ -79,6 +79,8 @@ namespace exage::Graphics
 
         [[nodiscard]] auto bindBuffer(VulkanBuffer& buffer) noexcept -> BufferID;
         [[nodiscard]] auto bindTexture(VulkanTexture& texture) noexcept -> TextureID;
+        [[nodiscard]] auto bindDepthStencilTexture(VulkanTexture& texture) noexcept
+            -> std::pair<TextureID, TextureID>;  // depth, stencil
         [[nodiscard]] auto bindSampler(VulkanSampler& sampler) noexcept -> SamplerID;
 
         void unbindBuffer(BufferID buffer) noexcept;
@@ -95,6 +97,11 @@ namespace exage::Graphics
         }
 
       private:
+        [[nodiscard]] auto bindTextureWith(vk::ImageView imageView,
+                                           vk::ImageLayout layout,
+                                           bool sampled,
+                                           bool storage) noexcept -> TextureID;
+
         std::reference_wrapper<VulkanContext> _context;
 
         bool _support;

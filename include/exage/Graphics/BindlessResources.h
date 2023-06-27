@@ -3,7 +3,6 @@
 #include <limits>
 
 #include "exage/Core/Core.h"
-#include "exage/Graphics/Context.h"
 
 namespace exage::Graphics
 {

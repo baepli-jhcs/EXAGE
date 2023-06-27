@@ -34,13 +34,21 @@ namespace exage
         glm::vec3 position {0.F};
         glm::vec3 scale {1.F};
         Rotation3D rotation {};
-        glm::mat4 matrix;
 
         // Not intended to be modified by the user
+        glm::mat4 matrix;
+
         glm::vec3 globalPosition;
         glm::vec3 globalScale;
         Rotation3D globalRotation;
         glm::mat4 globalMatrix;
+
+        // Serialization
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(position, scale, rotation);
+        }
     };
 
     struct EulerRotation

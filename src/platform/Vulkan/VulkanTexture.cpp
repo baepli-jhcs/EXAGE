@@ -12,14 +12,31 @@ namespace exage::Graphics
 
     void VulkanTexture::cleanup() noexcept
     {
-        if (_id.valid())
+        auto idDestruction = [this](auto& id)
         {
-            _context.get().getResourceManager().unbindTexture(_id);
+            if (id.valid())
+            {
+                _context.get().getResourceManager().unbindTexture(id);
+            }
+        };
+
+        idDestruction(_colorBindlessID);
+        idDestruction(_depthBindlessID);
+        idDestruction(_stencilBindlessID);
+
+        if (_firstImageView)
+        {
+            _context.get().getDevice().destroyImageView(_firstImageView);
         }
 
-        if (_imageView)
+        if (_secondImageView)
         {
-            _context.get().getDevice().destroyImageView(_imageView);
+            _context.get().getDevice().destroyImageView(_secondImageView);
+        }
+
+        if (_depthStencilImageView)
+        {
+            _context.get().getDevice().destroyImageView(_depthStencilImageView);
         }
 
         if (_image)
@@ -38,13 +55,19 @@ namespace exage::Graphics
         , _context(old._context)
         , _allocation(old._allocation)
         , _image(old._image)
-        , _imageView(old._imageView)
+        , _firstImageView(old._firstImageView)
+        , _secondImageView(old._secondImageView)
+        , _depthStencilImageView(old._depthStencilImageView)
     {
-        old._id = {};
+        old._colorBindlessID = {};
+        old._depthBindlessID = {};
+        old._stencilBindlessID = {};
 
         old._allocation = nullptr;
         old._image = nullptr;
-        old._imageView = nullptr;
+        old._firstImageView = nullptr;
+        old._secondImageView = nullptr;
+        old._depthStencilImageView = nullptr;
     }
 
     auto VulkanTexture::operator=(VulkanTexture&& old) noexcept -> VulkanTexture&
@@ -62,13 +85,19 @@ namespace exage::Graphics
 
         _allocation = old._allocation;
         _image = old._image;
-        _imageView = old._imageView;
+        _firstImageView = old._firstImageView;
+        _secondImageView = old._secondImageView;
+        _depthStencilImageView = old._depthStencilImageView;
 
-        old._id = {};
+        old._colorBindlessID = {};
+        old._depthBindlessID = {};
+        old._stencilBindlessID = {};
 
         old._allocation = nullptr;
         old._image = nullptr;
-        old._imageView = nullptr;
+        old._firstImageView = nullptr;
+        old._secondImageView = nullptr;
+        old._depthStencilImageView = nullptr;
 
         return *this;
     }
@@ -121,9 +150,55 @@ namespace exage::Graphics
         viewInfo.subresourceRange =
             vk::ImageSubresourceRange(aspectFlags, 0, _mipLevelCount, 0, _layerCount);
 
-        result = _context.get().getDevice().createImageView(&viewInfo, nullptr, &_imageView);
-        checkVulkan(result);
+        if (aspectFlags & vk::ImageAspectFlagBits::eColor)
+        {
+            result =
+                _context.get().getDevice().createImageView(&viewInfo, nullptr, &_firstImageView);
+            checkVulkan(result);
+        }
+        else
+        {
+            viewInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eDepth;
+            result =
+                _context.get().getDevice().createImageView(&viewInfo, nullptr, &_firstImageView);
+            checkVulkan(result);
 
-        _id = _context.get().getResourceManager().bindTexture(*this);
+            viewInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eStencil;
+            result =
+                _context.get().getDevice().createImageView(&viewInfo, nullptr, &_secondImageView);
+            checkVulkan(result);
+
+            viewInfo.subresourceRange.aspectMask = aspectFlags;
+            result = _context.get().getDevice().createImageView(
+                &viewInfo, nullptr, &_depthStencilImageView);
+            checkVulkan(result);
+        }
+
+        if (_format == Format::eDepth24Stencil8 || _format == Format::eDepth32Stencil8)
+        {
+            auto ids = _context.get().getResourceManager().bindDepthStencilTexture(*this);
+            _depthBindlessID = ids.first;
+            _stencilBindlessID = ids.second;
+        }
+        else
+        {
+            _colorBindlessID = _context.get().getResourceManager().bindTexture(*this);
+        }
     }
+
+    auto VulkanTexture::getImageView(Aspect aspect) const noexcept -> vk::ImageView
+    {
+        switch (aspect)
+        {
+            case Aspect::eColor:
+                return _firstImageView;
+            case Aspect::eDepth:
+                return _firstImageView;
+            case Aspect::eStencil:
+                return _secondImageView;
+        }
+
+        return {};
+    }
+
 }  // namespace exage::Graphics

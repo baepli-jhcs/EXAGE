@@ -149,7 +149,8 @@ namespace exitor
             if (textureReturn.has_value())
             {
                 Renderer::Texture& texture = *textureReturn;
-                auto saveResult = Renderer::saveTexture(texture, texturePath2, "");
+                texture.path = texturePath2;
+                auto saveResult = Renderer::saveTexture(texture, texturePath2);
                 debugAssume(saveResult.has_value(), "Failed to save texture");
 
                 Renderer::GPUTexture gpuTexture = Renderer::uploadTexture(texture, uploadOptions);
@@ -236,7 +237,8 @@ namespace exitor
                 std::filesystem::path("assets/exage/models/exspon/main/materials/")
                 / (std::to_string(i).append(Renderer::MATERIAL_EXTENSION));
 
-            auto saveResult = Renderer::saveMaterial(material2, materialPath, "");
+            material2.path = materialPath;
+            auto saveResult = Renderer::saveMaterial(material2, materialPath);
 
             debugAssume(saveResult.has_value(), "Failed to save material");
 
@@ -315,7 +317,9 @@ namespace exitor
                 std::filesystem::path("assets/exage/models/exspon/main/meshes/")
                 / (std::to_string(i).append(Renderer::MESH_EXTENSION));
 
-            auto saveResult = Renderer::saveMesh(mesh2, meshPath, "");
+            mesh2.path = meshPath;
+
+            auto saveResult = Renderer::saveMesh(mesh2, meshPath);
             debugAssume(saveResult.has_value(), "Failed to save mesh");
 
             Renderer::GPUStaticMesh gpuMesh = Renderer::uploadMesh(mesh2, meshUploadOptions);
@@ -460,6 +464,12 @@ namespace exitor
     void Editor::drawGUI(float deltaTime) noexcept
     {
         ImFont* font = _fontManager->getFont("Source Sans Pro Regular", 16.F);
+        ImGui::PushFont(font);
+
+        if (!_project)
+        {
+            _project = _projectSelector.run();
+        }
 
         bool open = true;
 
@@ -482,8 +492,6 @@ namespace exitor
 
         ImGuiIO const& io = ImGui::GetIO();
         ImGuiStyle const& style = ImGui::GetStyle();
-
-        ImGui::PushFont(font);
 
         ImGui::Begin("DockSpace", &open, windowFlags);
 

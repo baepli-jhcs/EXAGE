@@ -3,6 +3,7 @@
 #include "Panels/ComponentEditor.h"
 #include "Panels/ComponentList.h"
 #include "Panels/Hierarchy.h"
+#include "Stages/ProjectSelector.h"
 #include "exage/Core/Core.h"
 #include "exage/Core/Timer.h"
 #include "exage/Graphics/Context.h"
@@ -11,6 +12,8 @@
 #include "exage/Graphics/Queue.h"
 #include "exage/Graphics/Utils/BufferTypes.h"
 #include "exage/Graphics/Utils/QueueCommand.h"
+#include "exage/Projects/Level.h"
+#include "exage/Projects/Project.h"
 #include "exage/Renderer/Renderer.h"
 #include "exage/Renderer/Scene/AssetCache.h"
 #include "exage/Renderer/Scene/SceneBuffer.h"
@@ -52,6 +55,11 @@ namespace exitor
 
         std::optional<Renderer::SceneBuffer> _sceneBuffer;
         std::optional<Renderer::Renderer> _renderer;
+
+        ProjectSelector _projectSelector {};
+
+        std::optional<Projects::Project> _project;
+        std::optional<Projects::DeserializedLevel> _level;
 
         glm::uvec2 _viewportExtent = {600, 600};
 

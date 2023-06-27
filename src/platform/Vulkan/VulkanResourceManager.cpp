@@ -151,7 +151,10 @@ namespace exage::Graphics
         return BufferID {index};
     }
 
-    auto VulkanResourceManager::bindTexture(VulkanTexture& texture) noexcept -> TextureID
+    auto VulkanResourceManager::bindTextureWith(vk::ImageView imageView,
+                                                vk::ImageLayout layout,
+                                                bool sampled,
+                                                bool storage) noexcept -> TextureID
     {
         if (!_support)
         {
@@ -160,20 +163,12 @@ namespace exage::Graphics
 
         uint32_t const index = _texturePool.allocate();
 
-        bool sampledImage = texture.getUsage().any(Texture::UsageFlags::eSampled);
         vk::WriteDescriptorSet sampledImageWriteDescriptorSet {};
         vk::DescriptorImageInfo sampledImageInfo = {
-            nullptr, texture.getImageView(), vk::ImageLayout::eUndefined};
-        if (sampledImage)
+            nullptr, imageView, vk::ImageLayout::eUndefined};
+        if (sampled)
         {
-            sampledImageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-
-            if (texture.getFormat() == Format::eDepth24Stencil8
-                || texture.getFormat() == Format::eDepth32Stencil8)
-            {
-                sampledImageInfo.imageLayout = vk::ImageLayout::eDepthStencilReadOnlyOptimal;
-            }
-
+            sampledImageInfo.imageLayout = layout;
             sampledImageWriteDescriptorSet.dstSet = _descriptorSet;
             sampledImageWriteDescriptorSet.dstBinding = sampledTextureBinding;
             sampledImageWriteDescriptorSet.dstArrayElement = index;
@@ -184,8 +179,7 @@ namespace exage::Graphics
 
         vk::WriteDescriptorSet storageImageWriteDescriptorSet {};
         vk::DescriptorImageInfo storageImageDescriptorImageInfo = sampledImageInfo;
-        bool storageImage = texture.getUsage().any(Texture::UsageFlags::eStorage);
-        if (storageImage)
+        if (storage)
         {
             storageImageDescriptorImageInfo.imageLayout = vk::ImageLayout::eGeneral;
             storageImageWriteDescriptorSet.dstSet = _descriptorSet;
@@ -198,12 +192,12 @@ namespace exage::Graphics
 
         std::array<vk::WriteDescriptorSet, 2> writeDescriptorSets {};
         uint32_t writeDescriptorSetCount = 0;
-        if (sampledImage)
+        if (sampled)
         {
             writeDescriptorSets[writeDescriptorSetCount] = sampledImageWriteDescriptorSet;
             writeDescriptorSetCount++;
         }
-        if (storageImage)
+        if (storage)
         {
             writeDescriptorSets[writeDescriptorSetCount] = storageImageWriteDescriptorSet;
             writeDescriptorSetCount++;
@@ -213,6 +207,41 @@ namespace exage::Graphics
             writeDescriptorSetCount, &sampledImageWriteDescriptorSet, 0, nullptr);
 
         return TextureID {index};
+    }
+
+    auto VulkanResourceManager::bindTexture(VulkanTexture& texture) noexcept -> TextureID
+    {
+        bool sampledImage = texture.getUsage().any(Texture::UsageFlags::eSampled);
+        bool storageImage = texture.getUsage().any(Texture::UsageFlags::eStorage);
+
+        return bindTextureWith(texture.getImageView(Texture::Aspect::eColor),
+                               vk::ImageLayout::eShaderReadOnlyOptimal,
+                               sampledImage,
+                               storageImage);
+    }
+
+    auto VulkanResourceManager::bindDepthStencilTexture(VulkanTexture& texture) noexcept
+        -> std::pair<TextureID, TextureID>
+    {
+        if (!_support)
+        {
+            return {TextureID {}, TextureID {}};
+        }
+
+        bool sampledImage = texture.getUsage().any(Texture::UsageFlags::eSampled);
+        bool storageImage = texture.getUsage().any(Texture::UsageFlags::eStorage);
+
+        TextureID depthTextureID = bindTextureWith(texture.getImageView(Texture::Aspect::eDepth),
+                                                   vk::ImageLayout::eDepthStencilReadOnlyOptimal,
+                                                   sampledImage,
+                                                   storageImage);
+        TextureID stencilTextureID =
+            bindTextureWith(texture.getImageView(Texture::Aspect::eStencil),
+                            vk::ImageLayout::eDepthStencilReadOnlyOptimal,
+                            sampledImage,
+                            storageImage);
+
+        return {depthTextureID, stencilTextureID};
     }
 
     auto VulkanResourceManager::bindSampler(VulkanSampler& sampler) noexcept -> SamplerID

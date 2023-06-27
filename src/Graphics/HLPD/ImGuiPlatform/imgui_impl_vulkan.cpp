@@ -690,8 +690,13 @@ void ImGui_ImplVulkan_RenderDrawData(ImDrawData* draw_data,
                         static_cast<exage::Graphics::ImGuiTexture*>(pcmd->TextureId);
                     auto* texture = imguiTexture->texture->as<exage::Graphics::VulkanTexture>();
                     auto* sampler = imguiTexture->sampler->as<exage::Graphics::VulkanSampler>();
-                    descriptor.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                    descriptor.imageView = texture->getImageView();
+
+                    bool depth = texture->getUsage().any(
+                        exage::Graphics::Texture::UsageFlags::eDepthStencilAttachment);
+
+                    descriptor.imageLayout = depth ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
+                                                   : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                    descriptor.imageView = texture->getImageView(imguiTexture->aspect);
                     descriptor.sampler = sampler->getSampler();
                 }
 

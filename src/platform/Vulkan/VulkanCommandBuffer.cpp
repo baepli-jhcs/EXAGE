@@ -1,6 +1,7 @@
 ﻿#include "exage/platform/Vulkan/VulkanCommandBuffer.h"
 
 #include "exage/Graphics/Commands.h"
+#include "exage/Graphics/Texture.h"
 #include "exage/platform/Vulkan/VulkanBuffer.h"
 #include "exage/platform/Vulkan/VulkanFrameBuffer.h"
 #include "exage/platform/Vulkan/VulkanPipeline.h"
@@ -378,21 +379,25 @@ namespace exage::Graphics
     }
 
     void VulkanCommandBuffer::bindSampledTexture(std::shared_ptr<Texture> texture,
-                                                 uint32_t binding) noexcept
+                                                 uint32_t binding,
+                                                 Texture::Aspect aspect) noexcept
     {
         BindSampledTextureCommand bindSampledTextureCommand;
         bindSampledTextureCommand.texture = texture;
         bindSampledTextureCommand.binding = binding;
+        bindSampledTextureCommand.aspect = aspect;
 
         _commands.emplace_back(bindSampledTextureCommand);
     }
 
     void VulkanCommandBuffer::bindStorageTexture(std::shared_ptr<Texture> texture,
-                                                 uint32_t binding) noexcept
+                                                 uint32_t binding,
+                                                 Texture::Aspect aspect) noexcept
     {
         BindStorageTextureCommand bindStorageTextureCommand;
         bindStorageTextureCommand.texture = texture;
         bindStorageTextureCommand.binding = binding;
+        bindStorageTextureCommand.aspect = aspect;
 
         _commands.emplace_back(bindStorageTextureCommand);
     }
@@ -589,7 +594,8 @@ namespace exage::Graphics
                         const auto& clearColor = cmd.clearColors[i];
 
                         vk::RenderingAttachmentInfo attachmentInfo {};
-                        attachmentInfo.imageView = vulkanTexture.getImageView();
+                        attachmentInfo.imageView =
+                            vulkanTexture.getImageView(Texture::Aspect::eColor);
                         attachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
                         attachmentInfo.resolveMode = vk::ResolveModeFlagBits::eNone;
                         attachmentInfo.loadOp = clearColor.clear ? vk::AttachmentLoadOp::eClear
@@ -612,7 +618,7 @@ namespace exage::Graphics
                         auto& vulkanTexture = *depthTexture->as<VulkanTexture>();
                         const auto& clearDepth = cmd.clearDepth;
 
-                        depthAttachmentInfo.imageView = vulkanTexture.getImageView();
+                        depthAttachmentInfo.imageView = vulkanTexture.getDepthStencilImageView();
                         depthAttachmentInfo.imageLayout =
                             vk::ImageLayout::eDepthStencilAttachmentOptimal;
                         depthAttachmentInfo.resolveMode = vk::ResolveModeFlagBits::eNone;
@@ -731,8 +737,9 @@ namespace exage::Graphics
                 [this](const BindSampledTextureCommand& cmd)
                 {
                     auto& texture = *cmd.texture->as<VulkanTexture>();
-                    vk::DescriptorImageInfo imageInfo = {
-                        nullptr, texture.getImageView(), vk::ImageLayout::eShaderReadOnlyOptimal};
+                    vk::DescriptorImageInfo imageInfo = {nullptr,
+                                                         texture.getImageView(cmd.aspect),
+                                                         vk::ImageLayout::eShaderReadOnlyOptimal};
 
                     vk::WriteDescriptorSet write {};
                     write.dstBinding = cmd.binding;
@@ -751,7 +758,7 @@ namespace exage::Graphics
                 {
                     auto& texture = *cmd.texture->as<VulkanTexture>();
                     vk::DescriptorImageInfo imageInfo = {
-                        nullptr, texture.getImageView(), vk::ImageLayout::eGeneral};
+                        nullptr, texture.getImageView(cmd.aspect), vk::ImageLayout::eGeneral};
 
                     vk::WriteDescriptorSet write {};
                     write.dstBinding = cmd.binding;

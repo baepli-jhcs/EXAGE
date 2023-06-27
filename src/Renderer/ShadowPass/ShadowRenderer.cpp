@@ -139,7 +139,7 @@ namespace exage::Renderer
 
                         directionalLightRenderInfo.shadowMapIndex = static_cast<int32_t>(
                             directionalLightRenderInfo.shadowMap->getDepthStencilTexture()
-                                ->getBindlessID()
+                                ->getBindlessID(Graphics::Texture::Aspect::eDepth)
                                 .id);
                     }
                 }
@@ -336,7 +336,7 @@ namespace exage::Renderer
 
                     pointLightRenderInfo.shadowMapIndex = static_cast<int32_t>(
                         pointLightRenderInfo.shadowMap->getDepthStencilTexture()
-                            ->getBindlessID()
+                            ->getBindlessID(Graphics::Texture::Aspect::eDepth)
                             .id);
                 }
 
@@ -443,7 +443,9 @@ namespace exage::Renderer
                     spotLightRenderInfo.shadowMap =
                         _context.get().createFrameBuffer(frameBufferCreateInfo);
                     spotLightRenderInfo.shadowMapIndex =
-                        spotLightRenderInfo.shadowMap->getDepthStencilTexture()->getBindlessID().id;
+                        spotLightRenderInfo.shadowMap->getDepthStencilTexture()
+                            ->getBindlessID(Graphics::Texture::Aspect::eDepth)
+                            .id;
                 }
 
                 spotLightRenderInfo.arrayIndex = index;

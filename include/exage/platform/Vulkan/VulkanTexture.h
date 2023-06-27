@@ -21,7 +21,11 @@ namespace exage::Graphics
         auto operator=(VulkanTexture&& old) noexcept -> VulkanTexture&;
 
         [[nodiscard]] auto getImage() const noexcept -> vk::Image { return _image; }
-        [[nodiscard]] auto getImageView() const noexcept -> vk::ImageView { return _imageView; }
+        [[nodiscard]] auto getImageView(Aspect aspect) const noexcept -> vk::ImageView;
+        [[nodiscard]] auto getDepthStencilImageView() const noexcept -> vk::ImageView
+        {
+            return _depthStencilImageView;
+        }
 
         EXAGE_VULKAN_DERIVED
 
@@ -32,6 +36,9 @@ namespace exage::Graphics
 
         vma::Allocation _allocation;
         vk::Image _image;
-        vk::ImageView _imageView;
+        vk::ImageView _firstImageView;
+        vk::ImageView _secondImageView;
+
+        vk::ImageView _depthStencilImageView;
     };
 }  // namespace exage::Graphics

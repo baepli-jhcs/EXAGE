@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "exage/Core/Core.h"
+#include "exage/Core/Debug.h"
 #include "exage/Graphics/BindlessResources.h"
 #include "exage/Graphics/Context.h"
 #include "exage/utils/classes.h"
@@ -55,6 +56,13 @@ namespace exage::Graphics
             eDepthStencilAttachment = 1 << 5,
         };
 
+        enum class Aspect : uint32_t
+        {
+            eColor,
+            eDepth,
+            eStencil,
+        };
+
         using Usage = Flags<UsageFlags>;
 
         virtual ~Texture() = default;
@@ -70,7 +78,20 @@ namespace exage::Graphics
         [[nodiscard]] auto getLayerCount() const noexcept -> uint32_t { return _layerCount; }
         [[nodiscard]] auto getMipLevelCount() const noexcept -> uint32_t { return _mipLevelCount; }
 
-        [[nodiscard]] auto getBindlessID() const noexcept -> TextureID { return _id; }
+        [[nodiscard]] auto getBindlessID(Aspect aspect = Aspect::eColor) const noexcept -> TextureID
+        {
+            switch (aspect)
+            {
+                case Aspect::eColor:
+                    return _colorBindlessID;
+                case Aspect::eDepth:
+                    return _depthBindlessID;
+                case Aspect::eStencil:
+                    return _stencilBindlessID;
+            }
+
+            return {};
+        }
 
         [[nodiscard]] auto getTextureCreateInfo() const noexcept -> TextureCreateInfo;
 
@@ -106,7 +127,9 @@ namespace exage::Graphics
         uint32_t _layerCount;
         uint32_t _mipLevelCount;
 
-        TextureID _id {};
+        TextureID _colorBindlessID {};
+        TextureID _depthBindlessID {};
+        TextureID _stencilBindlessID {};
 
         Texture(TextureExtent extent,
                 Format format,

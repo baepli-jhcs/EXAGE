@@ -70,6 +70,12 @@ namespace exage::Renderer
     {
         std::filesystem::path path;
         size_t pathHash;
+
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(path, pathHash);
+        }
     };
 
     constexpr std::string_view MESH_EXTENSION = ".exmesh";

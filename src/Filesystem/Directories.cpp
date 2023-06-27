@@ -7,6 +7,8 @@ namespace exage::Filesystem
         std::filesystem::path engineAssetDirectory = "assets/exage";
         std::filesystem::path engineShaderDirectory = "shaders/exage";
         std::filesystem::path engineShaderCacheDirectory = "cache/shaders/exage";
+
+        std::filesystem::path applicationDataPath;
     }  // namespace
 
     void setEngineAssetDirectory(std::filesystem::path path) noexcept
@@ -38,4 +40,28 @@ namespace exage::Filesystem
     {
         return engineShaderCacheDirectory;
     }
+
+    auto getApplicationDataPath() noexcept -> const std::filesystem::path&
+    {
+        if (!applicationDataPath.empty())
+        {
+            return applicationDataPath;
+        }
+
+#ifdef EXAGE_WINDOWS
+        applicationDataPath = std::getenv("LOCALAPPDATA");
+
+#elif defined(EXAGE_LINUX)
+        std::filesystem::path home = std::getenv("HOME");
+        applicationDataPath = home / ".config";
+#elif defined(EXAGE_MACOS)
+        std::filesystem::path home = std::getenv("HOME");
+        applicationDataPath = home / "Library/Application Support";
+#else
+        applicationDataPath = ".";
+#endif
+
+        return applicationDataPath;
+    }
+
 }  // namespace exage::Filesystem

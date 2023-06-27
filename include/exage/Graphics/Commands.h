@@ -237,12 +237,14 @@ namespace exage::Graphics
         {
             std::shared_ptr<Texture> texture;
             uint32_t binding;
+            Texture::Aspect aspect;
         };
 
         struct BindStorageTextureCommand
         {
             std::shared_ptr<Texture> texture;
             uint32_t binding;
+            Texture::Aspect aspect;
         };
 
         using GPUCommand = std::variant<DrawCommand,
