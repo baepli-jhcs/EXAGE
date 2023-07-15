@@ -2,7 +2,7 @@
 
 ## Dependencies
 
-For a list of dependencies, please refer to [vcpkg.json](vcpkg.json).
+For a list of dependencies, please refer to [conanlist.txt](conanlist.txt).
 
 ## Build
 
@@ -65,8 +65,8 @@ cmake --install build --config Release
 This project exports a CMake package to be used with the [`find_package`][3]
 command of CMake:
 
-* Package name: `EXAGE`
-* Target name: `EXAGE::EXAGE`
+- Package name: `EXAGE`
+- Target name: `EXAGE::EXAGE`
 
 Example usage:
 

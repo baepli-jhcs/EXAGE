@@ -9,7 +9,6 @@
 
 #include "exage/Core/Core.h"
 #include "exage/Graphics/Texture.h"
-#include "exage/utils/serialization.h"
 
 namespace exage::Renderer
 {
@@ -22,7 +21,7 @@ namespace exage::Renderer
             uint64_t size;
         };
 
-        std::filesystem::path path;
+        std::string path;
         std::vector<Mip> mips;
         std::vector<std::byte> data;
         uint8_t channels;
@@ -32,7 +31,7 @@ namespace exage::Renderer
 
     struct GPUTexture
     {
-        std::filesystem::path path;
+        std::string path;
 
         std::shared_ptr<Graphics::Texture> texture;
     };
@@ -41,7 +40,7 @@ namespace exage::Renderer
 
     struct Material
     {
-        std::filesystem::path path;
+        std::string path;
 
         glm::vec3 albedoColor = glm::vec3(1.0f);
         glm::vec3 emissiveColor = glm::vec3(0.0f);
@@ -56,12 +55,12 @@ namespace exage::Renderer
         bool occlusionUseTexture = false;
         bool emissiveUseTexture = false;
 
-        std::filesystem::path albedoTexturePath;
-        std::filesystem::path normalTexturePath;
-        std::filesystem::path metallicTexturePath;
-        std::filesystem::path roughnessTexturePath;
-        std::filesystem::path occlusionTexturePath;
-        std::filesystem::path emissiveTexturePath;
+        std::string albedoTexturePath;
+        std::string normalTexturePath;
+        std::string metallicTexturePath;
+        std::string roughnessTexturePath;
+        std::string occlusionTexturePath;
+        std::string emissiveTexturePath;
     };
 
     struct GPUMaterial
@@ -89,7 +88,7 @@ namespace exage::Renderer
             alignas(4) uint32_t emissiveTextureIndex = 0;
         };
 
-        std::filesystem::path path;
+        std::string path;
 
         GPUTexture albedoTexture;
         GPUTexture emissiveTexture;

@@ -11,9 +11,19 @@ namespace exage::Projects
     {
         std::string name;
 
-        std::filesystem::path defaultLevelPath;
-        std::vector<std::filesystem::path> levelPaths;
+        std::string defaultLevelPath;
+        std::vector<std::string> levelPaths;
+
+        std::vector<std::string> texturePaths;
+        std::vector<std::string> meshPaths;
+        std::vector<std::string> materialPaths;
 
         // TODO: add more configuration options, including scripts
+
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(name, defaultLevelPath, levelPaths, texturePaths, meshPaths, materialPaths);
+        }
     };
 }  // namespace exage::Projects

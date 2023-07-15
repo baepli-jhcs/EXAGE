@@ -6,10 +6,10 @@
 #include <vector>
 
 #include "exage/Core/Core.h"
+#include "exage/Core/Errors.h"
 #include "exage/Graphics/CommandBuffer.h"
 #include "exage/Renderer/Scene/AssetCache.h"
 #include "exage/Renderer/Scene/Loader/AssetFile.h"
-#include "exage/Renderer/Scene/Loader/Errors.h"
 #include "exage/Renderer/Scene/Material.h"
 #include "exage/Renderer/Scene/Mesh.h"
 #include "exage/Scene/Hierarchy.h"
@@ -94,22 +94,22 @@ namespace exage::Renderer
     };
 
     [[nodiscard]] auto importAsset2(const std::filesystem::path& assetPath) noexcept
-        -> tl::expected<AssetImportResult2, AssetError>;
+        -> tl::expected<AssetImportResult2, Error>;
 
     [[nodiscard]] auto importTexture(const std::filesystem::path& texturePath) noexcept
-        -> tl::expected<Texture, AssetError>;
+        -> tl::expected<Texture, Error>;
 
     [[nodiscard]] auto saveTexture(Texture& texture) noexcept -> AssetFile;
     [[nodiscard]] auto saveMaterial(Material& material) noexcept -> AssetFile;
     [[nodiscard]] auto saveMesh(StaticMesh& mesh) noexcept -> AssetFile;
 
     [[nodiscard]] auto saveTexture(Texture& texture, const std::filesystem::path& savePath) noexcept
-        -> tl::expected<void, AssetError>;
+        -> tl::expected<void, Error>;
     [[nodiscard]] auto saveMaterial(Material& material,
                                     const std::filesystem::path& savePath) noexcept
-        -> tl::expected<void, AssetError>;
+        -> tl::expected<void, Error>;
     [[nodiscard]] auto saveMesh(StaticMesh& mesh, const std::filesystem::path& savePath) noexcept
-        -> tl::expected<void, AssetError>;
+        -> tl::expected<void, Error>;
 
     struct AssetSceneImportInfo
     {

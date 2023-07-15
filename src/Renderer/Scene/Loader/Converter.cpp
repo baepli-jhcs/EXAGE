@@ -11,17 +11,16 @@
 #include <assimp/matrix4x4.h>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
-#include <cereal/archives/binary.hpp>
-#include <cereal/cereal.hpp>
+#include <exage/utils/serialization.h>
 #include <ktx.h>
 #include <stb_image.h>
 #include <tl/expected.hpp>
 #include <zstd.h>
 
+#include "exage/Core/Errors.h"
 #include "exage/Filesystem/Directories.h"
 #include "exage/Graphics/Texture.h"
 #include "exage/Renderer/Scene/Loader/AssetFile.h"
-#include "exage/Renderer/Scene/Loader/Errors.h"
 #include "exage/Renderer/Scene/Loader/Loader.h"
 #include "exage/Renderer/Scene/Material.h"
 #include "exage/Renderer/Scene/Mesh.h"
@@ -271,11 +270,11 @@ namespace exage::Renderer
     }  // namespace
 
     auto importAsset2(const std::filesystem::path& assetPath) noexcept
-        -> tl::expected<AssetImportResult2, AssetError>
+        -> tl::expected<AssetImportResult2, Error>
     {
         if (!std::filesystem::exists(assetPath))
         {
-            return tl::make_unexpected(FileNotFoundError {});
+            return tl::make_unexpected(Errors::FileNotFound {});
         }
 
         Assimp::Importer importer;
@@ -289,14 +288,14 @@ namespace exage::Renderer
         if (scene == nullptr)
         {
             std::cerr << "Failed to load asset: " << importer.GetErrorString() << std::endl;
-            return tl::make_unexpected(FileFormatError {});
+            return tl::make_unexpected(Errors::FileFormat {});
         }
 
         return processScene2(assetPath, *scene);
     }
 
     auto importTexture(const std::filesystem::path& texturePath) noexcept
-        -> tl::expected<Texture, AssetError>
+        -> tl::expected<Texture, Error>
     {
         // Load using stb_image or ktx depending on file extension
         if (texturePath.extension() == ".ktx")
@@ -307,7 +306,7 @@ namespace exage::Renderer
 
             if (result != KTX_SUCCESS)
             {
-                return tl::make_unexpected(FileFormatError {});
+                return tl::make_unexpected(Errors::FileFormat {});
             }
 
             Texture texture;
@@ -332,7 +331,7 @@ namespace exage::Renderer
             if (channels == 0 || bitsPerChannel == 0)
             {
                 std::cout << "Unsupported format: " << vk::to_string(vkFormat) << std::endl;
-                return tl::make_unexpected(FileFormatError {});
+                return tl::make_unexpected(Errors::FileFormat {});
             }
 
             texture.channels = channels;
@@ -352,7 +351,7 @@ namespace exage::Renderer
 
         if (pixels == nullptr)
         {
-            return tl::make_unexpected(FileFormatError {});
+            return tl::make_unexpected(Errors::FileFormat {});
         }
 
         if (channels == 3)
@@ -429,12 +428,12 @@ namespace exage::Renderer
     }
 
     auto saveTexture(Texture& texture, const std::filesystem::path& savePath) noexcept
-        -> tl::expected<void, AssetError>
+        -> tl::expected<void, Error>
     {
         std::ofstream textureFile(savePath, std::ios::binary);
         if (!textureFile.is_open())
         {
-            return tl::make_unexpected(FileNotFoundError {});
+            return tl::make_unexpected(Errors::FileNotFound {});
         }
 
         AssetFile assetFile = saveTexture(texture);
@@ -472,12 +471,12 @@ namespace exage::Renderer
     }
 
     auto saveMaterial(Material& material, const std::filesystem::path& savePath) noexcept
-        -> tl::expected<void, AssetError>
+        -> tl::expected<void, Error>
     {
         std::ofstream materialFile(savePath, std::ios::binary);
         if (!materialFile.is_open())
         {
-            return tl::make_unexpected(FileNotFoundError {});
+            return tl::make_unexpected(Errors::FileNotFound {});
         }
 
         AssetFile assetFile = saveMaterial(material);
@@ -549,12 +548,12 @@ namespace exage::Renderer
     }
 
     auto saveMesh(StaticMesh& mesh, const std::filesystem::path& savePath) noexcept
-        -> tl::expected<void, AssetError>
+        -> tl::expected<void, Error>
     {
         std::ofstream meshFile(savePath, std::ios::binary);
         if (!meshFile.is_open())
         {
-            return tl::make_unexpected(FileNotFoundError {});
+            return tl::make_unexpected(Errors::FileNotFound {});
         }
 
         AssetFile assetFile = saveMesh(mesh);

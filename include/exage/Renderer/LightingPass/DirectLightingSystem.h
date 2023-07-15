@@ -9,6 +9,7 @@
 #include "exage/Graphics/Sampler.h"
 #include "exage/Graphics/Shader.h"
 #include "exage/Renderer/Scene/AssetCache.h"
+#include "exage/Renderer/Scene/Light.h"
 #include "exage/Renderer/Scene/SceneBuffer.h"
 #include "exage/Scene/Scene.h"
 
@@ -21,6 +22,9 @@ namespace exage::Renderer
 
     struct DirectLightingSystemRenderInfo
     {
+        DirectionalLightRenderArray& directionalLightRenderArray;
+        PointLightRenderArray& pointLightRenderArray;
+        SpotLightRenderArray& spotLightRenderArray;
         std::shared_ptr<Graphics::Texture> position;
         std::shared_ptr<Graphics::Texture> normal;
         std::shared_ptr<Graphics::Texture> albedo;
@@ -49,5 +53,7 @@ namespace exage::Renderer
 
         std::shared_ptr<Graphics::Pipeline> _pipeline;
         std::shared_ptr<Graphics::Sampler> _sampler;
+
+        std::shared_ptr<Graphics::Buffer> _vertexBuffer;
     };
 }  // namespace exage::Renderer

@@ -14,7 +14,8 @@ namespace exitor
 
     auto ComponentEditor::draw(exage::Scene& scene,
                                exage::Entity selectedEntity,
-                               entt::id_type selectedTypeID) noexcept -> void
+                               entt::id_type selectedTypeID,
+                               exage::Projects::Project& project) noexcept -> void
     {
         ImGui::Begin("Component Editor");
 
@@ -37,7 +38,7 @@ namespace exitor
         else if (selectedTypeID
                  == entt::type_hash<exage::Renderer::StaticMeshComponent, void>::value())
         {
-            drawMesh(scene, selectedEntity);
+            drawMesh(scene, selectedEntity, project);
         }
 
         else if (selectedTypeID
@@ -145,13 +146,31 @@ namespace exitor
         ImGui::DragFloat("Far", &camera.far, 0.1f);
     }
 
-    auto ComponentEditor::drawMesh(exage::Scene& scene, exage::Entity selectedEntity) noexcept
-        -> void
+    auto ComponentEditor::drawMesh(exage::Scene& scene,
+                                   exage::Entity selectedEntity,
+                                   exage::Projects::Project& project) noexcept -> void
     {
         auto& meshComponent =
             scene.getComponent<exage::Renderer::StaticMeshComponent>(selectedEntity);
 
-        ImGui::Text("StaticMesh Path: %ls", meshComponent.path.c_str());
+        ImGui::Text("Mesh: %s", meshComponent.path.c_str());
+
+        // Selection dropdown for mesh
+        if (ImGui::BeginCombo("##Mesh", meshComponent.path.c_str()))
+        {
+            for (auto& meshPath : project.meshPaths)
+            {
+                if (ImGui::Selectable(meshPath.c_str()))
+                {
+                    meshComponent.path = meshPath;
+                    if (_meshSelectionCallback)
+                    {
+                        _meshSelectionCallback(meshPath);
+                    }
+                }
+            }
+            ImGui::EndCombo();
+        }
     }
 
     auto ComponentEditor::drawDirectionalLight(exage::Scene& scene,

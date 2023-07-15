@@ -1,9 +1,7 @@
 ﻿#pragma once
 
-#include <cereal/cereal.hpp>
-#include <cereal/types/string.hpp>
-#include <cereal/types/vector.hpp>
 #include <entt/core/hashed_string.hpp>
+#include <exage/utils/serialization.h>
 #include <glm/glm.hpp>
 
 #include "exage/Core/Core.h"
@@ -38,11 +36,11 @@ namespace exage::Renderer
 
     struct StaticMesh
     {
-        std::filesystem::path path;
+        std::string path;
 
         std::vector<MeshDetails> lods;
 
-        std::filesystem::path materialPath;
+        std::string materialPath;
 
         std::vector<StaticMeshVertex> vertices;
         std::vector<uint32_t> indices;
@@ -52,12 +50,12 @@ namespace exage::Renderer
 
     struct GPUStaticMesh
     {
-        std::filesystem::path path;
+        std::string path;
         size_t pathHash;
 
         std::vector<MeshDetails> lods;
 
-        std::filesystem::path materialPath;
+        std::string materialPath;
         GPUMaterial material;
 
         std::shared_ptr<Graphics::Buffer> vertexBuffer;
@@ -68,7 +66,7 @@ namespace exage::Renderer
 
     struct StaticMeshComponent
     {
-        std::filesystem::path path;
+        std::string path;
         size_t pathHash;
 
         template<class Archive>

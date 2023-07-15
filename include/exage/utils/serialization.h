@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include <cereal/types/string.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtx/quaternion.hpp>
 
@@ -339,3 +340,112 @@ namespace glm
     }
 
 }  // namespace glm
+
+// // // std::filesystem::path serialization with cereal
+// // template<class Archive>
+// // void serialize(Archive& archive, std::filesystem::path& path)
+// // {
+// //     std::string str;
+// //     if constexpr (Archive::is_loading::value)
+// //     {
+// //         archive(str);
+// //         path = str;
+// //     }
+// //     else
+// //     {
+// //         str = path.string();
+// //         archive(str);
+// //     }
+// // }
+
+// namespace cereal
+// {
+//     //! Saving for boost::filesystem::path
+//     template<class Archive>
+//     inline void save(Archive& ar, ::std::filesystem::path const& p)
+//     {
+//         ar(CEREAL_NVP_("path", p.native()));
+//     }
+
+//     //! Loading for boost::filesystem::path
+//     template<class Archive>
+//     inline void load(Archive& ar, ::std::filesystem::path& p)
+//     {
+//         ::std::filesystem::path::string_type s;
+//         ar(CEREAL_NVP_("path", s));
+//         p = s;
+//     }
+
+//     //! Saving for boost::filesystem::filesystem_error
+//     template<class Archive>
+//     inline void save(Archive& ar, ::std::filesystem::filesystem_error const& err)
+//     {
+//         ar(CEREAL_NVP_("ec", err.code()));
+//         std::string what(err.what());
+//         ar(CEREAL_NVP_("what", what));
+//         ar(CEREAL_NVP_("path1", err.path1()));
+//         ar(CEREAL_NVP_("path2", err.path2()));
+//     }
+
+//     //! Loading for boost::filesystem::filesystem_error
+//     template<class Archive>
+//     inline void load(Archive& ar, ::std::filesystem::filesystem_error& err)
+//     {
+//         ::std::error_code ec;
+//         std::string what;
+//         ::std::filesystem::path p1, p2;
+//         ar(CEREAL_NVP_("ec", ec));
+//         ar(CEREAL_NVP_("what", what));
+//         ar(CEREAL_NVP_("path1", p1));
+//         ar(CEREAL_NVP_("path2", p2));
+//         err = ::std::filesystem::filesystem_error(what, p1, p2, ec);
+//     }
+
+//     //! Saving for boost::filesystem::file_status
+//     template<class Archive>
+//     inline void save(Archive& ar, ::std::filesystem::file_status const& fs)
+//     {
+//         ar(CEREAL_NVP_("type", fs.type()));
+//         ar(CEREAL_NVP_("permissions", fs.permissions()));
+//     }
+
+//     //! Loading for boost::filesystem::file_status
+//     template<class Archive>
+//     inline void load(Archive& ar, ::std::filesystem::file_status& fs)
+//     {
+//         ::std::filesystem::file_type ft;
+//         ::std::filesystem::perms permissions;
+//         ar(CEREAL_NVP_("type", ft));
+//         ar(CEREAL_NVP_("permissions", permissions));
+
+//         fs = ::std::filesystem::file_status(ft, permissions);
+//     }
+
+//     //             //! Saving for boost::filesystem::directory_entry
+//     //    template <class Archive> inline
+//     //       void save(Archive & ar, ::std::filesystem::directory_entry  const & de)
+//     //    {
+//     // 		ar( CEREAL_NVP_("path",  de.path()));
+//     // 		ar( CEREAL_NVP_("status",  de.status()));
+//     // 		ar( CEREAL_NVP_("symlink_status",  de.symlink_status()));
+//     //    }
+
+//     //    //! Loading for boost::filesystem::directory_entry
+//     //    template <class Archive> inline
+//     //       void load(Archive & ar, ::std::filesystem::directory_entry  & de)
+//     //    {
+//     // 		::std::filesystem::path 	p;
+//     // 		::std::filesystem::file_status		status;
+//     // 		::std::filesystem::file_status		symlink_status;
+//     // 		ar( CEREAL_NVP_("path",  p));
+//     // 		ar( CEREAL_NVP_("status",  status));
+//     // 		ar( CEREAL_NVP_("symlink_status",  symlink_status));
+
+//     // 		de = ::std::filesystem::directory_entry(p,status,symlink_status);
+//     //    }
+
+//     // No attempt made to serialize iterators - it would require serializing the path referenced
+//     as
+//     // well.
+
+// }  // namespace cereal

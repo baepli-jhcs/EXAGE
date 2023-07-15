@@ -34,9 +34,16 @@ namespace exitor
       private:
         void prepareTestScene() noexcept;
 
+        void tick(float deltaTime) noexcept;
+        void drawGUI(float deltaTime) noexcept;
+
+        void drawProjectSelector() noexcept;
+
         void resizeCallback(glm::uvec2 extent);
 
-        void drawGUI(float deltaTime) noexcept;
+        void loadTexture(const std::filesystem::path& path) noexcept;
+        void loadMaterial(const std::filesystem::path& path) noexcept;
+        void loadMesh(const std::filesystem::path& path) noexcept;
 
         HierarchyPanel _hierarchyPanel;
         ComponentList _componentList;
@@ -56,14 +63,16 @@ namespace exitor
         std::optional<Renderer::SceneBuffer> _sceneBuffer;
         std::optional<Renderer::Renderer> _renderer;
 
-        ProjectSelector _projectSelector {};
+        std::optional<ProjectSelector> _projectSelector {};
+        std::filesystem::path _projectPath;
+        std::filesystem::path _projectDirectory;
 
         std::optional<Projects::Project> _project;
         std::optional<Projects::DeserializedLevel> _level;
 
-        glm::uvec2 _viewportExtent = {600, 600};
+        Entity _editorCameraEntity;
 
-        Scene _scene;
+        glm::uvec2 _viewportExtent = {600, 600};
 
         Renderer::AssetCache _assetCache;
 

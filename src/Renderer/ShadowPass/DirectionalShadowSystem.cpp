@@ -184,7 +184,7 @@ namespace exage::Renderer
             GPUStaticMesh* meshPtr = _assetCache.get().getMeshIfExists(meshComponent.pathHash);
             if (meshPtr == nullptr)
             {
-                fmt::print("Mesh {} not found\n", meshComponent.path.string());
+                fmt::print("Mesh {} not found\n", meshComponent.path);
                 return;
             }
 

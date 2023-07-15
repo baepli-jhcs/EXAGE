@@ -2,6 +2,7 @@
 #include <filesystem>
 
 #include "Editor.h"
+#include "exage/Projects/Level.h"
 
 auto main(int /*argc*/, char* /*argv*/[]) -> int
 {
@@ -10,6 +11,11 @@ auto main(int /*argc*/, char* /*argv*/[]) -> int
     exage::init();
     exitor::Editor editor;
     editor.run();
+
+    // exage::Projects::Level level {};
+    // level.path = "project/assets/levels/default.exlevel";
+
+    // [[maybe_unused]] auto result = exage::Projects::saveLevel("default.exlevel", level);
 
     return 0;
 }

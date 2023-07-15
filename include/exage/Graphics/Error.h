@@ -22,12 +22,12 @@ namespace exage::Graphics
 
         struct FileNotFound
         {
-            std::filesystem::path path;
+            std::string path;
         };
 
         struct FileNotReadable
         {
-            std::filesystem::path path;
+            std::string path;
         };
 
         struct ShaderCompilationFailed

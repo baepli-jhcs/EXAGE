@@ -26,30 +26,30 @@ namespace exage::Renderer
             _materials.emplace(material.path, material);
         }
 
-        [[nodiscard]] auto getTexture(const std::filesystem::path& path) noexcept -> GPUTexture&
+        [[nodiscard]] auto getTexture(const std::string& path) noexcept -> GPUTexture&
         {
             return _textures[path];
         }
-        [[nodiscard]] auto getMesh(const std::filesystem::path& path) noexcept -> GPUStaticMesh&
+        [[nodiscard]] auto getMesh(const std::string& path) noexcept -> GPUStaticMesh&
         {
             size_t hash = std::filesystem::hash_value(path);
             return _meshes[hash];
         }
-        [[nodiscard]] auto getMaterial(const std::filesystem::path& path) noexcept -> GPUMaterial&
+        [[nodiscard]] auto getMaterial(const std::string& path) noexcept -> GPUMaterial&
         {
             return _materials[path];
         }
 
-        [[nodiscard]] auto hasTexture(const std::filesystem::path& path) const noexcept -> bool
+        [[nodiscard]] auto hasTexture(const std::string& path) const noexcept -> bool
         {
             return _textures.contains(path);
         }
-        [[nodiscard]] auto hasMesh(const std::filesystem::path& path) const noexcept -> bool
+        [[nodiscard]] auto hasMesh(const std::string& path) const noexcept -> bool
         {
             size_t hash = std::filesystem::hash_value(path);
             return _meshes.contains(hash);
         }
-        [[nodiscard]] auto hasMaterial(const std::filesystem::path& path) const noexcept -> bool
+        [[nodiscard]] auto hasMaterial(const std::string& path) const noexcept -> bool
         {
             return _materials.contains(path);
         }
@@ -82,8 +82,8 @@ namespace exage::Renderer
         }
 
       private:
-        std::unordered_map<std::filesystem::path, GPUTexture, Filesystem::PathHash> _textures;
+        std::unordered_map<std::string, GPUTexture> _textures;
         std::unordered_map<size_t, GPUStaticMesh> _meshes;
-        std::unordered_map<std::filesystem::path, GPUMaterial, Filesystem::PathHash> _materials;
+        std::unordered_map<std::string, GPUMaterial> _materials;
     };
 }  // namespace exage::Renderer

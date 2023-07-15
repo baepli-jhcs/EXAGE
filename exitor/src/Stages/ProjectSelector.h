@@ -14,21 +14,29 @@
 #include "exage/Renderer/Renderer.h"
 #include "exage/Renderer/Scene/AssetCache.h"
 #include "exage/Renderer/Scene/SceneBuffer.h"
+#include "exage/Renderer/Utils/Fonts.h"
 
 namespace exitor
 {
     using namespace exage;
 
+    struct ProjectReturn
+    {
+        Projects::Project project;
+        std::filesystem::path path;
+        std::filesystem::path directory;
+    };
+
     class ProjectSelector
     {
       public:
-        ProjectSelector() noexcept;
-        ~ProjectSelector();
+        explicit ProjectSelector(Renderer::FontManager& fontManager) noexcept;
+        ~ProjectSelector() = default;
 
         EXAGE_DEFAULT_COPY(ProjectSelector);
         EXAGE_DEFAULT_MOVE(ProjectSelector);
 
-        auto run() noexcept -> std::optional<Projects::Project>;
+        auto run() noexcept -> std::optional<ProjectReturn>;
 
       private:
         struct ProjectMetadata
@@ -37,6 +45,7 @@ namespace exitor
             std::string path;
             std::chrono::system_clock::time_point lastOpened;
 
+            // cereal serialization
             template<class Archive>
             void serialize(Archive& archive)
             {
@@ -45,9 +54,20 @@ namespace exitor
         };
 
         void getRecentProjects() noexcept;
+        [[nodiscard]] auto loadProject(const std::filesystem::path& path) noexcept
+            -> std::optional<Projects::Project>;
+        [[nodiscard]] auto createProject(const std::filesystem::path& path) noexcept
+            -> std::optional<Projects::Project>;
 
-        ImGuiFileDialog _fileDialog;
+        void addOrUpdateRecentProject(const std::filesystem::path& path,
+                                      const std::string& name) noexcept;
+
+        std::reference_wrapper<Renderer::FontManager> _fontManager;
+        IGFD::FileDialog _fileDialog;
         std::vector<ProjectMetadata> _recentProjects {};
+
+        std::string _projectName {};
+        std::string _projectPath {};
     };
 
 }  // namespace exitor

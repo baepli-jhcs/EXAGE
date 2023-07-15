@@ -8,7 +8,7 @@
 #include <tl/expected.hpp>
 
 #include "exage/Core/Core.h"
-#include "exage/Renderer/Scene/Loader/Errors.h"
+#include "exage/Core/Errors.h"
 #include "nlohmann/json.hpp"
 
 namespace exage::Renderer
@@ -30,14 +30,13 @@ namespace exage::Renderer
     }
 
     [[nodiscard]] inline auto saveAssetFile(const std::filesystem::path& path,
-                                            const AssetFile& assetFile)
-        -> tl::expected<void, AssetError>
+                                            const AssetFile& assetFile) -> tl::expected<void, Error>
     {
         std::ofstream stream(path, std::ios::binary);
 
         if (!stream.is_open())
         {
-            return tl::make_unexpected(FileNotFoundError {});
+            return tl::make_unexpected(Errors::FileNotFound {});
         }
         saveAssetFile(stream, assetFile);
         return {};
@@ -58,13 +57,13 @@ namespace exage::Renderer
     }
 
     [[nodiscard]] inline auto loadAssetFile(const std::filesystem::path& path)
-        -> tl::expected<AssetFile, AssetError>
+        -> tl::expected<AssetFile, Error>
     {
         std::ifstream stream(path, std::ios::binary);
 
         if (!stream.is_open())
         {
-            return tl::make_unexpected(FileNotFoundError {});
+            return tl::make_unexpected(Errors::FileNotFound {});
         }
 
         return loadAssetFile(stream);

@@ -9,6 +9,7 @@
 #include "exage/Core/Event.h"
 #include "exage/Core/Window.h"
 #include "exage/Graphics/Buffer.h"
+#include "exage/Projects/Level.h"
 #include "exage/Renderer/Renderer.h"
 #include "exage/Renderer/Scene/AssetCache.h"
 #include "exage/Renderer/Scene/Camera.h"
@@ -20,22 +21,25 @@
 #include "exage/Scene/Hierarchy.h"
 #include "exage/utils/math.h"
 #include "imgui.h"
+#include "utils/files.h"
 
 constexpr static auto WINDOW_API = exage::WindowAPI::eGLFW;
 constexpr static auto GRAPHICS_API = exage::Graphics::API::eVulkan;
 
 namespace exitor
 {
+
     Editor::Editor() noexcept
     {
         Monitor monitor = getDefaultMonitor(WINDOW_API);
         WindowInfo windowInfo {
             .name = "EXitor",
-            .extent = {monitor.extent.x * 3 / 4, monitor.extent.y * 3 / 4},
+            .extent = {monitor.extent.x / 2, monitor.extent.y / 2},
             .fullScreen = false,
             .windowBordered = true,
             .exclusiveRefreshRate = monitor.refreshRate,
             .exclusiveMonitor = monitor,
+            .resizable = true,
         };
 
         tl::expected windowResult = Window::create(windowInfo, WINDOW_API);
@@ -87,9 +91,10 @@ namespace exitor
 
         _fontManager = Renderer::FontManager {*_imGui};
 
-        _fontManager->addFont("assets/exage/fonts/SourceSansPro/Regular.ttf",
-                              "Source Sans Pro Regular");
-        _fontManager->addFont("assets/exage/fonts/SourceSansPro/Bold.ttf", "Source Sans Pro Bold");
+        _fontManager->addFont("assets/fonts/SourceSansPro/Regular.ttf", "Source Sans Pro Regular");
+        _fontManager->addFont("assets/fonts/SourceSansPro/Bold.ttf", "Source Sans Pro Bold");
+
+        _projectSelector = ProjectSelector {*_fontManager};
 
         Renderer::SceneBufferCreateInfo sceneBufferCreateInfo {.context = *_context};
         _sceneBuffer = Renderer::SceneBuffer {sceneBufferCreateInfo};
@@ -102,7 +107,18 @@ namespace exitor
 
         _renderTexture.sampler = _sampler;
 
-        prepareTestScene();
+        // prepareTestScene();
+
+        _componentEditor.setMeshSelectionCallback(
+            [&](const std::string& path) -> void
+            {
+                if (!_assetCache.hasMesh(path))
+                {
+                    _level->meshPaths.push_back(path);
+
+                    // Load mesh
+                }
+            });
     }
 
     Editor::~Editor()
@@ -110,253 +126,259 @@ namespace exitor
         _context->waitIdle();
     }
 
-    void Editor::prepareTestScene() noexcept
-    {
-        auto cameraEntity = _scene.createEntity();
+    // void Editor::prepareTestScene() noexcept
+    // {
+    //     auto cameraEntity = _scene.createEntity();
 
-        auto& camera = _scene.addComponent<Renderer::Camera>(cameraEntity);
-        camera.fov = glm::radians(45.0F);
+    //     auto& camera = _scene.addComponent<Renderer::Camera>(cameraEntity);
+    //     camera.fov = glm::radians(45.0F);
 
-        auto& transform = _scene.addComponent<Transform3D>(cameraEntity);
-        transform.position = {0.0F, 0.F, 0.0F};
-        transform.rotation = Rotation3D {{0, 0, 0}, RotationType::ePitchYawRoll};
+    //     auto& transform = _scene.addComponent<Transform3D>(cameraEntity);
+    //     transform.position = {0.0F, 0.F, 0.0F};
+    //     transform.rotation = Rotation3D {{0, 0, 0}, RotationType::ePitchYawRoll};
 
-        Renderer::setSceneCamera(_scene, cameraEntity);
+    //     Renderer::setSceneCamera(_scene, cameraEntity);
 
-        auto importResult = Renderer::importAsset2("assets/exage/models/sponza/Sponza.gltf");
-        debugAssume(importResult.has_value(), "Failed to import asset");
+    //     auto importResult = Renderer::importAsset2("assets/models/sponza/Sponza.gltf");
+    //     debugAssume(importResult.has_value(), "Failed to import asset");
 
-        std::vector<Renderer::GPUTexture> gpuTextures;
-        gpuTextures.reserve(importResult->textures.size());
+    //     std::vector<Renderer::GPUTexture> gpuTextures;
+    //     gpuTextures.reserve(importResult->textures.size());
 
-        auto supportedFormats = Renderer::queryCompressedTextureSupport(*_context);
+    //     auto supportedFormats = Renderer::queryCompressedTextureSupport(*_context);
 
-        auto commamdBuffer = _context->createCommandBuffer();
-        commamdBuffer->begin();
+    //     auto commamdBuffer = _context->createCommandBuffer();
+    //     commamdBuffer->begin();
 
-        Renderer::TextureUploadOptions uploadOptions {.context = *_context,
-                                                      .commandBuffer = *commamdBuffer};
-        uploadOptions.supportedCompressedFormats = &supportedFormats;
-        uploadOptions.useCompressedFormat = false;
+    //     Renderer::TextureUploadOptions uploadOptions {.context = *_context,
+    //                                                   .commandBuffer = *commamdBuffer};
+    //     uploadOptions.supportedCompressedFormats = &supportedFormats;
+    //     uploadOptions.useCompressedFormat = false;
 
-        for (size_t i = 0; i < importResult->textures.size(); i++)
-        {
-            auto& texturePath = importResult->textures[i];
-            std::filesystem::path texturePath2 =
-                std::filesystem::path("assets/exage/models/exspon/main/textures/")
-                / (std::to_string(i).append(Renderer::TEXTURE_EXTENSION));
-            auto textureReturn = Renderer::importTexture(texturePath);
-            if (textureReturn.has_value())
-            {
-                Renderer::Texture& texture = *textureReturn;
-                texture.path = texturePath2;
-                auto saveResult = Renderer::saveTexture(texture, texturePath2);
-                debugAssume(saveResult.has_value(), "Failed to save texture");
+    //     for (size_t i = 0; i < importResult->textures.size(); i++)
+    //     {
+    //         auto& texturePath = importResult->textures[i];
+    //         std::filesystem::path texturePath2 =
+    //             std::filesystem::path("assets/models/exspon/main/textures/")
+    //             / (std::to_string(i).append(Renderer::TEXTURE_EXTENSION));
+    //         auto textureReturn = Renderer::importTexture(texturePath);
+    //         if (textureReturn.has_value())
+    //         {
+    //             Renderer::Texture& texture = *textureReturn;
+    //             texture.path = texturePath2;
+    //             auto saveResult = Renderer::saveTexture(texture, texturePath2);
+    //             debugAssume(saveResult.has_value(), "Failed to save texture");
 
-                Renderer::GPUTexture gpuTexture = Renderer::uploadTexture(texture, uploadOptions);
-                gpuTextures.push_back(gpuTexture);
+    //             Renderer::GPUTexture gpuTexture = Renderer::uploadTexture(texture,
+    //             uploadOptions); gpuTextures.push_back(gpuTexture);
 
-                _assetCache.addTexture(gpuTexture);
-            }
-            else
-            {
-                gpuTextures.push_back(Renderer::GPUTexture {});
-            }
-        }
+    //             _assetCache.addTexture(gpuTexture);
+    //         }
+    //         else
+    //         {
+    //             gpuTextures.push_back(Renderer::GPUTexture {});
+    //         }
+    //     }
 
-        std::vector<Renderer::GPUMaterial> gpuMaterials;
-        gpuMaterials.reserve(importResult->materials.size());
+    //     std::vector<Renderer::GPUMaterial> gpuMaterials;
+    //     gpuMaterials.reserve(importResult->materials.size());
 
-        for (size_t i = 0; i < importResult->materials.size(); i++)
-        {
-            auto& material = importResult->materials[i];
+    //     for (size_t i = 0; i < importResult->materials.size(); i++)
+    //     {
+    //         auto& material = importResult->materials[i];
 
-            Renderer::Material material2 {};
-            material2.albedoColor = material.albedoColor;
-            material2.emissiveColor = material.emissiveColor;
-            material2.metallicValue = material.metallicValue;
-            material2.roughnessValue = material.roughnessValue;
+    //         Renderer::Material material2 {};
+    //         material2.albedoColor = material.albedoColor;
+    //         material2.emissiveColor = material.emissiveColor;
+    //         material2.metallicValue = material.metallicValue;
+    //         material2.roughnessValue = material.roughnessValue;
 
-            if (material.albedoTextureIndex < gpuTextures.size())
-            {
-                if (gpuTextures[material.albedoTextureIndex].texture)
-                {
-                    material2.albedoTexturePath = gpuTextures[material.albedoTextureIndex].path;
-                    material2.albedoUseTexture = true;
-                }
-            }
+    //         if (material.albedoTextureIndex < gpuTextures.size())
+    //         {
+    //             if (gpuTextures[material.albedoTextureIndex].texture)
+    //             {
+    //                 material2.albedoTexturePath = gpuTextures[material.albedoTextureIndex].path;
+    //                 material2.albedoUseTexture = true;
+    //             }
+    //         }
 
-            // Normal
-            if (material.normalTextureIndex < gpuTextures.size())
-            {
-                if (gpuTextures[material.normalTextureIndex].texture)
-                {
-                    material2.normalTexturePath = gpuTextures[material.normalTextureIndex].path;
-                    material2.normalUseTexture = true;
-                }
-            }
+    //         // Normal
+    //         if (material.normalTextureIndex < gpuTextures.size())
+    //         {
+    //             if (gpuTextures[material.normalTextureIndex].texture)
+    //             {
+    //                 material2.normalTexturePath = gpuTextures[material.normalTextureIndex].path;
+    //                 material2.normalUseTexture = true;
+    //             }
+    //         }
 
-            if (material.metallicTextureIndex < gpuTextures.size())
-            {
-                if (gpuTextures[material.metallicTextureIndex].texture)
-                {
-                    material2.metallicTexturePath = gpuTextures[material.metallicTextureIndex].path;
-                    material2.metallicUseTexture = true;
-                }
-            }
+    //         if (material.metallicTextureIndex < gpuTextures.size())
+    //         {
+    //             if (gpuTextures[material.metallicTextureIndex].texture)
+    //             {
+    //                 material2.metallicTexturePath =
+    //                 gpuTextures[material.metallicTextureIndex].path; material2.metallicUseTexture
+    //                 = true;
+    //             }
+    //         }
 
-            if (material.roughnessTextureIndex < gpuTextures.size())
-            {
-                if (gpuTextures[material.roughnessTextureIndex].texture)
-                {
-                    material2.roughnessTexturePath =
-                        gpuTextures[material.roughnessTextureIndex].path;
-                    material2.roughnessUseTexture = true;
-                }
-            }
+    //         if (material.roughnessTextureIndex < gpuTextures.size())
+    //         {
+    //             if (gpuTextures[material.roughnessTextureIndex].texture)
+    //             {
+    //                 material2.roughnessTexturePath =
+    //                     gpuTextures[material.roughnessTextureIndex].path;
+    //                 material2.roughnessUseTexture = true;
+    //             }
+    //         }
 
-            if (material.aoTextureIndex < gpuTextures.size())
-            {
-                if (gpuTextures[material.aoTextureIndex].texture)
-                {
-                    material2.occlusionTexturePath = gpuTextures[material.aoTextureIndex].path;
-                    material2.occlusionUseTexture = true;
-                }
-            }
+    //         if (material.aoTextureIndex < gpuTextures.size())
+    //         {
+    //             if (gpuTextures[material.aoTextureIndex].texture)
+    //             {
+    //                 material2.occlusionTexturePath = gpuTextures[material.aoTextureIndex].path;
+    //                 material2.occlusionUseTexture = true;
+    //             }
+    //         }
 
-            if (material.emissiveTextureIndex < gpuTextures.size())
-            {
-                if (gpuTextures[material.emissiveTextureIndex].texture)
-                {
-                    material2.emissiveTexturePath = gpuTextures[material.emissiveTextureIndex].path;
-                    material2.emissiveUseTexture = true;
-                }
-            }
+    //         if (material.emissiveTextureIndex < gpuTextures.size())
+    //         {
+    //             if (gpuTextures[material.emissiveTextureIndex].texture)
+    //             {
+    //                 material2.emissiveTexturePath =
+    //                 gpuTextures[material.emissiveTextureIndex].path; material2.emissiveUseTexture
+    //                 = true;
+    //             }
+    //         }
 
-            std::filesystem::path materialPath =
-                std::filesystem::path("assets/exage/models/exspon/main/materials/")
-                / (std::to_string(i).append(Renderer::MATERIAL_EXTENSION));
+    //         std::filesystem::path materialPath =
+    //             std::filesystem::path("assets/models/exspon/main/materials/")
+    //             / (std::to_string(i).append(Renderer::MATERIAL_EXTENSION));
 
-            material2.path = materialPath;
-            auto saveResult = Renderer::saveMaterial(material2, materialPath);
+    //         material2.path = materialPath;
+    //         auto saveResult = Renderer::saveMaterial(material2, materialPath);
 
-            debugAssume(saveResult.has_value(), "Failed to save material");
+    //         debugAssume(saveResult.has_value(), "Failed to save material");
 
-            Renderer::GPUMaterial gpuMaterial {.path = material2.path};
-            if (_assetCache.hasTexture(material2.albedoTexturePath))
-            {
-                gpuMaterial.albedoTexture = _assetCache.getTexture(material2.albedoTexturePath);
-            }
-            if (_assetCache.hasTexture(material2.emissiveTexturePath))
-            {
-                gpuMaterial.emissiveTexture = _assetCache.getTexture(material2.emissiveTexturePath);
-            }
-            if (_assetCache.hasTexture(material2.normalTexturePath))
-            {
-                gpuMaterial.normalTexture = _assetCache.getTexture(material2.normalTexturePath);
-            }
-            if (_assetCache.hasTexture(material2.metallicTexturePath))
-            {
-                gpuMaterial.metallicTexture = _assetCache.getTexture(material2.metallicTexturePath);
-            }
-            if (_assetCache.hasTexture(material2.roughnessTexturePath))
-            {
-                gpuMaterial.roughnessTexture =
-                    _assetCache.getTexture(material2.roughnessTexturePath);
-            }
-            if (_assetCache.hasTexture(material2.occlusionTexturePath))
-            {
-                gpuMaterial.occlusionTexture =
-                    _assetCache.getTexture(material2.occlusionTexturePath);
-            }
+    //         Renderer::GPUMaterial gpuMaterial {.path = material2.path};
+    //         if (_assetCache.hasTexture(material2.albedoTexturePath))
+    //         {
+    //             gpuMaterial.albedoTexture = _assetCache.getTexture(material2.albedoTexturePath);
+    //         }
+    //         if (_assetCache.hasTexture(material2.emissiveTexturePath))
+    //         {
+    //             gpuMaterial.emissiveTexture =
+    //             _assetCache.getTexture(material2.emissiveTexturePath);
+    //         }
+    //         if (_assetCache.hasTexture(material2.normalTexturePath))
+    //         {
+    //             gpuMaterial.normalTexture = _assetCache.getTexture(material2.normalTexturePath);
+    //         }
+    //         if (_assetCache.hasTexture(material2.metallicTexturePath))
+    //         {
+    //             gpuMaterial.metallicTexture =
+    //             _assetCache.getTexture(material2.metallicTexturePath);
+    //         }
+    //         if (_assetCache.hasTexture(material2.roughnessTexturePath))
+    //         {
+    //             gpuMaterial.roughnessTexture =
+    //                 _assetCache.getTexture(material2.roughnessTexturePath);
+    //         }
+    //         if (_assetCache.hasTexture(material2.occlusionTexturePath))
+    //         {
+    //             gpuMaterial.occlusionTexture =
+    //                 _assetCache.getTexture(material2.occlusionTexturePath);
+    //         }
 
-            Renderer::GPUMaterial::Data data =
-                Renderer::materialDataFromGPUAndCPU(gpuMaterial, material2);
+    //         Renderer::GPUMaterial::Data data =
+    //             Renderer::materialDataFromGPUAndCPU(gpuMaterial, material2);
 
-            Graphics::BufferCreateInfo bufferCreateInfo {
-                .size = sizeof(Renderer::GPUMaterial::Data),
-                .mapMode = Graphics::Buffer::MapMode::eMapped,
-                .cached = false,
-            };
+    //         Graphics::BufferCreateInfo bufferCreateInfo {
+    //             .size = sizeof(Renderer::GPUMaterial::Data),
+    //             .mapMode = Graphics::Buffer::MapMode::eMapped,
+    //             .cached = false,
+    //         };
 
-            gpuMaterial.buffer = _context->createBuffer(bufferCreateInfo);
-            gpuMaterial.buffer->write(std::as_bytes(std::span(&data, 1)), 0);
+    //         gpuMaterial.buffer = _context->createBuffer(bufferCreateInfo);
+    //         gpuMaterial.buffer->write(std::as_bytes(std::span(&data, 1)), 0);
 
-            _assetCache.addMaterial(gpuMaterial);
-            gpuMaterials.push_back(gpuMaterial);
+    //         _assetCache.addMaterial(gpuMaterial);
+    //         gpuMaterials.push_back(gpuMaterial);
 
-            material = {};  // Memory cleanup
-        }
+    //         material = {};  // Memory cleanup
+    //     }
 
-        std::vector<Renderer::GPUStaticMesh> gpuMeshes;
-        gpuMeshes.reserve(importResult->meshes.size());
+    //     std::vector<Renderer::GPUStaticMesh> gpuMeshes;
+    //     gpuMeshes.reserve(importResult->meshes.size());
 
-        Renderer::MeshUploadOptions meshUploadOptions {
-            .context = *_context,
-            .commandBuffer = *commamdBuffer,
-            .sceneBuffer = *_sceneBuffer,
-        };
+    //     Renderer::MeshUploadOptions meshUploadOptions {
+    //         .context = *_context,
+    //         .commandBuffer = *commamdBuffer,
+    //         .sceneBuffer = *_sceneBuffer,
+    //     };
 
-        for (size_t i = 0; i < importResult->meshes.size(); i++)
-        {
-            auto& mesh = importResult->meshes[i];
+    //     for (size_t i = 0; i < importResult->meshes.size(); i++)
+    //     {
+    //         auto& mesh = importResult->meshes[i];
 
-            Renderer::StaticMesh mesh2 {};
-            mesh2.vertices = std::move(mesh.vertices);
-            mesh2.indices = std::move(mesh.indices);
-            mesh2.aabb = mesh.aabb;
-            mesh2.materialPath = gpuMaterials[mesh.materialIndex].path;
-            mesh2.lods.resize(1);
+    //         Renderer::StaticMesh mesh2 {};
+    //         mesh2.vertices = std::move(mesh.vertices);
+    //         mesh2.indices = std::move(mesh.indices);
+    //         mesh2.aabb = mesh.aabb;
+    //         mesh2.materialPath = gpuMaterials[mesh.materialIndex].path;
+    //         mesh2.lods.resize(1);
 
-            mesh2.lods[0].indexCount = static_cast<uint32_t>(mesh2.indices.size());
-            mesh2.lods[0].indexOffset = 0;
-            mesh2.lods[0].vertexCount = static_cast<uint32_t>(mesh2.vertices.size());
-            mesh2.lods[0].vertexOffset = 0;
+    //         mesh2.lods[0].indexCount = static_cast<uint32_t>(mesh2.indices.size());
+    //         mesh2.lods[0].indexOffset = 0;
+    //         mesh2.lods[0].vertexCount = static_cast<uint32_t>(mesh2.vertices.size());
+    //         mesh2.lods[0].vertexOffset = 0;
 
-            std::filesystem::path meshPath =
-                std::filesystem::path("assets/exage/models/exspon/main/meshes/")
-                / (std::to_string(i).append(Renderer::MESH_EXTENSION));
+    //         std::filesystem::path meshPath =
+    //             std::filesystem::path("assets/models/exspon/main/meshes/")
+    //             / (std::to_string(i).append(Renderer::MESH_EXTENSION));
 
-            mesh2.path = meshPath;
+    //         mesh2.path = meshPath;
 
-            auto saveResult = Renderer::saveMesh(mesh2, meshPath);
-            debugAssume(saveResult.has_value(), "Failed to save mesh");
+    //         auto saveResult = Renderer::saveMesh(mesh2, meshPath);
+    //         debugAssume(saveResult.has_value(), "Failed to save mesh");
 
-            Renderer::GPUStaticMesh gpuMesh = Renderer::uploadMesh(mesh2, meshUploadOptions);
+    //         Renderer::GPUStaticMesh gpuMesh = Renderer::uploadMesh(mesh2, meshUploadOptions);
 
-            if (_assetCache.hasMaterial(mesh2.materialPath))
-            {
-                gpuMesh.material = _assetCache.getMaterial(mesh2.materialPath);
-            }
+    //         if (_assetCache.hasMaterial(mesh2.materialPath))
+    //         {
+    //             gpuMesh.material = _assetCache.getMaterial(mesh2.materialPath);
+    //         }
 
-            _assetCache.addMesh(gpuMesh);
-            gpuMeshes.push_back(gpuMesh);
+    //         _assetCache.addMesh(gpuMesh);
+    //         gpuMeshes.push_back(gpuMesh);
 
-            mesh = {};  // Memory cleanup
-        }
+    //         mesh = {};  // Memory cleanup
+    //     }
 
-        commamdBuffer->end();
-        _context->getQueue().submitTemporary(std::move(commamdBuffer));
+    //     commamdBuffer->end();
+    //     _context->getQueue().submitTemporary(std::move(commamdBuffer));
 
-        Renderer::AssetSceneImportInfo sceneImportInfo {.meshes = gpuMeshes,
-                                                        .rootNodes = importResult->rootNodes,
-                                                        .nodes = importResult->nodes};
-        Renderer::importScene(sceneImportInfo, _scene);
+    //     Renderer::AssetSceneImportInfo sceneImportInfo {.meshes = gpuMeshes,
+    //                                                     .rootNodes = importResult->rootNodes,
+    //                                                     .nodes = importResult->nodes};
+    //     Renderer::importScene(sceneImportInfo, _scene);
 
-        auto lightEntity = _scene.createEntity();
-        auto& light = _scene.addComponent<Renderer::DirectionalLight>(lightEntity);
-        light.color = {1.0F, 1.0F, 1.0F};
-        light.intensity = 1.0F;
-        light.castShadow = true;
-        auto& transform2 = _scene.addComponent<Transform3D>(lightEntity);
-        transform2.position = {0.0F, 5.0F, -5.0F};
-        transform2.rotation = Rotation3D {{0, 0, 0}, RotationType::ePitchYawRoll};
-        auto& point = _scene.addComponent<Renderer::PointLight>(lightEntity);
-        point.color = {1.0F, 1.0F, 1.0F};
-        point.intensity = 1.0F;
-        point.castShadow = true;
-        point.physicalRadius = 1.0F;
-    }
+    //     auto lightEntity = _scene.createEntity();
+    //     auto& light = _scene.addComponent<Renderer::DirectionalLight>(lightEntity);
+    //     light.color = {1.0F, 1.0F, 1.0F};
+    //     light.intensity = 1.0F;
+    //     light.castShadow = true;
+    //     auto& transform2 = _scene.addComponent<Transform3D>(lightEntity);
+    //     transform2.position = {0.0F, 5.0F, -5.0F};
+    //     transform2.rotation =
+    //         Rotation3D {{0, glm::radians(-45.F), glm::radians(-45.F)},
+    //         RotationType::ePitchYawRoll};
+    //     auto& point = _scene.addComponent<Renderer::PointLight>(lightEntity);
+    //     point.color = {1.0F, 1.0F, 1.0F};
+    //     point.intensity = 1.0F;
+    //     point.castShadow = true;
+    //     point.physicalRadius = 1.0F;
+    // }
 
     void Editor::run() noexcept
     {
@@ -390,70 +412,80 @@ namespace exitor
 
             float deltaTime = _timer.nextFrame();
 
-            _scene.updateHierarchy();
-
-            Renderer::copySceneForRenderer(_scene);
-
-            Graphics::CommandBuffer& cmd = _queueCommandRepo->current();
-            _context->getQueue().startNextFrame();
-            tl::expected swapError = _swapchain->acquireNextImage();
-            if (!swapError.has_value())
-            {
-                continue;
-            }
-            cmd.begin();
-
-            _renderer->render(cmd, _scene);
-
-            cmd.textureBarrier(_renderer->getFrameBuffer().getTexture(0),
-                               Graphics::Texture::Layout::eShaderReadOnly,
-                               Graphics::PipelineStageFlags::eColorAttachmentOutput,
-                               Graphics::PipelineStageFlags::eFragmentShader,
-                               Graphics::AccessFlags::eColorAttachmentWrite,
-                               Graphics::AccessFlags::eShaderRead);
-
-            std::shared_ptr<Graphics::Texture> const texture = _frameBuffer->getTexture(0);
-            cmd.textureBarrier(texture,
-                               Graphics::Texture::Layout::eColorAttachment,
-                               Graphics::PipelineStageFlags::eTopOfPipe,
-                               Graphics::PipelineStageFlags::eColorAttachmentOutput,
-                               Graphics::Access {},
-                               Graphics::AccessFlags::eColorAttachmentWrite);
-
-            Graphics::ClearColor const clearColor {.clear = true, .color = {}};
-            Graphics::ClearDepthStencil const clearDepthStencil {.clear = false};
-
-            cmd.beginRendering(_frameBuffer, {clearColor}, clearDepthStencil);
-            _imGui->begin();
-
-            drawGUI(deltaTime);
-
-            _imGui->end();
-
-            _imGui->renderMainWindow(cmd);
-
-            cmd.endRendering();
-
-            cmd.textureBarrier(texture,
-                               Graphics::Texture::Layout::eTransferSrc,
-                               Graphics::PipelineStageFlags::eColorAttachmentOutput,
-                               Graphics::PipelineStageFlags::eTransfer,
-                               Graphics::AccessFlags::eColorAttachmentWrite,
-                               Graphics::AccessFlags::eTransferWrite);
-
-            _swapchain->drawImage(cmd, texture);
-
-            cmd.end();
-
-            Graphics::QueueSubmitInfo submitInfo {.commandBuffer = cmd};
-            _context->getQueue().submit(submitInfo);
-
-            _imGui->renderAdditional();
-
-            Graphics::QueuePresentInfo presentInfo {.swapchain = *_swapchain};
-            swapError = _context->getQueue().present(presentInfo);
+            tick(deltaTime);
         }
     }
+
+    void Editor::tick(float deltaTime) noexcept
+    {
+        // _scene.updateHierarchy();
+
+        Graphics::CommandBuffer& cmd = _queueCommandRepo->current();
+        _context->getQueue().startNextFrame();
+        tl::expected swapError = _swapchain->acquireNextImage();
+        if (!swapError.has_value())
+        {
+            return;
+        }
+
+        cmd.begin();
+
+        if (_project && _level)
+        {
+            _level->scene.updateHierarchy();
+
+            Renderer::copySceneForRenderer(_level->scene);
+            _renderer->render(cmd, _level->scene);
+        }
+
+        _imGui->begin();
+        drawGUI(deltaTime);
+        _imGui->end();
+
+        cmd.textureBarrier(_renderer->getFrameBuffer().getTexture(0),
+                           Graphics::Texture::Layout::eShaderReadOnly,
+                           Graphics::PipelineStageFlags::eColorAttachmentOutput,
+                           Graphics::PipelineStageFlags::eFragmentShader,
+                           Graphics::AccessFlags::eColorAttachmentWrite,
+                           Graphics::AccessFlags::eShaderRead);
+
+        std::shared_ptr<Graphics::Texture> const texture = _frameBuffer->getTexture(0);
+        cmd.textureBarrier(texture,
+                           Graphics::Texture::Layout::eColorAttachment,
+                           Graphics::PipelineStageFlags::eTopOfPipe,
+                           Graphics::PipelineStageFlags::eColorAttachmentOutput,
+                           Graphics::Access {},
+                           Graphics::AccessFlags::eColorAttachmentWrite);
+
+        Graphics::ClearColor const clearColor {.clear = true, .color = {}};
+        Graphics::ClearDepthStencil const clearDepthStencil {.clear = false};
+
+        cmd.beginRendering(_frameBuffer, {clearColor}, clearDepthStencil);
+
+        _imGui->renderMainWindow(cmd);
+
+        cmd.endRendering();
+
+        cmd.textureBarrier(texture,
+                           Graphics::Texture::Layout::eTransferSrc,
+                           Graphics::PipelineStageFlags::eColorAttachmentOutput,
+                           Graphics::PipelineStageFlags::eTransfer,
+                           Graphics::AccessFlags::eColorAttachmentWrite,
+                           Graphics::AccessFlags::eTransferWrite);
+
+        _swapchain->drawImage(cmd, texture);
+
+        cmd.end();
+
+        Graphics::QueueSubmitInfo submitInfo {.commandBuffer = cmd};
+        _context->getQueue().submit(submitInfo);
+
+        _imGui->renderAdditional();
+
+        Graphics::QueuePresentInfo presentInfo {.swapchain = *_swapchain};
+        swapError = _context->getQueue().present(presentInfo);
+    }
+
     void Editor::resizeCallback(glm::uvec2 extent)
     {
         _frameBuffer->resize(extent);
@@ -468,8 +500,13 @@ namespace exitor
 
         if (!_project)
         {
-            _project = _projectSelector.run();
+            drawProjectSelector();
+
+            ImGui::PopFont();
+            return;
         }
+
+        Scene& scene = _level->scene;
 
         bool open = true;
 
@@ -501,9 +538,37 @@ namespace exitor
             ImGui::DockSpace(dockspaceId, ImVec2(0.0F, 0.0F), dockspaceFlags);
         }
 
-        bool showViewport = true;
+        if (ImGui::BeginMenuBar())
+        {
+            if (ImGui::BeginMenu("File"))
+            {
+                if (ImGui::MenuItem("New Project"))
+                {
+                    _project = {};
+                    _componentList.reset();
+                }
+
+                ImGui::Separator();
+
+                if (ImGui::MenuItem("Save Level"))
+                {
+                    if (_editorCameraEntity != entt::null)
+                    {
+                        _level->scene.destroyEntity(_editorCameraEntity);
+                    }
+
+                    Projects::Level level = Projects::serializeLevel(*_level);
+                    auto truePath = getTruePath(level.path, _projectDirectory);
+                    auto saveResult = Projects::saveLevel(truePath, level);
+                }
+
+                ImGui::EndMenu();
+            }
+            ImGui::EndMenuBar();
+        }
+
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-        ImGui::Begin("Viewport", &showViewport, ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 
         ImVec2 currentMousePosIM = ImGui::GetMousePos();
         glm::vec2 currentMousePos = {currentMousePosIM.x, currentMousePosIM.y};
@@ -526,8 +591,8 @@ namespace exitor
         {
             if (ImGui::IsMouseDown(ImGuiMouseButton_Right) || ImGui::IsKeyDown(ImGuiKey_LeftAlt))
             {
-                auto camera = Renderer::getSceneCamera(_scene);
-                auto& transform = _scene.getComponent<Transform3D>(camera);
+                auto camera = Renderer::getSceneCamera(scene);
+                auto& transform = scene.getComponent<Transform3D>(camera);
 
                 // Editor camera movement
                 glm::vec3 cameraMovement {0.0F, 0.0F, 0.0F};
@@ -615,15 +680,53 @@ namespace exitor
         ImGui::Text("Frame time: %f", deltaTime);
         ImGui::End();
 
-        exage::Entity selectedEntity =
-            _hierarchyPanel.draw(_scene, Renderer::getSceneCamera(_scene));
-        entt::id_type type = _componentList.draw(_scene, selectedEntity);
-        _componentEditor.draw(_scene, selectedEntity, type);
+        exage::Entity selectedEntity = _hierarchyPanel.draw(scene, _editorCameraEntity);
+        entt::id_type type = _componentList.draw(scene, selectedEntity);
+        _componentEditor.draw(scene, selectedEntity, type, *_project);
 
         ImGui::End();
 
         ImGui::PopFont();
 
         _lastMousePosition = currentMousePos;
+    }
+
+    void Editor::drawProjectSelector() noexcept
+    {
+        auto returnValue = _projectSelector->run();
+        if (returnValue.has_value())
+        {
+            _project = returnValue->project;
+            _projectPath = returnValue->path;
+            _projectDirectory = returnValue->directory;
+        }
+
+        if (!_project)
+        {
+            return;
+        }
+
+        const auto& levelPath = _project->defaultLevelPath;
+        auto truePath = getTruePath(levelPath, _projectDirectory);
+
+        auto levelResult = Projects::loadLevel(truePath);
+        if (!levelResult.has_value())
+        {
+            _project = {};
+            return;
+        }
+
+        _level = Projects::deserializeLevel(*levelResult);
+
+        _level->scene.updateHierarchy();
+        _editorCameraEntity = _level->scene.createEntity();
+        auto& camera = _level->scene.addComponent<Renderer::Camera>(_editorCameraEntity);
+        camera.fov = glm::radians(45.0F);
+
+        auto& transform = _level->scene.addComponent<Transform3D>(_editorCameraEntity);
+        transform.position = {0.0F, 0.F, 0.0F};
+        transform.rotation = Rotation3D {{0, 0, 0}, RotationType::ePitchYawRoll};
+
+        Renderer::setSceneCamera(_level->scene, _editorCameraEntity);
     }
 }  // namespace exitor

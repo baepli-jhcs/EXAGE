@@ -4,8 +4,8 @@ namespace exage::Filesystem
 {
     namespace
     {
-        std::filesystem::path engineAssetDirectory = "assets/exage";
-        std::filesystem::path engineShaderDirectory = "shaders/exage";
+        std::filesystem::path engineAssetDirectory = "assets";
+        std::filesystem::path engineShaderDirectory = "shaders";
         std::filesystem::path engineShaderCacheDirectory = "cache/shaders/exage";
 
         std::filesystem::path applicationDataPath;

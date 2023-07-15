@@ -517,7 +517,9 @@ namespace
                 bool ignore_event = (ImGui::GetFrameCount() <= vd->IgnoreWindowSizeEventFrame + 1);
                 // data->IgnoreWindowSizeEventFrame = -1;
                 if (ignore_event)
+                {
                     return;
+                }
             }
 
             viewport->PlatformRequestResize = true;

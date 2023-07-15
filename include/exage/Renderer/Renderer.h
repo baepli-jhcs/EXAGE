@@ -10,6 +10,7 @@
 #include "exage/Renderer/GeometryPass/GeometryRenderer.h"
 #include "exage/Renderer/LightingPass/LightingRenderer.h"
 #include "exage/Renderer/Scene/AssetCache.h"
+#include "exage/Renderer/Scene/Light.h"
 #include "exage/Renderer/Scene/SceneBuffer.h"
 #include "exage/Renderer/ShadowPass/ShadowRenderer.h"
 #include "exage/Scene/Scene.h"
@@ -47,6 +48,8 @@ namespace exage::Renderer
         }
 
       private:
+        void prepareData(Graphics::CommandBuffer& commandBuffer, Scene& scene) noexcept;
+
         std::reference_wrapper<Graphics::Context> _context;
         std::reference_wrapper<SceneBuffer> _sceneBuffer;
         std::reference_wrapper<AssetCache> _assetCache;
@@ -55,6 +58,10 @@ namespace exage::Renderer
         Graphics::Sampler::Anisotropy _anisotropy;
         ShadowResolution _shadowResolution;
         CascadeLevels _cascadeLevels;
+
+        DirectionalLightRenderArray _directionalLightRenderArray;
+        PointLightRenderArray _pointLightRenderArray;
+        SpotLightRenderArray _spotLightRenderArray;
 
         GeometryRenderer _geometryRenderer;
         ShadowRenderer _shadowRenderer;

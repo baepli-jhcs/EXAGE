@@ -47,6 +47,8 @@ add_library(
     src/platform/Vulkan/VulkanShader.cpp
     src/platform/Vulkan/VulkanSwapchain.cpp
     src/platform/Vulkan/VulkanTexture.cpp
+    src/Projects/Level.cpp
+    src/Projects/Serialization.cpp
     src/Renderer/Renderer.cpp
     src/Renderer/GeometryPass/GeometryRenderer.cpp
     src/Renderer/GeometryPass/MeshSystem.cpp

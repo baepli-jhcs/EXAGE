@@ -121,4 +121,54 @@ namespace exage
             }
         }
     }
+
+    void Scene::setParent(Entity entity, Entity parent) noexcept
+    {
+        auto& relationship = getComponent<EntityRelationship>(entity);
+
+        if (relationship.parent != entt::null)
+        {
+            auto& parentRelationship = getComponent<EntityRelationship>(relationship.parent);
+            parentRelationship.childCount--;
+            if (parentRelationship.firstChild == entity)
+            {
+                parentRelationship.firstChild = relationship.nextSibling;
+            }
+        }
+
+        if (relationship.nextSibling != entt::null)
+        {
+            auto& nextSiblingRelationship =
+                getComponent<EntityRelationship>(relationship.nextSibling);
+            nextSiblingRelationship.previousSibling = relationship.previousSibling;
+        }
+
+        if (relationship.previousSibling != entt::null)
+        {
+            auto& previousSiblingRelationship =
+                getComponent<EntityRelationship>(relationship.previousSibling);
+            previousSiblingRelationship.nextSibling = relationship.nextSibling;
+        }
+
+        relationship.parent = parent;
+        relationship.nextSibling = entt::null;
+        relationship.previousSibling = entt::null;
+
+        if (isValid(parent))
+        {
+            auto& parentRelationship = getComponent<EntityRelationship>(parent);
+
+            if (isValid(parentRelationship.firstChild))
+            {
+                auto& firstChildRelationship =
+                    getComponent<EntityRelationship>(parentRelationship.firstChild);
+
+                firstChildRelationship.previousSibling = entity;
+                relationship.nextSibling = parentRelationship.firstChild;
+            }
+
+            parentRelationship.firstChild = entity;
+            parentRelationship.childCount++;
+        }
+    }
 }  // namespace exage

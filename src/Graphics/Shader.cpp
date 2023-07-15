@@ -126,13 +126,13 @@ namespace exage::Graphics
 
         if (!std::filesystem::exists(path))
         {
-            return tl::make_unexpected(Errors::FileNotFound {path});
+            return tl::make_unexpected(Errors::FileNotFound {});
         }
 
         std::ifstream shaderFile(path);
         if (!shaderFile.is_open())
         {
-            return tl::make_unexpected(Errors::FileNotFound {path});
+            return tl::make_unexpected(Errors::FileNotFound {});
         }
 
         std::string shaderSource((std::istreambuf_iterator<char>(shaderFile)),

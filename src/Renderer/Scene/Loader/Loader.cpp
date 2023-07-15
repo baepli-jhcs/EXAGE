@@ -3,14 +3,13 @@
 
 #include "exage/Renderer/Scene/Loader/Loader.h"
 
-#include <cereal/archives/binary.hpp>
-#include <cereal/cereal.hpp>
+#include <exage/utils/serialization.h>
 
 #include "exage/Core/Debug.h"
+#include "exage/Core/Errors.h"
 #include "exage/Graphics/Buffer.h"
 #include "exage/Graphics/Texture.h"
 #include "exage/Renderer/Scene/Loader/AssetFile.h"
-#include "exage/Renderer/Scene/Loader/Errors.h"
 #include "exage/Renderer/Scene/Material.h"
 #include "exage/Renderer/Scene/Mesh.h"
 #include "zstd.h"
@@ -191,13 +190,9 @@ namespace exage::Renderer
         return formats;
     }
 
-    auto loadTexture(const std::filesystem::path& path,
-                     const std::filesystem::path& prefix) noexcept
-        -> tl::expected<Texture, AssetError>
+    auto loadTexture(const std::filesystem::path& path) noexcept -> tl::expected<Texture, Error>
     {
-        std::filesystem::path fullPath = prefix / path;
-
-        tl::expected asset = loadAssetFile(fullPath);
+        tl::expected asset = loadAssetFile(path);
 
         if (!asset.has_value())
         {
@@ -208,11 +203,10 @@ namespace exage::Renderer
 
         if (json["dataType"] != "Texture")
         {
-            return tl::make_unexpected(FileFormatError {});
+            return tl::make_unexpected(Errors::FileFormat {});
         }
 
         Texture texture;
-        texture.path = path;
         texture.mips.resize(json["mips"].size());
 
         for (size_t i = 0; i < json["mips"].size(); i++)
@@ -235,18 +229,15 @@ namespace exage::Renderer
 
         if (ZSTD_isError(result) != 0u)
         {
-            return tl::make_unexpected(FileFormatError {});
+            return tl::make_unexpected(Errors::FileFormat {});
         }
 
         return texture;
     }
 
-    auto loadMaterial(const std::filesystem::path& path,
-                      const std::filesystem::path& prefix) noexcept
-        -> tl::expected<Material, AssetError>
+    auto loadMaterial(const std::filesystem::path& path) noexcept -> tl::expected<Material, Error>
     {
-        std::filesystem::path fullPath = prefix / path;
-        tl::expected asset = loadAssetFile(fullPath);
+        tl::expected asset = loadAssetFile(path);
 
         if (!asset.has_value())
         {
@@ -257,11 +248,10 @@ namespace exage::Renderer
 
         if (json["dataType"] != "Material")
         {
-            return tl::make_unexpected(FileFormatError {});
+            return tl::make_unexpected(Errors::FileFormat {});
         }
 
         Material material;
-        material.path = path;
         material.albedoColor = json["albedoColor"];
         material.emissiveColor = json["emissiveColor"];
         material.metallicValue = json["metallicValue"];
@@ -272,21 +262,19 @@ namespace exage::Renderer
         material.roughnessUseTexture = json["roughnessUseTexture"];
         material.occlusionUseTexture = json["occlusionUseTexture"];
         material.emissiveUseTexture = json["emissiveUseTexture"];
-        material.albedoTexturePath = json["albedoTexturePath"].get<std::filesystem::path>();
-        material.normalTexturePath = json["normalTexturePath"].get<std::filesystem::path>();
-        material.metallicTexturePath = json["metallicTexturePath"].get<std::filesystem::path>();
-        material.roughnessTexturePath = json["roughnessTexturePath"].get<std::filesystem::path>();
-        material.occlusionTexturePath = json["occlusionTexturePath"].get<std::filesystem::path>();
-        material.emissiveTexturePath = json["emissiveTexturePath"].get<std::filesystem::path>();
+        material.albedoTexturePath = json["albedoTexturePath"].get<std::string>();
+        material.normalTexturePath = json["normalTexturePath"].get<std::string>();
+        material.metallicTexturePath = json["metallicTexturePath"].get<std::string>();
+        material.roughnessTexturePath = json["roughnessTexturePath"].get<std::string>();
+        material.occlusionTexturePath = json["occlusionTexturePath"].get<std::string>();
+        material.emissiveTexturePath = json["emissiveTexturePath"].get<std::string>();
 
         return material;
     }
 
-    auto loadMesh(const std::filesystem::path& path, const std::filesystem::path& prefix) noexcept
-        -> tl::expected<StaticMesh, AssetError>
+    auto loadMesh(const std::filesystem::path& path) noexcept -> tl::expected<StaticMesh, Error>
     {
-        std::filesystem::path fullPath = prefix / path;
-        tl::expected asset = loadAssetFile(fullPath);
+        tl::expected asset = loadAssetFile(path);
 
         if (!asset.has_value())
         {
@@ -297,12 +285,11 @@ namespace exage::Renderer
 
         if (json["dataType"] != "StaticMesh")
         {
-            return tl::make_unexpected(FileFormatError {});
+            return tl::make_unexpected(Errors::FileFormat {});
         }
 
         StaticMesh mesh;
-        mesh.path = path;
-        mesh.materialPath = json["materialPath"].get<std::filesystem::path>();
+        mesh.materialPath = json["materialPath"].get<std::string>();
         mesh.aabb.max = json["aabb"]["max"];
         mesh.aabb.min = json["aabb"]["min"];
         mesh.lods.resize(json["lods"].size());
@@ -333,7 +320,7 @@ namespace exage::Renderer
 
         if (ZSTD_isError(result) != 0u)
         {
-            return tl::make_unexpected(FileFormatError {});
+            return tl::make_unexpected(Errors::FileFormat {});
         }
 
         result = ZSTD_decompress(mesh.indices.data(),
@@ -343,7 +330,7 @@ namespace exage::Renderer
 
         if (ZSTD_isError(result) != 0u)
         {
-            return tl::make_unexpected(FileFormatError {});
+            return tl::make_unexpected(Errors::FileFormat {});
         }
 
         return mesh;
@@ -429,11 +416,14 @@ namespace exage::Renderer
         return gpuTexture;
     }
 
-    auto uploadMesh(const StaticMesh& mesh, const MeshUploadOptions& options) noexcept -> GPUStaticMesh
+    auto uploadMesh(const StaticMesh& mesh, const MeshUploadOptions& options) noexcept
+        -> GPUStaticMesh
     {
         GPUStaticMesh gpuMesh;
         gpuMesh.path = mesh.path;
-        gpuMesh.pathHash = std::filesystem::hash_value(mesh.path);
+
+        std::hash<std::string> hasher;
+        gpuMesh.pathHash = hasher(mesh.path);
         gpuMesh.materialPath = mesh.materialPath;
         gpuMesh.aabb = mesh.aabb;
 

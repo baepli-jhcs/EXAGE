@@ -55,6 +55,12 @@ namespace exage
 
         operator glm::quat() const noexcept { return getQuaternion(); }  // NOLINT
 
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(_rotation, _euler, _type);
+        }
+
       private:
         glm::quat _rotation {glm::identity<glm::quat>()};
         glm::vec3 _euler {0.F};

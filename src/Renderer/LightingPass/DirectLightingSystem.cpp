@@ -97,15 +97,21 @@ namespace exage::Renderer
 
         Graphics::SamplerCreateInfo samplerCreateInfo {};
         _sampler = _context.get().createSampler(samplerCreateInfo);
+
+        Graphics::BufferCreateInfo bufferCreateInfo {};
+        bufferCreateInfo.size = sizeof(glm::vec2) * 3;
+        bufferCreateInfo.mapMode = Graphics::Buffer::MapMode::eUnmapped;
+
+        _vertexBuffer = _context.get().createBuffer(bufferCreateInfo);
     }
 
     void DirectLightingSystem::render(Graphics::CommandBuffer& commandBuffer,
                                       Scene& scene,
                                       const DirectLightingSystemRenderInfo& renderInfo) noexcept
     {
-        auto& directionalLightArray = getDirectionalLightRenderArray(scene);
-        auto& pointLightArray = getPointLightRenderArray(scene);
-        auto& spotLightArray = getSpotLightRenderArray(scene);
+        auto& directionalLightArray = renderInfo.directionalLightRenderArray;
+        auto& pointLightArray = renderInfo.pointLightRenderArray;
+        auto& spotLightArray = renderInfo.spotLightRenderArray;
 
         PushConstant pushConstant {};
         pushConstant.pointLightBufferIndex = pointLightArray.buffer->currentBindlessID().id;
@@ -129,6 +135,8 @@ namespace exage::Renderer
         commandBuffer.setViewport({0.F, 0.F}, renderInfo.extent);
         commandBuffer.setScissor({0, 0}, renderInfo.extent);
         commandBuffer.setPushConstant(pushConstant);
+
+        commandBuffer.bindVertexBuffer(_vertexBuffer, 0);
 
         commandBuffer.draw(3, 0, 1, 0);
     }

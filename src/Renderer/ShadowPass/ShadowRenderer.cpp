@@ -34,8 +34,12 @@ namespace exage::Renderer
         _pointShadowSystem.render(commandBuffer, scene);
     }
 
-    void ShadowRenderer::prepareLightingData(Scene& scene,
-                                             Graphics::CommandBuffer& commandBuffer) noexcept
+    void ShadowRenderer::prepareLightingData(
+        Scene& scene,
+        Graphics::CommandBuffer& commandBuffer,
+        DirectionalLightRenderArray& directionalLightRenderArray,
+        PointLightRenderArray& pointLightRenderArray,
+        SpotLightRenderArray& spotLightRenderArray) noexcept
     {
         auto& reg = scene.registry();
         auto& cameraRenderInfo = getCameraRenderInfo(scene);
@@ -67,14 +71,6 @@ namespace exage::Renderer
             auto& storage =
                 reg.storage<DirectionalLightRenderInfo>(CURRENT_DIRECTIONAL_LIGHT_RENDER_INFO);
 
-            auto& directionalLightArrayRenderInfo =
-                reg.storage<DirectionalLightRenderArray>(CURRENT_DIRECTIONAL_LIGHT_RENDER_ARRAY);
-            if (!directionalLightArrayRenderInfo.contains(scene.dataEntity()))
-            {
-                directionalLightArrayRenderInfo.emplace(scene.dataEntity());
-            }
-            auto& directionalLightArray = directionalLightArrayRenderInfo.get(scene.dataEntity());
-
             uint32_t size = 0;
             for (auto entity : view)
             {
@@ -84,19 +80,20 @@ namespace exage::Renderer
             const auto bufferSize =
                 16 + size * sizeof(DirectionalLightRenderArray::Data::ArrayItem);
 
-            if (!directionalLightArray.buffer)
+            if (!directionalLightRenderArray.buffer)
             {
                 Graphics::DynamicBufferCreateInfo bufferCreateInfo {.context = _context.get()};
                 bufferCreateInfo.cached = true;
                 bufferCreateInfo.size = bufferSize;
 
-                directionalLightArray.buffer = Graphics::ResizableDynamicBuffer(bufferCreateInfo);
+                directionalLightRenderArray.buffer =
+                    Graphics::ResizableDynamicBuffer(bufferCreateInfo);
             }
 
-            directionalLightArray.buffer->resize(bufferSize);
+            directionalLightRenderArray.buffer->resize(bufferSize);
 
             std::span<uint32_t> sizeSpan {&size, 1};
-            directionalLightArray.buffer->write(std::as_bytes(sizeSpan), 0);
+            directionalLightRenderArray.buffer->write(std::as_bytes(sizeSpan), 0);
 
             uint32_t index = 0;
             uint32_t offset = 16;  // 4 bytes for size, 12 bytes for padding
@@ -236,7 +233,7 @@ namespace exage::Renderer
 
                 std::span<DirectionalLightRenderArray::Data::ArrayItem> arrayItemSpan {&arrayItem,
                                                                                        1};
-                directionalLightArray.buffer->write(std::as_bytes(arrayItemSpan), offset);
+                directionalLightRenderArray.buffer->write(std::as_bytes(arrayItemSpan), offset);
 
                 directionalLightRenderInfo.direction = arrayItem.direction;
                 directionalLightRenderInfo.color = arrayItem.color;
@@ -247,9 +244,10 @@ namespace exage::Renderer
                 offset += sizeof(DirectionalLightRenderArray::Data::ArrayItem);
             }
 
-            directionalLightArray.buffer->update(commandBuffer,
-                                                 Graphics::PipelineStageFlags::eFragmentShader,
-                                                 Graphics::AccessFlags::eShaderRead);
+            directionalLightRenderArray.buffer->update(
+                commandBuffer,
+                Graphics::PipelineStageFlags::eFragmentShader,
+                Graphics::AccessFlags::eShaderRead);
 
             auto renderInfoView = entt::runtime_view {};
             renderInfoView.iterate(
@@ -268,13 +266,6 @@ namespace exage::Renderer
                 | entt::basic_view {reg.storage<Transform3D>(CURRENT_TRANSFORM_3D)};
 
             auto& storage = reg.storage<PointLightRenderInfo>(CURRENT_POINT_LIGHT_RENDER_INFO);
-            auto& pointLightArrayRenderInfo =
-                reg.storage<PointLightRenderArray>(CURRENT_POINT_LIGHT_RENDER_ARRAY);
-            if (!pointLightArrayRenderInfo.contains(scene.dataEntity()))
-            {
-                pointLightArrayRenderInfo.emplace(scene.dataEntity());
-            }
-            auto& pointLightArray = pointLightArrayRenderInfo.get(scene.dataEntity());
 
             uint32_t size = 0;
             for (auto entity : view)
@@ -284,19 +275,19 @@ namespace exage::Renderer
 
             uint32_t bufferSize = 16 + size * sizeof(PointLightRenderArray::Data::ArrayItem);
 
-            if (!pointLightArray.buffer)
+            if (!pointLightRenderArray.buffer)
             {
                 Graphics::DynamicBufferCreateInfo bufferCreateInfo {.context = _context.get()};
                 bufferCreateInfo.cached = true;
                 bufferCreateInfo.size = bufferSize;
 
-                pointLightArray.buffer = Graphics::ResizableDynamicBuffer(bufferCreateInfo);
+                pointLightRenderArray.buffer = Graphics::ResizableDynamicBuffer(bufferCreateInfo);
             }
 
-            pointLightArray.buffer->resize(bufferSize);
+            pointLightRenderArray.buffer->resize(bufferSize);
 
             std::span<uint32_t> sizeSpan {&size, 1};
-            pointLightArray.buffer->write(std::as_bytes(sizeSpan), 0);
+            pointLightRenderArray.buffer->write(std::as_bytes(sizeSpan), 0);
 
             uint32_t index = 0;
             uint32_t offset = 16;
@@ -352,7 +343,7 @@ namespace exage::Renderer
                 arrayItem.shadowBias = pointLight.shadowBias;
 
                 std::span<PointLightRenderArray::Data::ArrayItem> arrayItemSpan {&arrayItem, 1};
-                pointLightArray.buffer->write(std::as_bytes(arrayItemSpan), offset);
+                pointLightRenderArray.buffer->write(std::as_bytes(arrayItemSpan), offset);
 
                 pointLightRenderInfo.position = arrayItem.position;
                 pointLightRenderInfo.color = arrayItem.color;
@@ -365,9 +356,9 @@ namespace exage::Renderer
                 offset += sizeof(PointLightRenderArray::Data::ArrayItem);
             }
 
-            pointLightArray.buffer->update(commandBuffer,
-                                           Graphics::PipelineStageFlags::eFragmentShader,
-                                           Graphics::AccessFlags::eShaderRead);
+            pointLightRenderArray.buffer->update(commandBuffer,
+                                                 Graphics::PipelineStageFlags::eFragmentShader,
+                                                 Graphics::AccessFlags::eShaderRead);
 
             auto renderInfoView = entt::runtime_view {};
             renderInfoView.iterate(
@@ -386,13 +377,6 @@ namespace exage::Renderer
                 | entt::basic_view {reg.storage<Transform3D>(CURRENT_TRANSFORM_3D)};
 
             auto& storage = reg.storage<SpotLightRenderInfo>(CURRENT_SPOT_LIGHT_RENDER_INFO);
-            auto& spotLightArrayRenderInfo =
-                reg.storage<SpotLightRenderArray>(CURRENT_SPOT_LIGHT_RENDER_ARRAY);
-            if (!spotLightArrayRenderInfo.contains(scene.dataEntity()))
-            {
-                spotLightArrayRenderInfo.emplace(scene.dataEntity());
-            }
-            auto& spotLightArray = spotLightArrayRenderInfo.get(scene.dataEntity());
 
             uint32_t size = 0;
             for (auto entity : view)
@@ -402,19 +386,19 @@ namespace exage::Renderer
 
             const auto bufferSize = 16 + size * sizeof(SpotLightRenderArray::Data::ArrayItem);
 
-            if (!spotLightArray.buffer)
+            if (!spotLightRenderArray.buffer)
             {
                 Graphics::DynamicBufferCreateInfo bufferCreateInfo {.context = _context.get()};
                 bufferCreateInfo.cached = true;
                 bufferCreateInfo.size = bufferSize;
 
-                spotLightArray.buffer = Graphics::ResizableDynamicBuffer(bufferCreateInfo);
+                spotLightRenderArray.buffer = Graphics::ResizableDynamicBuffer(bufferCreateInfo);
             }
 
-            spotLightArray.buffer->resize(bufferSize);
+            spotLightRenderArray.buffer->resize(bufferSize);
 
             std::span<uint32_t> sizeSpan {&size, 1};
-            spotLightArray.buffer->write(std::as_bytes(sizeSpan), 0);
+            spotLightRenderArray.buffer->write(std::as_bytes(sizeSpan), 0);
 
             uint32_t index = 0;
             uint32_t offset = 16;
@@ -463,7 +447,7 @@ namespace exage::Renderer
                 arrayItem.shadowBias = spotLight.shadowBias;
 
                 std::span<SpotLightRenderArray::Data::ArrayItem> arrayItemSpan {&arrayItem, 1};
-                spotLightArray.buffer->write(std::as_bytes(arrayItemSpan), offset);
+                spotLightRenderArray.buffer->write(std::as_bytes(arrayItemSpan), offset);
 
                 index++;
                 offset += sizeof(SpotLightRenderArray::Data::ArrayItem);

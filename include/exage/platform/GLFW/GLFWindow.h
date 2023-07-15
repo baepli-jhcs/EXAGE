@@ -46,6 +46,8 @@ namespace exage
 
         [[nodiscard]] auto isHidden() const noexcept -> bool override;
 
+        [[nodiscard]] auto isResizable() const noexcept -> bool override;
+
         [[nodiscard]] auto getID() const noexcept -> uint32_t override;
         [[nodiscard]] auto getNativeHandle() const noexcept -> void* override;
 
@@ -58,6 +60,8 @@ namespace exage
         void setExclusiveMonitor(Monitor monitor) noexcept override;
 
         void setHidden(bool hidden) noexcept override;
+
+        void setResizable(bool resizable) noexcept override;
 
         [[nodiscard]] auto shouldClose() const noexcept -> bool override;
         [[nodiscard]] auto isIconified() const noexcept -> bool override;

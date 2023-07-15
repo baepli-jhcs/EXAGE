@@ -181,26 +181,4 @@ namespace exage::Renderer
 
         std::optional<Graphics::ResizableDynamicBuffer> buffer;
     };
-
-    inline auto getPointLightRenderArray(Scene& scene) noexcept -> PointLightRenderArray&
-    {
-        return scene.registry()
-            .storage<PointLightRenderArray>(CURRENT_POINT_LIGHT_RENDER_ARRAY)
-            .get(scene.dataEntity());
-    }
-
-    inline auto getDirectionalLightRenderArray(Scene& scene) noexcept
-        -> DirectionalLightRenderArray&
-    {
-        return scene.registry()
-            .storage<DirectionalLightRenderArray>(CURRENT_DIRECTIONAL_LIGHT_RENDER_ARRAY)
-            .get(scene.dataEntity());
-    }
-
-    inline auto getSpotLightRenderArray(Scene& scene) noexcept -> SpotLightRenderArray&
-    {
-        return scene.registry()
-            .storage<SpotLightRenderArray>(CURRENT_SPOT_LIGHT_RENDER_ARRAY)
-            .get(scene.dataEntity());
-    }
 }  // namespace exage::Renderer

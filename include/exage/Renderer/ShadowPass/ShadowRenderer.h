@@ -5,6 +5,7 @@
 #include "exage/Core/Core.h"
 #include "exage/Graphics/Context.h"
 #include "exage/Renderer/Scene/AssetCache.h"
+#include "exage/Renderer/Scene/Light.h"
 #include "exage/Renderer/Scene/SceneBuffer.h"
 #include "exage/Renderer/ShadowPass/DirectionalShadowSystem.h"
 #include "exage/Renderer/ShadowPass/PointShadowSystem.h"
@@ -47,7 +48,11 @@ namespace exage::Renderer
             return _shadowResolution;
         }
 
-        void prepareLightingData(Scene& scene, Graphics::CommandBuffer& commandBuffer) noexcept;
+        void prepareLightingData(Scene& scene,
+                                 Graphics::CommandBuffer& commandBuffer,
+                                 DirectionalLightRenderArray& directionalLightRenderArray,
+                                 PointLightRenderArray& pointLightRenderArray,
+                                 SpotLightRenderArray& spotLightRenderArray) noexcept;
 
       private:
         std::reference_wrapper<Graphics::Context> _context;

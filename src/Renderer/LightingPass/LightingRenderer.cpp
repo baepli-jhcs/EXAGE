@@ -68,7 +68,10 @@ namespace exage::Renderer
 
         commandBuffer.beginRendering(_frameBuffer, clearValues, {});
 
-        DirectLightingSystemRenderInfo directLightingSystemRenderInfo {};
+        DirectLightingSystemRenderInfo directLightingSystemRenderInfo {
+            renderInfo.directionalLightRenderArray,
+            renderInfo.pointLightRenderArray,
+            renderInfo.spotLightRenderArray};
         directLightingSystemRenderInfo.position = renderInfo.position;
         directLightingSystemRenderInfo.normal = renderInfo.normal;
         directLightingSystemRenderInfo.albedo = renderInfo.albedo;

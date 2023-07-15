@@ -5,10 +5,10 @@
 #include <unordered_set>
 
 #include "exage/Core/Core.h"
+#include "exage/Core/Errors.h"
 #include "exage/Graphics/CommandBuffer.h"
 #include "exage/Graphics/Texture.h"
 #include "exage/Renderer/Scene/AssetCache.h"
-#include "exage/Renderer/Scene/Loader/Errors.h"
 #include "exage/Renderer/Scene/Material.h"
 #include "exage/Renderer/Scene/Mesh.h"
 #include "exage/Renderer/Scene/SceneBuffer.h"
@@ -19,17 +19,14 @@ namespace exage::Renderer
     [[nodiscard]] auto queryCompressedTextureSupport(Graphics::Context& context) noexcept
         -> std::unordered_set<Graphics::Format>;
 
-    [[nodiscard]] auto loadTexture(const std::filesystem::path& path,
-                                   const std::filesystem::path& prefix) noexcept
-        -> tl::expected<Texture, AssetError>;
+    [[nodiscard]] auto loadTexture(const std::filesystem::path& path) noexcept
+        -> tl::expected<Texture, Error>;
 
-    [[nodiscard]] auto loadMaterial(const std::filesystem::path& path,
-                                    const std::filesystem::path& prefix) noexcept
-        -> tl::expected<Material, AssetError>;
+    [[nodiscard]] auto loadMaterial(const std::filesystem::path& path) noexcept
+        -> tl::expected<Material, Error>;
 
-    [[nodiscard]] auto loadMesh(const std::filesystem::path& path,
-                                const std::filesystem::path& prefix) noexcept
-        -> tl::expected<StaticMesh, AssetError>;
+    [[nodiscard]] auto loadMesh(const std::filesystem::path& path) noexcept
+        -> tl::expected<StaticMesh, Error>;
 
     struct TextureUploadOptions
     {

@@ -17,6 +17,9 @@ namespace exage::Renderer
 
     struct LightingRenderInfo
     {
+        DirectionalLightRenderArray& directionalLightRenderArray;
+        PointLightRenderArray& pointLightRenderArray;
+        SpotLightRenderArray& spotLightRenderArray;
         std::shared_ptr<Graphics::Texture> position;
         std::shared_ptr<Graphics::Texture> normal;
         std::shared_ptr<Graphics::Texture> albedo;

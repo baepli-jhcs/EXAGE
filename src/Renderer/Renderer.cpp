@@ -83,15 +83,83 @@ namespace exage::Renderer
 
     void Renderer::render(Graphics::CommandBuffer& commandBuffer, Scene& scene) noexcept
     {
-        auto& context = _context.get();
-        auto colorTexture = _frameBuffer->getTexture(0);
-
         auto camera = getSceneCamera(scene);
 
         if (!scene.isValid(camera))
         {
             return;
         }
+
+        prepareData(commandBuffer, scene);
+
+        auto colorTexture = _frameBuffer->getTexture(0);
+
+        _geometryRenderer.render(commandBuffer, scene);
+
+        LightingRenderInfo lightingRenderInfo {
+            _directionalLightRenderArray, _pointLightRenderArray, _spotLightRenderArray};
+        lightingRenderInfo.position = _geometryRenderer.getFrameBuffer().getTexture(0);
+        lightingRenderInfo.normal = _geometryRenderer.getFrameBuffer().getTexture(1);
+        lightingRenderInfo.albedo = _geometryRenderer.getFrameBuffer().getTexture(2);
+        lightingRenderInfo.metallic = _geometryRenderer.getFrameBuffer().getTexture(3);
+        lightingRenderInfo.roughness = _geometryRenderer.getFrameBuffer().getTexture(4);
+        lightingRenderInfo.occlusion = _geometryRenderer.getFrameBuffer().getTexture(5);
+        lightingRenderInfo.emissive = _geometryRenderer.getFrameBuffer().getTexture(6);
+
+        _lightingRenderer.render(commandBuffer, scene, lightingRenderInfo);
+
+        commandBuffer.textureBarrier(colorTexture,
+                                     Graphics::Texture::Layout::eTransferDst,
+                                     Graphics::PipelineStageFlags::eTopOfPipe,
+                                     Graphics::PipelineStageFlags::eTransfer,
+                                     Graphics::Access {},
+                                     Graphics::AccessFlags::eTransferWrite);
+
+        auto albedo = _geometryRenderer.getFrameBuffer().getTexture(2);
+        auto lightingResult = _lightingRenderer.getFrameBuffer().getTexture(0);
+
+        commandBuffer.textureBarrier(lightingResult,
+                                     Graphics::Texture::Layout::eTransferSrc,
+                                     Graphics::PipelineStageFlags::eColorAttachmentOutput,
+                                     Graphics::PipelineStageFlags::eTransfer,
+                                     Graphics::AccessFlags::eColorAttachmentWrite,
+                                     Graphics::AccessFlags::eTransferRead);
+
+        commandBuffer.blit(lightingResult,
+                           colorTexture,
+                           glm::uvec3 {0},
+                           glm::uvec3 {0},
+                           0,
+                           0,
+                           0,
+                           0,
+                           1,
+                           lightingResult->getExtent(),
+                           colorTexture->getExtent());
+
+        commandBuffer.textureBarrier(colorTexture,
+                                     Graphics::Texture::Layout::eColorAttachment,
+                                     Graphics::PipelineStageFlags::eTransfer,
+                                     Graphics::PipelineStageFlags::eColorAttachmentOutput,
+                                     Graphics::AccessFlags::eTransferWrite,
+                                     Graphics::AccessFlags::eColorAttachmentWrite);
+
+        Graphics::ClearColor clearColor;
+        clearColor.clear = false;
+        clearColor.color = {0.0f, 0.0f, 0.0f, 1.0f};
+
+        Graphics::ClearDepthStencil clearDepthStencil;
+        clearDepthStencil.clear = false;
+
+        commandBuffer.beginRendering(_frameBuffer, {clearColor}, clearDepthStencil);
+
+        commandBuffer.endRendering();
+    }
+
+    void Renderer::prepareData(Graphics::CommandBuffer& commandBuffer, Scene& scene) noexcept
+    {
+        auto& context = _context.get();
+        auto camera = getSceneCamera(scene);
 
         auto&& transformStorage = scene.registry().storage<Transform3D>(CURRENT_TRANSFORM_3D);
         auto&& cameraStorage = scene.registry().storage<Camera>(CURRENT_CAMERA);
@@ -176,68 +244,12 @@ namespace exage::Renderer
                                                Graphics::AccessFlags::eShaderRead);
         }
 
-        _shadowRenderer.prepareLightingData(scene, commandBuffer);
-
+        _shadowRenderer.prepareLightingData(scene,
+                                            commandBuffer,
+                                            _directionalLightRenderArray,
+                                            _pointLightRenderArray,
+                                            _spotLightRenderArray);
         _shadowRenderer.render(commandBuffer, scene);
-        _geometryRenderer.render(commandBuffer, scene);
-
-        LightingRenderInfo lightingRenderInfo {};
-        lightingRenderInfo.position = _geometryRenderer.getFrameBuffer().getTexture(0);
-        lightingRenderInfo.normal = _geometryRenderer.getFrameBuffer().getTexture(1);
-        lightingRenderInfo.albedo = _geometryRenderer.getFrameBuffer().getTexture(2);
-        lightingRenderInfo.metallic = _geometryRenderer.getFrameBuffer().getTexture(3);
-        lightingRenderInfo.roughness = _geometryRenderer.getFrameBuffer().getTexture(4);
-        lightingRenderInfo.occlusion = _geometryRenderer.getFrameBuffer().getTexture(5);
-        lightingRenderInfo.emissive = _geometryRenderer.getFrameBuffer().getTexture(6);
-
-        _lightingRenderer.render(commandBuffer, scene, lightingRenderInfo);
-
-        commandBuffer.textureBarrier(colorTexture,
-                                     Graphics::Texture::Layout::eTransferDst,
-                                     Graphics::PipelineStageFlags::eTopOfPipe,
-                                     Graphics::PipelineStageFlags::eTransfer,
-                                     Graphics::Access {},
-                                     Graphics::AccessFlags::eTransferWrite);
-
-        auto albedo = _geometryRenderer.getFrameBuffer().getTexture(2);
-        auto lightingResult = _lightingRenderer.getFrameBuffer().getTexture(0);
-
-        commandBuffer.textureBarrier(lightingResult,
-                                     Graphics::Texture::Layout::eTransferSrc,
-                                     Graphics::PipelineStageFlags::eColorAttachmentOutput,
-                                     Graphics::PipelineStageFlags::eTransfer,
-                                     Graphics::AccessFlags::eColorAttachmentWrite,
-                                     Graphics::AccessFlags::eTransferRead);
-
-        commandBuffer.blit(lightingResult,
-                           colorTexture,
-                           glm::uvec3 {0},
-                           glm::uvec3 {0},
-                           0,
-                           0,
-                           0,
-                           0,
-                           1,
-                           lightingResult->getExtent(),
-                           colorTexture->getExtent());
-
-        commandBuffer.textureBarrier(colorTexture,
-                                     Graphics::Texture::Layout::eColorAttachment,
-                                     Graphics::PipelineStageFlags::eTransfer,
-                                     Graphics::PipelineStageFlags::eColorAttachmentOutput,
-                                     Graphics::AccessFlags::eTransferWrite,
-                                     Graphics::AccessFlags::eColorAttachmentWrite);
-
-        Graphics::ClearColor clearColor;
-        clearColor.clear = false;
-        clearColor.color = {0.0f, 0.0f, 0.0f, 1.0f};
-
-        Graphics::ClearDepthStencil clearDepthStencil;
-        clearDepthStencil.clear = false;
-
-        commandBuffer.beginRendering(_frameBuffer, {clearColor}, clearDepthStencil);
-
-        commandBuffer.endRendering();
     }
 
     void Renderer::resize(glm::uvec2 extent) noexcept

@@ -1,6 +1,7 @@
 ﻿#ifndef GLFW_INCLUDE_NONE
 #    define GLFW_INCLUDE_NONE
 #    include <mutex>
+#    include <queue>
 #    include <unordered_set>
 
 #    include <stdint.h>
@@ -46,10 +47,9 @@ namespace exage
             return {static_cast<MouseButton::Codes>(button)};
         }
 
-        std::atomic_uint32_t idCounter = 0;  // NOLINT
+        uint32_t idCounter = 0;  // NOLINT
         std::unordered_map<uint32_t, GLFWindow*> windows;  // NOLINT
         std::unordered_map<GLFWwindow*, GLFWindow*> glfwWindows;  // NOLINT
-        std::mutex windowsMutex;  // NOLINT
 
         auto nextID() noexcept -> uint32_t
         {
@@ -58,7 +58,6 @@ namespace exage
 
         auto getWindow(uint32_t id) noexcept -> GLFWindow*
         {
-            std::lock_guard lock(windowsMutex);
             auto it = windows.find(id);
 
             if (it != windows.end())
@@ -71,7 +70,6 @@ namespace exage
 
         auto getWindow(GLFWwindow* glfwWindow) noexcept -> GLFWindow*
         {
-            std::lock_guard lock(windowsMutex);
             auto it = glfwWindows.find(glfwWindow);
 
             if (it != glfwWindows.end())
@@ -82,11 +80,11 @@ namespace exage
             return nullptr;
         }
 
-        std::vector<Event> events;  // NOLINT
+        std::queue<Event> events;  // NOLINT
 
         void pushEvent(Event event) noexcept
         {
-            events.push_back(std::move(event));
+            events.push(std::move(event));
         }
 
         void windowPositionCallback(GLFWwindow* window, int xpos, int ypos) noexcept
@@ -394,7 +392,6 @@ namespace exage
 
         void registerWindow(uint32_t id, GLFWindow* window, GLFWwindow* glfwWindow) noexcept
         {
-            std::lock_guard lock(windowsMutex);
             windows[id] = window;
             glfwWindows[glfwWindow] = window;
 
@@ -415,7 +412,6 @@ namespace exage
 
         void unregisterWindow(uint32_t id, GLFWwindow* glfwWindow) noexcept
         {
-            std::lock_guard lock(windowsMutex);
             windows.erase(id);
             glfwWindows.erase(glfwWindow);
         }
@@ -438,7 +434,7 @@ namespace exage
         , _exclusiveMonitor(info.exclusiveMonitor)
     {
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+        glfwWindowHint(GLFW_RESIZABLE, info.resizable ? GLFW_TRUE : GLFW_FALSE);
         glfwWindowHint(GLFW_VISIBLE, info.hidden ? GLFW_FALSE : GLFW_TRUE);
         glfwWindowHint(GLFW_FOCUSED, info.focused ? GLFW_TRUE : GLFW_FALSE);
         glfwWindowHint(GLFW_FOCUS_ON_SHOW, info.focusOnShow ? GLFW_TRUE : GLFW_FALSE);
@@ -510,6 +506,11 @@ namespace exage
         return glfwGetWindowAttrib(_window, GLFW_VISIBLE) == GLFW_FALSE;
     }
 
+    auto GLFWindow::isResizable() const noexcept -> bool
+    {
+        return glfwGetWindowAttrib(_window, GLFW_RESIZABLE) == GLFW_TRUE;
+    }
+
     void GLFWindow::setHidden(bool hidden) noexcept
     {
         if (hidden)
@@ -520,6 +521,11 @@ namespace exage
         {
             glfwShowWindow(_window);
         }
+    }
+
+    void GLFWindow::setResizable(bool resizable) noexcept
+    {
+        glfwSetWindowAttrib(_window, GLFW_RESIZABLE, resizable ? GLFW_TRUE : GLFW_FALSE);
     }
 
     auto GLFWindow::exclusiveMonitor() const noexcept -> GLFWmonitor*
@@ -705,8 +711,8 @@ namespace exage
             return std::nullopt;
         }
 
-        Event event = events.back();
-        events.pop_back();
+        Event event = events.front();
+        events.pop();
 
         return event;
     }

@@ -20,7 +20,7 @@ namespace exage
         EXAGE_DELETE_COPY(Scene);
         EXAGE_DEFAULT_MOVE(Scene);
 
-        [[nodiscard]] auto createEntity(Entity parent = entt::null) noexcept -> Entity;
+        auto createEntity(Entity parent = entt::null) noexcept -> Entity;
         void destroyEntity(Entity entity) noexcept;
 
         void updateHierarchy(bool calculateTransforms = true) noexcept;
@@ -79,12 +79,11 @@ namespace exage
             }
         }
 
-        [[nodiscard]] auto dataEntity() const noexcept -> Entity { return _dataEntity; }
+        void setParent(Entity entity, Entity parent) noexcept;
 
       private:
         void calculateChildTransform(Transform3D& parentTransform, Entity entity) noexcept;
 
         Registry _registry;
-        Entity _dataEntity = entt::null;  // If you want to store data in the scene, use this entity
     };
 }  // namespace exage

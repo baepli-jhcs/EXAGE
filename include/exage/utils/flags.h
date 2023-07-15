@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+#include <type_traits>
+
 namespace exage
 {
 #define EXAGE_ENABLE_FLAGS(Flags) \
@@ -178,4 +180,4 @@ namespace exage
             });
         return out;
     }
-}
+}  // namespace exage

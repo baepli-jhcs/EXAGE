@@ -16,13 +16,13 @@ namespace exage
 {
     struct EntityRelationship
     {
-        Entity parent;
+        Entity parent = entt::null;
 
-        size_t childCount;
-        Entity firstChild;
+        uint32_t childCount = 0;
+        Entity firstChild = entt::null;
 
-        Entity nextSibling;
-        Entity previousSibling;
+        Entity nextSibling = entt::null;
+        Entity previousSibling = entt::null;
     };
 
     struct RootEntity
@@ -43,7 +43,6 @@ namespace exage
         Rotation3D globalRotation;
         glm::mat4 globalMatrix;
 
-        // Serialization
         template<class Archive>
         void serialize(Archive& archive)
         {

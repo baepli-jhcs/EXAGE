@@ -40,6 +40,7 @@ namespace exage
         bool hidden = false;
         bool focused = true;
         bool focusOnShow = true;
+        bool resizable = true;
     };
 
     class Window
@@ -68,6 +69,8 @@ namespace exage
 
         [[nodiscard]] virtual auto isHidden() const noexcept -> bool = 0;
 
+        [[nodiscard]] virtual auto isResizable() const noexcept -> bool = 0;
+
         [[nodiscard]] virtual auto getID() const noexcept -> uint32_t = 0;
         [[nodiscard]] virtual auto getNativeHandle() const noexcept -> void* = 0;
 
@@ -80,6 +83,8 @@ namespace exage
         virtual void setExclusiveMonitor(Monitor monitor) noexcept = 0;
 
         virtual void setHidden(bool hidden) noexcept = 0;
+
+        virtual void setResizable(bool resizable) noexcept = 0;
 
         [[nodiscard]] virtual auto shouldClose() const noexcept -> bool = 0;
         [[nodiscard]] virtual auto isIconified() const noexcept -> bool = 0;

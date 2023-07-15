@@ -7,6 +7,7 @@
 #include "exage/Renderer/Scene/Mesh.h"
 #include "exage/Scene/Hierarchy.h"
 #include "imgui.h"
+#include "misc/cpp/imgui_stdlib.h"
 
 namespace exitor
 {
@@ -23,6 +24,52 @@ namespace exitor
         }
 
         auto& reg = scene.registry();
+
+        //
+        if (ImGui::Button("Add Component", ImVec2(ImGui::GetContentRegionAvail().x, 0.0f)))
+        {
+            ImGui::OpenPopup("Add Component");
+        }
+
+        if (ImGui::BeginPopup("Add Component"))
+        {
+            if (ImGui::Selectable("3D Transform"))
+            {
+                reg.emplace_or_replace<exage::Transform3D>(selectedEntity);
+            }
+
+            if (ImGui::Selectable("Camera"))
+            {
+                reg.emplace_or_replace<exage::Renderer::Camera>(selectedEntity);
+            }
+
+            if (ImGui::Selectable("Static Mesh"))
+            {
+                reg.emplace_or_replace<exage::Renderer::StaticMeshComponent>(selectedEntity);
+            }
+
+            if (ImGui::Selectable("Directional Light"))
+            {
+                reg.emplace_or_replace<exage::Renderer::DirectionalLight>(selectedEntity);
+            }
+
+            if (ImGui::Selectable("Point Light"))
+            {
+                reg.emplace_or_replace<exage::Renderer::PointLight>(selectedEntity);
+            }
+
+            if (ImGui::Selectable("Spot Light"))
+            {
+                reg.emplace_or_replace<exage::Renderer::SpotLight>(selectedEntity);
+            }
+
+            if (ImGui::Selectable("Other"))
+            {
+                _componentAdderOpen = true;
+            }
+
+            ImGui::EndPopup();
+        }
 
         for (auto&& curr : reg.storage())
         {
@@ -73,6 +120,11 @@ namespace exitor
 
         ImGui::End();
 
+        if (_componentAdderOpen)
+        {
+            drawComponentAdder(scene, selectedEntity);
+        }
+
         return _selectedTypeID;
     }
 
@@ -89,6 +141,69 @@ namespace exitor
 
             ImGui::Separator();
         }
+    }
+
+    void ComponentList::drawComponentAdder(exage::Scene& scene,
+                                           exage::Entity selectedEntity) noexcept
+    {
+        ImGui::SetNextWindowSizeConstraints(ImVec2(350, 400), ImVec2(FLT_MAX, FLT_MAX));
+
+        ImGui::Begin("Component Adder", &_componentAdderOpen);
+
+        ImGui::Text("Add Component");
+        ImGui::Separator();
+
+        ImGui::BeginChild("Component Adder List", ImVec2(0, 300), true);
+
+        auto& reg = scene.registry();
+
+        if (ImGui::Selectable("3D Transform"))
+        {
+            reg.emplace_or_replace<exage::Transform3D>(selectedEntity);
+            _componentAdderOpen = false;
+        }
+
+        if (ImGui::Selectable("Camera"))
+        {
+            reg.emplace_or_replace<exage::Renderer::Camera>(selectedEntity);
+            _componentAdderOpen = false;
+        }
+
+        if (ImGui::Selectable("Static Mesh"))
+        {
+            reg.emplace_or_replace<exage::Renderer::StaticMeshComponent>(selectedEntity);
+            _componentAdderOpen = false;
+        }
+
+        if (ImGui::Selectable("Directional Light"))
+        {
+            reg.emplace_or_replace<exage::Renderer::DirectionalLight>(selectedEntity);
+            _componentAdderOpen = false;
+        }
+
+        if (ImGui::Selectable("Point Light"))
+        {
+            reg.emplace_or_replace<exage::Renderer::PointLight>(selectedEntity);
+            _componentAdderOpen = false;
+        }
+
+        if (ImGui::Selectable("Spot Light"))
+        {
+            reg.emplace_or_replace<exage::Renderer::SpotLight>(selectedEntity);
+            _componentAdderOpen = false;
+        }
+
+        ImGui::EndChild();
+
+        // Component search bar
+        ImGui::Separator();
+
+        // Width of the search bar is the width of the window
+        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+
+        ImGui::InputTextWithHint("##Component Search", "Search", &_componentAdderSearch);
+
+        ImGui::End();
     }
 
 }  // namespace exitor

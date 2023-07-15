@@ -6,17 +6,20 @@
 
 #include "exage/Projects/Serialization.h"
 
-#include <cereal/archives/binary.hpp>
 #include <entt/core/hashed_string.hpp>
+#include <entt/entity/entity.hpp>
 #include <entt/entity/fwd.hpp>
 #include <entt/meta/meta.hpp>
 #include <entt/meta/resolve.hpp>
+#include <exage/utils/serialization.h>
 
+#include "cereal/archives/binary.hpp"
 #include "exage/Projects/Level.h"
 #include "exage/Renderer/Scene/Camera.h"
 #include "exage/Renderer/Scene/Light.h"
 #include "exage/Renderer/Scene/Mesh.h"
 #include "exage/Renderer/Scene/Transform.h"
+#include "exage/Scene/Hierarchy.h"
 
 namespace exage::Projects
 {
@@ -25,7 +28,7 @@ namespace exage::Projects
         template<typename T>
         auto serializeStorageWithCereal(
             entt::id_type id,
-            entt::sparse_set& storage,
+            const entt::sparse_set& storage,
             std::unordered_map<Entity, uint32_t>& entityToIndex) noexcept
             -> std::optional<ComponentData>
         {
@@ -37,29 +40,128 @@ namespace exage::Projects
                 {
                     uint32_t index = entityToIndex[entity];
 
-                    void* data = storage.get(entity);
-                    auto& component = *static_cast<T*>(data);
+                    const void* data = storage.get(entity);
+                    auto& component = *static_cast<const T*>(data);
 
-                    std::stringstream ss;
+                    try
                     {
-                        cereal::BinaryOutputArchive oarchive(ss);
-                        oarchive(component);
+                        std::stringstream ss {std::ios::out | std::ios::binary};
+                        {
+                            cereal::BinaryOutputArchive oarchive(ss);
+                            oarchive(component);
+                        }
+
+                        componentData[index] = ss.str();
                     }
 
-                    componentData[index] = ss.str();
-                }
+                    catch (const std::exception& e)
+                    {
+                        componentData[index] = "";
+                    }
 
-                return componentData;
+                    return componentData;
+                }
             }
 
             return std::nullopt;
         };
 
+        namespace
+        {
+            struct MappedComponentRelationship
+            {
+                uint32_t parent;
+
+                uint32_t childCount;
+                uint32_t firstChild;
+
+                uint32_t nextSibling;
+                uint32_t previousSibling;
+
+                template<class Archive>
+                void serialize(Archive& archive)
+                {
+                    archive(parent, childCount, firstChild, nextSibling, previousSibling);
+                }
+            };
+        }  // namespace
+
         auto serializeStorage(entt::id_type id,
-                              entt::sparse_set& storage,
+                              const entt::sparse_set& storage,
                               std::unordered_map<Entity, uint32_t>& entityToIndex) noexcept
             -> std::optional<std::pair<std::string, ComponentData>>
         {
+            if (id == entt::type_hash<EntityRelationship, void>::value())
+            {
+                ComponentData componentData;
+
+                for (Entity entity : storage)
+                {
+                    uint32_t index = entityToIndex[entity];
+
+                    const void* data = storage.get(entity);
+                    const auto& component = *static_cast<const EntityRelationship*>(data);
+                    MappedComponentRelationship mappedComponent {};
+
+                    if (entityToIndex.find(component.parent) != entityToIndex.end())
+                    {
+                        mappedComponent.parent = entityToIndex[component.parent];
+                    }
+                    else
+                    {
+                        mappedComponent.parent = entt::null;
+                    }
+
+                    if (entityToIndex.find(component.firstChild) != entityToIndex.end())
+                    {
+                        mappedComponent.firstChild = entityToIndex[component.firstChild];
+                    }
+                    else
+                    {
+                        mappedComponent.firstChild = entt::null;
+                    }
+
+                    if (entityToIndex.find(component.nextSibling) != entityToIndex.end())
+                    {
+                        mappedComponent.nextSibling = entityToIndex[component.nextSibling];
+                    }
+                    else
+                    {
+                        mappedComponent.nextSibling = entt::null;
+                    }
+
+                    if (entityToIndex.find(component.previousSibling) != entityToIndex.end())
+                    {
+                        mappedComponent.previousSibling = entityToIndex[component.previousSibling];
+                    }
+                    else
+                    {
+                        mappedComponent.previousSibling = entt::null;
+                    }
+
+                    mappedComponent.childCount = component.childCount;
+
+                    try
+                    {
+                        std::stringstream ss {std::ios::out | std::ios::binary};
+                        {
+                            cereal::BinaryOutputArchive oarchive(ss);
+                            oarchive(mappedComponent);
+                        }
+
+                        componentData[index] = ss.str();
+                    }
+
+                    catch (const std::exception& e)
+                    {
+                        componentData[index] = "";
+                    }
+                }
+
+                return std::pair {std::string {"MappedEntityRelationship"},
+                                  std::move(componentData)};
+            }
+
 #define SERIALIZE_STORAGE(T) \
     if (auto data = serializeStorageWithCereal<T>(id, storage, entityToIndex); data) \
     { \
@@ -109,7 +211,7 @@ namespace exage::Projects
         }
     }  // namespace
 
-    [[nodiscard]] auto serializeScene(Scene& scene) noexcept
+    [[nodiscard]] auto serializeScene(const Scene& scene) noexcept
         -> std::pair<uint32_t, std::unordered_map<std::string, ComponentData>>
     {
         auto& reg = scene.registry();
@@ -148,13 +250,21 @@ namespace exage::Projects
             {
                 Entity entity = indexToEntity.at(index);
 
-                std::stringstream ss {data};
-                cereal::BinaryInputArchive iarchive(ss);
+                std::stringstream ss {data, std::ios::in | std::ios::binary};
 
-                T component;
-                iarchive(component);
+                try
+                {
+                    cereal::BinaryInputArchive iarchive(ss);
 
-                reg.emplace_or_replace<T>(entity, std::move(component));
+                    T component;
+                    iarchive(component);
+
+                    reg.emplace_or_replace<T>(entity, std::move(component));
+                }
+                catch (const std::exception& e)
+                {
+                    reg.emplace_or_replace<T>(entity);
+                }
             }
         };
 
@@ -179,10 +289,63 @@ namespace exage::Projects
         {
             // Now, we have to deserialize the data and add it to the registry
 
+            if (typeName == "MappedEntityRelationship")
+            {
+                for (const auto& [index, data] : data)
+                {
+                    Entity entity = indexToEntity.at(index);
+
+                    std::stringstream ss {data, std::ios::in | std::ios::binary};
+
+                    try
+                    {
+                        cereal::BinaryInputArchive iarchive(ss);
+
+                        MappedComponentRelationship mappedComponent {};
+                        iarchive(mappedComponent);
+
+                        EntityRelationship component {};
+
+                        if (mappedComponent.parent != entt::null)
+                        {
+                            component.parent = indexToEntity[mappedComponent.parent];
+                        }
+
+                        if (mappedComponent.firstChild != entt::null)
+                        {
+                            component.firstChild = indexToEntity[mappedComponent.firstChild];
+                        }
+
+                        if (mappedComponent.nextSibling != entt::null)
+                        {
+                            component.nextSibling = indexToEntity[mappedComponent.nextSibling];
+                        }
+
+                        if (mappedComponent.previousSibling != entt::null)
+                        {
+                            component.previousSibling =
+                                indexToEntity[mappedComponent.previousSibling];
+                        }
+
+                        component.childCount = mappedComponent.childCount;
+
+                        scene.registry().emplace_or_replace<EntityRelationship>(entity, component);
+                    }
+
+                    catch (const std::exception& e)
+                    {
+                        scene.registry().emplace_or_replace<EntityRelationship>(entity);
+                    }
+                }
+
+                continue;
+            }
+
 #define DESERIALIZE_STORAGE(T) \
     if (typeName == #T) \
     { \
         deserializeStorageWithCereal<T>(indexToEntity, data, scene.registry()); \
+        continue; \
     }
 
             DESERIALIZE_STORAGE(exage::Transform3D);

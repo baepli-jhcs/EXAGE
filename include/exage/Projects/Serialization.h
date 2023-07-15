@@ -25,7 +25,7 @@ namespace exage::Projects
     };
 
     /* Returns a pair of entity count and component data */
-    [[nodiscard]] auto serializeScene(Scene& scene) noexcept
+    [[nodiscard]] auto serializeScene(const Scene& scene) noexcept
         -> std::pair<uint32_t, std::unordered_map<std::string, ComponentData>>;
 
     [[nodiscard]] auto loadScene(
