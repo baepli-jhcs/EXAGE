@@ -15,6 +15,7 @@
 #include "exage/utils/imgui.h"
 #include "exage/utils/string.h"
 #include "imgui.h"
+#include "tinyfiledialogs.h"
 #include "utils/files.h"
 
 namespace exitor
@@ -65,19 +66,47 @@ namespace exitor
         ImGui::SameLine();
         if (ImGui::Button("Browse"))
         {
-            _fileDialog.OpenDialog(
-                "Choose Project Directory", "Choose a project directory", nullptr, ".");
+            // _fileDialog.OpenDialog(
+            //     "Choose Project Directory", "Choose a project directory", nullptr, ".");
+
+            // char* projectPath = tinyfd_selectFolderDialog("Choose Project Directory", nullptr);
+            // if (projectPath != nullptr)
+            // {
+            //     _projectPath = projectPath;
+            // }
+
+            _folderDialog.open("Choose Project Directory", {});
         }
 
-        if (_fileDialog.Display("Choose Project Directory", ImGuiWindowFlags_NoCollapse))
+        if (_folderDialog.isReady())
         {
-            if (_fileDialog.IsOk())
+            std::string result = _folderDialog.getResult();
+            if (!result.empty())
             {
-                _projectPath = _fileDialog.GetFilePathName();
+                _projectPath = result;
             }
-
-            _fileDialog.Close();
         }
+
+        // if (_fileDialog.Display("Choose Project Directory", ImGuiWindowFlags_NoCollapse))
+        // {
+        //     if (_fileDialog.IsOk())
+        //     {
+        //         _projectPath = _fileDialog.GetFilePathName();
+        //     }
+
+        //     _fileDialog.Close();
+        // }
+
+        // if (_folderDialog && _folderDialog->ready())
+        // {
+        //     std::string result = _folderDialog->result();
+        //     if (!result.empty())
+        //     {
+        //         _projectPath = result;
+        //     }
+
+        //     _folderDialog = std::nullopt;
+        // }
 
         exage::ImGuiUtils::Spacing(3);
 

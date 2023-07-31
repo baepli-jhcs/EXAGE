@@ -3,8 +3,10 @@
 #include "Editor.h"
 
 #include <fmt/format.h>
+#include <glm/ext/matrix_clip_space.hpp>
 #include <glm/trigonometric.hpp>
 
+#include "MousePicking/MousePicking.h"
 #include "exage/Core/Debug.h"
 #include "exage/Core/Event.h"
 #include "exage/Core/Window.h"
@@ -18,6 +20,7 @@
 #include "exage/Renderer/Scene/Material.h"
 #include "exage/Renderer/Scene/Mesh.h"
 #include "exage/Renderer/Scene/SceneBuffer.h"
+#include "exage/Renderer/Utils/Perspective.h"
 #include "exage/Scene/Hierarchy.h"
 #include "exage/utils/math.h"
 #include "imgui.h"
@@ -109,16 +112,8 @@ namespace exitor
 
         // prepareTestScene();
 
-        _componentEditor.setMeshSelectionCallback(
-            [&](const std::string& path) -> void
-            {
-                if (!_assetCache.hasMesh(path))
-                {
-                    _level->meshPaths.push_back(path);
-
-                    // Load mesh
-                }
-            });
+        _componentEditor.setMeshSelectionCallback([this](const std::string& path) -> void
+                                                  { meshSelectionCallback(path); });
     }
 
     Editor::~Editor()
@@ -416,6 +411,132 @@ namespace exitor
         }
     }
 
+    void Editor::meshSelectionCallback(const std::string& path) noexcept
+    {
+        bool found = std::ranges::any_of(
+            _level->meshPaths, [&](const std::string& path2) -> bool { return path2 == path; });
+
+        if (found)
+        {
+            return;
+        }
+
+        _level->meshPaths.push_back(path);
+
+        // Load mesh
+        auto truePath = getTruePath(path, _projectDirectory);
+        auto meshReturn = Renderer::loadMesh(truePath);
+        debugAssume(meshReturn.has_value(), "Failed to load mesh");
+
+        Renderer::StaticMesh& mesh = *meshReturn;
+
+        if (!std::ranges::any_of(_level->materialPaths,
+                                 [&](const std::string& path2) -> bool
+                                 { return path2 == mesh.materialPath; }))
+        {
+            _level->materialPaths.push_back(mesh.materialPath);
+
+            // Load material
+            auto materialTruePath = getTruePath(mesh.materialPath, _projectDirectory);
+            auto materialReturn = Renderer::loadMaterial(materialTruePath);
+
+            debugAssume(materialReturn.has_value(), "Failed to load material");
+
+            Renderer::Material& material = *materialReturn;
+            auto eachTexture = [&](const std::string& texturePath) -> void
+            {
+                if (!std::ranges::any_of(_level->texturePaths,
+                                         [&](const std::string& path2) -> bool
+                                         { return path2 == texturePath; }))
+                {
+                    _level->texturePaths.push_back(texturePath);
+
+                    // Load texture
+                    auto textureTruePath = getTruePath(texturePath, _projectDirectory);
+                    auto textureReturn = Renderer::loadTexture(textureTruePath);
+
+                    debugAssume(textureReturn.has_value(), "Failed to load texture");
+
+                    Renderer::Texture& texture = *textureReturn;
+                    // Upload texture
+                    Renderer::TextureUploadOptions uploadOptions {
+                        .context = *_context,
+                        .commandBuffer = _queueCommandRepo->current(),
+                        .useCompressedFormat = false};
+                    Renderer::GPUTexture gpuTexture =
+                        Renderer::uploadTexture(texture, uploadOptions);
+
+                    _assetCache.addTexture(gpuTexture);
+                }
+            };
+
+            eachTexture(material.albedoTexturePath);
+            eachTexture(material.emissiveTexturePath);
+            eachTexture(material.normalTexturePath);
+            eachTexture(material.metallicTexturePath);
+            eachTexture(material.roughnessTexturePath);
+            eachTexture(material.occlusionTexturePath);
+
+            // Upload material
+            Renderer::GPUMaterial gpuMaterial {.path = material.path};
+            if (_assetCache.hasTexture(material.albedoTexturePath))
+            {
+                gpuMaterial.albedoTexture = _assetCache.getTexture(material.albedoTexturePath);
+            }
+            if (_assetCache.hasTexture(material.emissiveTexturePath))
+            {
+                gpuMaterial.emissiveTexture = _assetCache.getTexture(material.emissiveTexturePath);
+            }
+            if (_assetCache.hasTexture(material.normalTexturePath))
+            {
+                gpuMaterial.normalTexture = _assetCache.getTexture(material.normalTexturePath);
+            }
+            if (_assetCache.hasTexture(material.metallicTexturePath))
+            {
+                gpuMaterial.metallicTexture = _assetCache.getTexture(material.metallicTexturePath);
+            }
+            if (_assetCache.hasTexture(material.roughnessTexturePath))
+            {
+                gpuMaterial.roughnessTexture =
+                    _assetCache.getTexture(material.roughnessTexturePath);
+            }
+            if (_assetCache.hasTexture(material.occlusionTexturePath))
+            {
+                gpuMaterial.occlusionTexture =
+                    _assetCache.getTexture(material.occlusionTexturePath);
+            }
+
+            Renderer::GPUMaterial::Data data =
+                Renderer::materialDataFromGPUAndCPU(gpuMaterial, material);
+
+            Graphics::BufferCreateInfo bufferCreateInfo {
+                .size = sizeof(Renderer::GPUMaterial::Data),
+                .mapMode = Graphics::Buffer::MapMode::eMapped,
+                .cached = false,
+            };
+
+            gpuMaterial.buffer = _context->createBuffer(bufferCreateInfo);
+            gpuMaterial.buffer->write(std::as_bytes(std::span(&data, 1)), 0);
+
+            _assetCache.addMaterial(gpuMaterial);
+        }
+
+        // Upload mesh
+        Renderer::MeshUploadOptions meshUploadOptions {
+            .context = *_context,
+            .commandBuffer = _queueCommandRepo->current(),
+            .sceneBuffer = *_sceneBuffer,
+        };
+
+        Renderer::GPUStaticMesh gpuMesh = Renderer::uploadMesh(mesh, meshUploadOptions);
+        if (_assetCache.hasMaterial(mesh.materialPath))
+        {
+            gpuMesh.material = _assetCache.getMaterial(mesh.materialPath);
+        }
+
+        _assetCache.addMesh(gpuMesh);
+    }
+
     void Editor::tick(float deltaTime) noexcept
     {
         // _scene.updateHierarchy();
@@ -486,7 +607,7 @@ namespace exitor
         swapError = _context->getQueue().present(presentInfo);
     }
 
-    void Editor::resizeCallback(glm::uvec2 extent)
+    void Editor::resizeCallback(glm::uvec2 extent) noexcept
     {
         _frameBuffer->resize(extent);
         _renderer->resize(extent);
@@ -538,14 +659,15 @@ namespace exitor
             ImGui::DockSpace(dockspaceId, ImVec2(0.0F, 0.0F), dockspaceFlags);
         }
 
+        bool shouldCloseProject = false;
+
         if (ImGui::BeginMenuBar())
         {
             if (ImGui::BeginMenu("File"))
             {
                 if (ImGui::MenuItem("New Project"))
                 {
-                    _project = {};
-                    _componentList.reset();
+                    shouldCloseProject = true;
                 }
 
                 ImGui::Separator();
@@ -593,6 +715,7 @@ namespace exitor
             {
                 auto camera = Renderer::getSceneCamera(scene);
                 auto& transform = scene.getComponent<Transform3D>(camera);
+                auto& cameraComponent = scene.getComponent<Renderer::Camera>(camera);
 
                 // Editor camera movement
                 glm::vec3 cameraMovement {0.0F, 0.0F, 0.0F};
@@ -662,6 +785,32 @@ namespace exitor
                 }
 
                 transform.rotation = Rotation3D {euler.value(), RotationType::ePitchYawRoll};
+
+                if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+                {
+                    glm::mat4 viewMatrix =
+                        transform.globalRotation.getViewMatrix(transform.globalPosition);
+                    glm::mat4 projectionMatrix = Renderer::perspectiveProject(
+                        cameraComponent.fov,
+                        static_cast<float>(viewportSize.x) / static_cast<float>(viewportSize.y),
+                        cameraComponent.near,
+                        cameraComponent.far,
+                        true);
+
+                    auto windowPos = ImGui::GetWindowPos();
+                    glm::vec2 mousePos = {currentMousePos.x - windowPos.x,
+                                          currentMousePos.y - windowPos.y};
+
+                    float x = (2.0F * mousePos.x) / viewportSize.x - 1.0F;
+                    float y = 1.0F - (2.0F * mousePos.y) / viewportSize.y;
+
+                    glm::vec2 ndc = {x, y};
+
+                    _selectedEntity = getSelectedEntity(scene, viewMatrix, projectionMatrix, ndc);
+
+                    std::cout << "Selected entity: " << static_cast<uint32_t>(_selectedEntity)
+                              << std::endl;
+                }
             }
         }
 
@@ -689,6 +838,13 @@ namespace exitor
         ImGui::PopFont();
 
         _lastMousePosition = currentMousePos;
+
+        if (shouldCloseProject)
+        {
+            _project = {};
+            _componentList.reset();
+            closeLevel();
+        }
     }
 
     void Editor::drawProjectSelector() noexcept
@@ -718,6 +874,8 @@ namespace exitor
 
         _level = Projects::deserializeLevel(*levelResult);
 
+        loadLevelAssets();
+
         _level->scene.updateHierarchy();
         _editorCameraEntity = _level->scene.createEntity();
         auto& camera = _level->scene.addComponent<Renderer::Camera>(_editorCameraEntity);
@@ -729,4 +887,137 @@ namespace exitor
 
         Renderer::setSceneCamera(_level->scene, _editorCameraEntity);
     }
+
+    void Editor::loadLevelAssets() noexcept
+    {
+        // Load textures
+        for (const auto& texturePath : _level->texturePaths)
+        {
+            loadTexture(texturePath);
+        }
+
+        // Load materials
+        for (const auto& materialPath : _level->materialPaths)
+        {
+            loadMaterial(materialPath);
+        }
+
+        // Load meshes
+        for (const auto& meshPath : _level->meshPaths)
+        {
+            loadMesh(meshPath);
+        }
+    }
+
+    void Editor::loadTexture(const std::string& path) noexcept
+    {
+        auto truePath = getTruePath(path, _projectDirectory);
+        auto textureReturn = Renderer::loadTexture(truePath);
+        debugAssume(textureReturn.has_value(), "Failed to load texture");
+
+        Renderer::Texture& texture = *textureReturn;
+        // Upload texture
+        Renderer::TextureUploadOptions uploadOptions {.context = *_context,
+                                                      .commandBuffer = _queueCommandRepo->current(),
+                                                      .useCompressedFormat = false};
+        Renderer::GPUTexture gpuTexture = Renderer::uploadTexture(texture, uploadOptions);
+
+        _assetCache.addTexture(gpuTexture);
+    }
+
+    void Editor::loadMaterial(const std::string& path) noexcept
+    {
+        auto truePath = getTruePath(path, _projectDirectory);
+        auto materialReturn = Renderer::loadMaterial(truePath);
+
+        debugAssume(materialReturn.has_value(), "Failed to load material");
+
+        Renderer::Material& material = *materialReturn;
+
+        // Upload material
+        Renderer::GPUMaterial gpuMaterial {.path = material.path};
+        if (_assetCache.hasTexture(material.albedoTexturePath))
+        {
+            gpuMaterial.albedoTexture = _assetCache.getTexture(material.albedoTexturePath);
+        }
+        if (_assetCache.hasTexture(material.emissiveTexturePath))
+        {
+            gpuMaterial.emissiveTexture = _assetCache.getTexture(material.emissiveTexturePath);
+        }
+        if (_assetCache.hasTexture(material.normalTexturePath))
+        {
+            gpuMaterial.normalTexture = _assetCache.getTexture(material.normalTexturePath);
+        }
+        if (_assetCache.hasTexture(material.metallicTexturePath))
+        {
+            gpuMaterial.metallicTexture = _assetCache.getTexture(material.metallicTexturePath);
+        }
+        if (_assetCache.hasTexture(material.roughnessTexturePath))
+        {
+            gpuMaterial.roughnessTexture = _assetCache.getTexture(material.roughnessTexturePath);
+        }
+        if (_assetCache.hasTexture(material.occlusionTexturePath))
+        {
+            gpuMaterial.occlusionTexture = _assetCache.getTexture(material.occlusionTexturePath);
+        }
+
+        Renderer::GPUMaterial::Data data =
+            Renderer::materialDataFromGPUAndCPU(gpuMaterial, material);
+
+        Graphics::BufferCreateInfo bufferCreateInfo {
+            .size = sizeof(Renderer::GPUMaterial::Data),
+            .mapMode = Graphics::Buffer::MapMode::eMapped,
+            .cached = false,
+        };
+
+        gpuMaterial.buffer = _context->createBuffer(bufferCreateInfo);
+        gpuMaterial.buffer->write(std::as_bytes(std::span(&data, 1)), 0);
+
+        _assetCache.addMaterial(gpuMaterial);
+    }
+
+    void Editor::loadMesh(const std::string& path) noexcept
+    {
+        auto truePath = getTruePath(path, _projectDirectory);
+        auto meshReturn = Renderer::loadMesh(truePath);
+        debugAssume(meshReturn.has_value(), "Failed to load mesh");
+
+        Renderer::StaticMesh& mesh = *meshReturn;
+
+        Renderer::MeshUploadOptions meshUploadOptions {
+            .context = *_context,
+            .commandBuffer = _queueCommandRepo->current(),
+            .sceneBuffer = *_sceneBuffer,
+        };
+
+        Renderer::GPUStaticMesh gpuMesh = Renderer::uploadMesh(mesh, meshUploadOptions);
+        if (_assetCache.hasMaterial(mesh.materialPath))
+        {
+            gpuMesh.material = _assetCache.getMaterial(mesh.materialPath);
+        }
+
+        _assetCache.addMesh(gpuMesh);
+    }
+
+    void Editor::closeLevel() noexcept
+    {
+        for (const auto& texturePath : _level->texturePaths)
+        {
+            _assetCache.clearTexture(texturePath);
+        }
+
+        for (const auto& materialPath : _level->materialPaths)
+        {
+            _assetCache.clearMaterial(materialPath);
+        }
+
+        for (const auto& meshPath : _level->meshPaths)
+        {
+            _assetCache.clearMesh(meshPath);
+        }
+
+        _level = {};
+        _editorCameraEntity = entt::null;
+    }
+
 }  // namespace exitor

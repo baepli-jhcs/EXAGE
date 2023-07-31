@@ -108,6 +108,7 @@ target_include_directories(
 target_compile_features(EXAGE_EXAGE PUBLIC cxx_std_20)
 
 CPMAddPackage(NAME assimp GITHUB_REPOSITORY assimp/assimp VERSION 5.2.5)
+CPMAddPackage(NAME nativefiledialog-extended GITHUB_REPOSITORY btzy/nativefiledialog-extended VERSION 1.1.0)
 
 add_subdirectory(external)
 
@@ -119,6 +120,7 @@ find_package(glfw3 REQUIRED)
 find_package(glm REQUIRED)
 find_package(Ktx REQUIRED)
 find_package(nlohmann_json REQUIRED)
+find_package(portable-file-dialogs REQUIRED)
 find_package(Stb REQUIRED)
 find_package(shaderc REQUIRED)
 find_package(tl-expected REQUIRED)
@@ -136,11 +138,14 @@ target_link_libraries(EXAGE_EXAGE PUBLIC
     glm::glm
     ImGui
     KTX::ktx
+    nfd
     nlohmann_json::nlohmann_json
+    portable-file-dialogs::portable-file-dialogs
     shaderc::shaderc
     stb::stb
     slot_map
     tl::expected
+    tinyfiledialogs
     vulkan-headers::vulkan-headers
     vulkan-memory-allocator::vulkan-memory-allocator
     VulkanMemoryAllocator-Hpp

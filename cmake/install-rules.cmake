@@ -20,7 +20,7 @@ install(
 )
 
 install(
-    TARGETS EXAGE_EXAGE ImGui slot_map
+    TARGETS EXAGE_EXAGE ImGui slot_map nfd tinyfiledialogs
     EXPORT EXAGETargets
     RUNTIME #
     COMPONENT EXAGE_Runtime

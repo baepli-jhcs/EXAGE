@@ -5,3 +5,4 @@ add_subdirectory(VulkanMemoryAllocator-Hpp)
 add_subdirectory(imgui)
 
 add_subdirectory(slot_map)
+add_subdirectory(tinyfiledialogs)

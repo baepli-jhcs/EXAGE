@@ -18,6 +18,7 @@
 #include "exage/Renderer/Scene/AssetCache.h"
 #include "exage/Renderer/Scene/SceneBuffer.h"
 #include "exage/Renderer/Utils/Fonts.h"
+#include "exage/utils/classes.h"
 
 namespace exitor
 {
@@ -29,6 +30,9 @@ namespace exitor
         Editor() noexcept;
         ~Editor();
 
+        EXAGE_DELETE_COPY(Editor);
+        EXAGE_DELETE_MOVE(Editor);
+
         void run() noexcept;
 
       private:
@@ -39,11 +43,16 @@ namespace exitor
 
         void drawProjectSelector() noexcept;
 
-        void resizeCallback(glm::uvec2 extent);
+        void resizeCallback(glm::uvec2 extent) noexcept;
 
-        void loadTexture(const std::filesystem::path& path) noexcept;
-        void loadMaterial(const std::filesystem::path& path) noexcept;
-        void loadMesh(const std::filesystem::path& path) noexcept;
+        void loadTexture(const std::string& path) noexcept;
+        void loadMaterial(const std::string& path) noexcept;
+        void loadMesh(const std::string& path) noexcept;
+
+        void loadLevelAssets() noexcept;
+        void closeLevel() noexcept;
+
+        void meshSelectionCallback(const std::string& path) noexcept;
 
         HierarchyPanel _hierarchyPanel;
         ComponentList _componentList;
@@ -70,7 +79,7 @@ namespace exitor
         std::optional<Projects::Project> _project;
         std::optional<Projects::DeserializedLevel> _level;
 
-        Entity _editorCameraEntity;
+        Entity _editorCameraEntity = entt::null;
 
         glm::uvec2 _viewportExtent = {600, 600};
 
@@ -78,5 +87,7 @@ namespace exitor
 
         Timer _timer;
         glm::vec2 _lastMousePosition = {0.0f, 0.0f};
+
+        Entity _selectedEntity = entt::null;
     };
 }  // namespace exitor

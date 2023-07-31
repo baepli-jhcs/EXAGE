@@ -32,7 +32,7 @@ namespace exage::Renderer
         }
         [[nodiscard]] auto getMesh(const std::string& path) noexcept -> GPUStaticMesh&
         {
-            size_t hash = std::filesystem::hash_value(path);
+            size_t hash = _hasher(path);
             return _meshes[hash];
         }
         [[nodiscard]] auto getMaterial(const std::string& path) noexcept -> GPUMaterial&
@@ -46,7 +46,7 @@ namespace exage::Renderer
         }
         [[nodiscard]] auto hasMesh(const std::string& path) const noexcept -> bool
         {
-            size_t hash = std::filesystem::hash_value(path);
+            size_t hash = _hasher(path);
             return _meshes.contains(hash);
         }
         [[nodiscard]] auto hasMaterial(const std::string& path) const noexcept -> bool
@@ -81,9 +81,19 @@ namespace exage::Renderer
             return nullptr;
         }
 
+        void clearTexture(const std::string& path) noexcept { _textures.erase(path); }
+        void clearMaterial(const std::string& path) noexcept { _materials.erase(path); }
+        void clearMesh(const std::string& path) noexcept
+        {
+            size_t hash = _hasher(path);
+            _meshes.erase(hash);
+        }
+
       private:
         std::unordered_map<std::string, GPUTexture> _textures;
         std::unordered_map<size_t, GPUStaticMesh> _meshes;
         std::unordered_map<std::string, GPUMaterial> _materials;
+
+        std::hash<std::string> _hasher;
     };
 }  // namespace exage::Renderer

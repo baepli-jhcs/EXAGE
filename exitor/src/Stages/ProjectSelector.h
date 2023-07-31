@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Dialogs/FolderDialog.h"
 #include "ImGuiFileDialog.h"
 #include "exage/Core/Core.h"
 #include "exage/Core/Timer.h"
@@ -63,6 +64,7 @@ namespace exitor
                                       const std::string& name) noexcept;
 
         std::reference_wrapper<Renderer::FontManager> _fontManager;
+        FolderDialogAsync _folderDialog;
         IGFD::FileDialog _fileDialog;
         std::vector<ProjectMetadata> _recentProjects {};
 
