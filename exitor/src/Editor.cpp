@@ -1,4 +1,6 @@
 ﻿#include <algorithm>
+#include <fstream>
+#include <limits>
 
 #include "Editor.h"
 
@@ -7,14 +9,17 @@
 #include <glm/trigonometric.hpp>
 
 #include "MousePicking/MousePicking.h"
+#include "Stages/AssetImport.h"
 #include "exage/Core/Debug.h"
 #include "exage/Core/Event.h"
 #include "exage/Core/Window.h"
 #include "exage/Graphics/Buffer.h"
+#include "exage/Graphics/CommandBuffer.h"
 #include "exage/Projects/Level.h"
 #include "exage/Renderer/Renderer.h"
 #include "exage/Renderer/Scene/AssetCache.h"
 #include "exage/Renderer/Scene/Camera.h"
+#include "exage/Renderer/Scene/Loader/AssetFile.h"
 #include "exage/Renderer/Scene/Loader/Converter.h"
 #include "exage/Renderer/Scene/Loader/Loader.h"
 #include "exage/Renderer/Scene/Material.h"
@@ -97,6 +102,8 @@ namespace exitor
         _fontManager->addFont("assets/fonts/SourceSansPro/Regular.ttf", "Source Sans Pro Regular");
         _fontManager->addFont("assets/fonts/SourceSansPro/Bold.ttf", "Source Sans Pro Bold");
 
+        _defaultFont = _fontManager->getFont("Source Sans Pro Regular", 16.F);
+
         _projectSelector = ProjectSelector {*_fontManager};
 
         Renderer::SceneBufferCreateInfo sceneBufferCreateInfo {.context = *_context};
@@ -110,10 +117,11 @@ namespace exitor
 
         _renderTexture.sampler = _sampler;
 
-        // prepareTestScene();
-
         _componentEditor.setMeshSelectionCallback([this](const std::string& path) -> void
-                                                  { meshSelectionCallback(path); });
+                                                  { onComponentMeshSelection(path); });
+        _contentBrowser.setCallbacks(*this);
+
+        createDefaultAssets();
     }
 
     Editor::~Editor()
@@ -121,259 +129,7 @@ namespace exitor
         _context->waitIdle();
     }
 
-    // void Editor::prepareTestScene() noexcept
-    // {
-    //     auto cameraEntity = _scene.createEntity();
-
-    //     auto& camera = _scene.addComponent<Renderer::Camera>(cameraEntity);
-    //     camera.fov = glm::radians(45.0F);
-
-    //     auto& transform = _scene.addComponent<Transform3D>(cameraEntity);
-    //     transform.position = {0.0F, 0.F, 0.0F};
-    //     transform.rotation = Rotation3D {{0, 0, 0}, RotationType::ePitchYawRoll};
-
-    //     Renderer::setSceneCamera(_scene, cameraEntity);
-
-    //     auto importResult = Renderer::importAsset2("assets/models/sponza/Sponza.gltf");
-    //     debugAssume(importResult.has_value(), "Failed to import asset");
-
-    //     std::vector<Renderer::GPUTexture> gpuTextures;
-    //     gpuTextures.reserve(importResult->textures.size());
-
-    //     auto supportedFormats = Renderer::queryCompressedTextureSupport(*_context);
-
-    //     auto commamdBuffer = _context->createCommandBuffer();
-    //     commamdBuffer->begin();
-
-    //     Renderer::TextureUploadOptions uploadOptions {.context = *_context,
-    //                                                   .commandBuffer = *commamdBuffer};
-    //     uploadOptions.supportedCompressedFormats = &supportedFormats;
-    //     uploadOptions.useCompressedFormat = false;
-
-    //     for (size_t i = 0; i < importResult->textures.size(); i++)
-    //     {
-    //         auto& texturePath = importResult->textures[i];
-    //         std::filesystem::path texturePath2 =
-    //             std::filesystem::path("assets/models/exspon/main/textures/")
-    //             / (std::to_string(i).append(Renderer::TEXTURE_EXTENSION));
-    //         auto textureReturn = Renderer::importTexture(texturePath);
-    //         if (textureReturn.has_value())
-    //         {
-    //             Renderer::Texture& texture = *textureReturn;
-    //             texture.path = texturePath2;
-    //             auto saveResult = Renderer::saveTexture(texture, texturePath2);
-    //             debugAssume(saveResult.has_value(), "Failed to save texture");
-
-    //             Renderer::GPUTexture gpuTexture = Renderer::uploadTexture(texture,
-    //             uploadOptions); gpuTextures.push_back(gpuTexture);
-
-    //             _assetCache.addTexture(gpuTexture);
-    //         }
-    //         else
-    //         {
-    //             gpuTextures.push_back(Renderer::GPUTexture {});
-    //         }
-    //     }
-
-    //     std::vector<Renderer::GPUMaterial> gpuMaterials;
-    //     gpuMaterials.reserve(importResult->materials.size());
-
-    //     for (size_t i = 0; i < importResult->materials.size(); i++)
-    //     {
-    //         auto& material = importResult->materials[i];
-
-    //         Renderer::Material material2 {};
-    //         material2.albedoColor = material.albedoColor;
-    //         material2.emissiveColor = material.emissiveColor;
-    //         material2.metallicValue = material.metallicValue;
-    //         material2.roughnessValue = material.roughnessValue;
-
-    //         if (material.albedoTextureIndex < gpuTextures.size())
-    //         {
-    //             if (gpuTextures[material.albedoTextureIndex].texture)
-    //             {
-    //                 material2.albedoTexturePath = gpuTextures[material.albedoTextureIndex].path;
-    //                 material2.albedoUseTexture = true;
-    //             }
-    //         }
-
-    //         // Normal
-    //         if (material.normalTextureIndex < gpuTextures.size())
-    //         {
-    //             if (gpuTextures[material.normalTextureIndex].texture)
-    //             {
-    //                 material2.normalTexturePath = gpuTextures[material.normalTextureIndex].path;
-    //                 material2.normalUseTexture = true;
-    //             }
-    //         }
-
-    //         if (material.metallicTextureIndex < gpuTextures.size())
-    //         {
-    //             if (gpuTextures[material.metallicTextureIndex].texture)
-    //             {
-    //                 material2.metallicTexturePath =
-    //                 gpuTextures[material.metallicTextureIndex].path; material2.metallicUseTexture
-    //                 = true;
-    //             }
-    //         }
-
-    //         if (material.roughnessTextureIndex < gpuTextures.size())
-    //         {
-    //             if (gpuTextures[material.roughnessTextureIndex].texture)
-    //             {
-    //                 material2.roughnessTexturePath =
-    //                     gpuTextures[material.roughnessTextureIndex].path;
-    //                 material2.roughnessUseTexture = true;
-    //             }
-    //         }
-
-    //         if (material.aoTextureIndex < gpuTextures.size())
-    //         {
-    //             if (gpuTextures[material.aoTextureIndex].texture)
-    //             {
-    //                 material2.occlusionTexturePath = gpuTextures[material.aoTextureIndex].path;
-    //                 material2.occlusionUseTexture = true;
-    //             }
-    //         }
-
-    //         if (material.emissiveTextureIndex < gpuTextures.size())
-    //         {
-    //             if (gpuTextures[material.emissiveTextureIndex].texture)
-    //             {
-    //                 material2.emissiveTexturePath =
-    //                 gpuTextures[material.emissiveTextureIndex].path; material2.emissiveUseTexture
-    //                 = true;
-    //             }
-    //         }
-
-    //         std::filesystem::path materialPath =
-    //             std::filesystem::path("assets/models/exspon/main/materials/")
-    //             / (std::to_string(i).append(Renderer::MATERIAL_EXTENSION));
-
-    //         material2.path = materialPath;
-    //         auto saveResult = Renderer::saveMaterial(material2, materialPath);
-
-    //         debugAssume(saveResult.has_value(), "Failed to save material");
-
-    //         Renderer::GPUMaterial gpuMaterial {.path = material2.path};
-    //         if (_assetCache.hasTexture(material2.albedoTexturePath))
-    //         {
-    //             gpuMaterial.albedoTexture = _assetCache.getTexture(material2.albedoTexturePath);
-    //         }
-    //         if (_assetCache.hasTexture(material2.emissiveTexturePath))
-    //         {
-    //             gpuMaterial.emissiveTexture =
-    //             _assetCache.getTexture(material2.emissiveTexturePath);
-    //         }
-    //         if (_assetCache.hasTexture(material2.normalTexturePath))
-    //         {
-    //             gpuMaterial.normalTexture = _assetCache.getTexture(material2.normalTexturePath);
-    //         }
-    //         if (_assetCache.hasTexture(material2.metallicTexturePath))
-    //         {
-    //             gpuMaterial.metallicTexture =
-    //             _assetCache.getTexture(material2.metallicTexturePath);
-    //         }
-    //         if (_assetCache.hasTexture(material2.roughnessTexturePath))
-    //         {
-    //             gpuMaterial.roughnessTexture =
-    //                 _assetCache.getTexture(material2.roughnessTexturePath);
-    //         }
-    //         if (_assetCache.hasTexture(material2.occlusionTexturePath))
-    //         {
-    //             gpuMaterial.occlusionTexture =
-    //                 _assetCache.getTexture(material2.occlusionTexturePath);
-    //         }
-
-    //         Renderer::GPUMaterial::Data data =
-    //             Renderer::materialDataFromGPUAndCPU(gpuMaterial, material2);
-
-    //         Graphics::BufferCreateInfo bufferCreateInfo {
-    //             .size = sizeof(Renderer::GPUMaterial::Data),
-    //             .mapMode = Graphics::Buffer::MapMode::eMapped,
-    //             .cached = false,
-    //         };
-
-    //         gpuMaterial.buffer = _context->createBuffer(bufferCreateInfo);
-    //         gpuMaterial.buffer->write(std::as_bytes(std::span(&data, 1)), 0);
-
-    //         _assetCache.addMaterial(gpuMaterial);
-    //         gpuMaterials.push_back(gpuMaterial);
-
-    //         material = {};  // Memory cleanup
-    //     }
-
-    //     std::vector<Renderer::GPUStaticMesh> gpuMeshes;
-    //     gpuMeshes.reserve(importResult->meshes.size());
-
-    //     Renderer::MeshUploadOptions meshUploadOptions {
-    //         .context = *_context,
-    //         .commandBuffer = *commamdBuffer,
-    //         .sceneBuffer = *_sceneBuffer,
-    //     };
-
-    //     for (size_t i = 0; i < importResult->meshes.size(); i++)
-    //     {
-    //         auto& mesh = importResult->meshes[i];
-
-    //         Renderer::StaticMesh mesh2 {};
-    //         mesh2.vertices = std::move(mesh.vertices);
-    //         mesh2.indices = std::move(mesh.indices);
-    //         mesh2.aabb = mesh.aabb;
-    //         mesh2.materialPath = gpuMaterials[mesh.materialIndex].path;
-    //         mesh2.lods.resize(1);
-
-    //         mesh2.lods[0].indexCount = static_cast<uint32_t>(mesh2.indices.size());
-    //         mesh2.lods[0].indexOffset = 0;
-    //         mesh2.lods[0].vertexCount = static_cast<uint32_t>(mesh2.vertices.size());
-    //         mesh2.lods[0].vertexOffset = 0;
-
-    //         std::filesystem::path meshPath =
-    //             std::filesystem::path("assets/models/exspon/main/meshes/")
-    //             / (std::to_string(i).append(Renderer::MESH_EXTENSION));
-
-    //         mesh2.path = meshPath;
-
-    //         auto saveResult = Renderer::saveMesh(mesh2, meshPath);
-    //         debugAssume(saveResult.has_value(), "Failed to save mesh");
-
-    //         Renderer::GPUStaticMesh gpuMesh = Renderer::uploadMesh(mesh2, meshUploadOptions);
-
-    //         if (_assetCache.hasMaterial(mesh2.materialPath))
-    //         {
-    //             gpuMesh.material = _assetCache.getMaterial(mesh2.materialPath);
-    //         }
-
-    //         _assetCache.addMesh(gpuMesh);
-    //         gpuMeshes.push_back(gpuMesh);
-
-    //         mesh = {};  // Memory cleanup
-    //     }
-
-    //     commamdBuffer->end();
-    //     _context->getQueue().submitTemporary(std::move(commamdBuffer));
-
-    //     Renderer::AssetSceneImportInfo sceneImportInfo {.meshes = gpuMeshes,
-    //                                                     .rootNodes = importResult->rootNodes,
-    //                                                     .nodes = importResult->nodes};
-    //     Renderer::importScene(sceneImportInfo, _scene);
-
-    //     auto lightEntity = _scene.createEntity();
-    //     auto& light = _scene.addComponent<Renderer::DirectionalLight>(lightEntity);
-    //     light.color = {1.0F, 1.0F, 1.0F};
-    //     light.intensity = 1.0F;
-    //     light.castShadow = true;
-    //     auto& transform2 = _scene.addComponent<Transform3D>(lightEntity);
-    //     transform2.position = {0.0F, 5.0F, -5.0F};
-    //     transform2.rotation =
-    //         Rotation3D {{0, glm::radians(-45.F), glm::radians(-45.F)},
-    //         RotationType::ePitchYawRoll};
-    //     auto& point = _scene.addComponent<Renderer::PointLight>(lightEntity);
-    //     point.color = {1.0F, 1.0F, 1.0F};
-    //     point.intensity = 1.0F;
-    //     point.castShadow = true;
-    //     point.physicalRadius = 1.0F;
-    // }
+    void Editor::createDefaultAssets() noexcept {}
 
     void Editor::run() noexcept
     {
@@ -411,17 +167,14 @@ namespace exitor
         }
     }
 
-    void Editor::meshSelectionCallback(const std::string& path) noexcept
+    void Editor::onComponentMeshSelection(const std::string& path) noexcept
     {
-        bool found = std::ranges::any_of(
-            _level->meshPaths, [&](const std::string& path2) -> bool { return path2 == path; });
-
-        if (found)
+        if (_level->meshPaths.contains(path))
         {
             return;
         }
 
-        _level->meshPaths.push_back(path);
+        _level->meshPaths.insert(path);
 
         // Load mesh
         auto truePath = getTruePath(path, _projectDirectory);
@@ -430,11 +183,9 @@ namespace exitor
 
         Renderer::StaticMesh& mesh = *meshReturn;
 
-        if (!std::ranges::any_of(_level->materialPaths,
-                                 [&](const std::string& path2) -> bool
-                                 { return path2 == mesh.materialPath; }))
+        if (!mesh.materialPath.empty())
         {
-            _level->materialPaths.push_back(mesh.materialPath);
+            _level->materialPaths.insert(mesh.materialPath);
 
             // Load material
             auto materialTruePath = getTruePath(mesh.materialPath, _projectDirectory);
@@ -445,11 +196,9 @@ namespace exitor
             Renderer::Material& material = *materialReturn;
             auto eachTexture = [&](const std::string& texturePath) -> void
             {
-                if (!std::ranges::any_of(_level->texturePaths,
-                                         [&](const std::string& path2) -> bool
-                                         { return path2 == texturePath; }))
+                if (!texturePath.empty())
                 {
-                    _level->texturePaths.push_back(texturePath);
+                    _level->texturePaths.insert(texturePath);
 
                     // Load texture
                     auto textureTruePath = getTruePath(texturePath, _projectDirectory);
@@ -479,32 +228,24 @@ namespace exitor
 
             // Upload material
             Renderer::GPUMaterial gpuMaterial {.path = material.path};
-            if (_assetCache.hasTexture(material.albedoTexturePath))
+            auto eachTexture2 = [&](Renderer::GPUTexture& texture, const std::string& texturePath)
             {
-                gpuMaterial.albedoTexture = _assetCache.getTexture(material.albedoTexturePath);
-            }
-            if (_assetCache.hasTexture(material.emissiveTexturePath))
-            {
-                gpuMaterial.emissiveTexture = _assetCache.getTexture(material.emissiveTexturePath);
-            }
-            if (_assetCache.hasTexture(material.normalTexturePath))
-            {
-                gpuMaterial.normalTexture = _assetCache.getTexture(material.normalTexturePath);
-            }
-            if (_assetCache.hasTexture(material.metallicTexturePath))
-            {
-                gpuMaterial.metallicTexture = _assetCache.getTexture(material.metallicTexturePath);
-            }
-            if (_assetCache.hasTexture(material.roughnessTexturePath))
-            {
-                gpuMaterial.roughnessTexture =
-                    _assetCache.getTexture(material.roughnessTexturePath);
-            }
-            if (_assetCache.hasTexture(material.occlusionTexturePath))
-            {
-                gpuMaterial.occlusionTexture =
-                    _assetCache.getTexture(material.occlusionTexturePath);
-            }
+                if (!texturePath.empty() && _assetCache.hasTexture(texturePath))
+                {
+                    texture = _assetCache.getTexture(texturePath);
+                }
+                else
+                {
+                    texture = _defaultTexture;
+                }
+            };
+
+            eachTexture2(gpuMaterial.albedoTexture, material.albedoTexturePath);
+            eachTexture2(gpuMaterial.emissiveTexture, material.emissiveTexturePath);
+            eachTexture2(gpuMaterial.normalTexture, material.normalTexturePath);
+            eachTexture2(gpuMaterial.metallicTexture, material.metallicTexturePath);
+            eachTexture2(gpuMaterial.roughnessTexture, material.roughnessTexturePath);
+            eachTexture2(gpuMaterial.occlusionTexture, material.occlusionTexturePath);
 
             Renderer::GPUMaterial::Data data =
                 Renderer::materialDataFromGPUAndCPU(gpuMaterial, material);
@@ -529,9 +270,13 @@ namespace exitor
         };
 
         Renderer::GPUStaticMesh gpuMesh = Renderer::uploadMesh(mesh, meshUploadOptions);
-        if (_assetCache.hasMaterial(mesh.materialPath))
+        if (!mesh.materialPath.empty() && _assetCache.hasMaterial(mesh.materialPath))
         {
             gpuMesh.material = _assetCache.getMaterial(mesh.materialPath);
+        }
+        else
+        {
+            gpuMesh.material = _defaultMaterial;
         }
 
         _assetCache.addMesh(gpuMesh);
@@ -541,8 +286,8 @@ namespace exitor
     {
         // _scene.updateHierarchy();
 
-        Graphics::CommandBuffer& cmd = _queueCommandRepo->current();
         _context->getQueue().startNextFrame();
+        Graphics::CommandBuffer& cmd = _queueCommandRepo->current();
         tl::expected swapError = _swapchain->acquireNextImage();
         if (!swapError.has_value())
         {
@@ -616,8 +361,7 @@ namespace exitor
 
     void Editor::drawGUI(float deltaTime) noexcept
     {
-        ImFont* font = _fontManager->getFont("Source Sans Pro Regular", 16.F);
-        ImGui::PushFont(font);
+        ImGui::PushFont(_defaultFont);
 
         if (!_project)
         {
@@ -661,9 +405,12 @@ namespace exitor
 
         bool shouldCloseProject = false;
 
+        bool openModelMenu = false;
+        bool openTextureMenu = false;
+
         if (ImGui::BeginMenuBar())
         {
-            if (ImGui::BeginMenu("File"))
+            if (ImGui::BeginMenu("General"))
             {
                 if (ImGui::MenuItem("New Project"))
                 {
@@ -682,11 +429,41 @@ namespace exitor
                     Projects::Level level = Projects::serializeLevel(*_level);
                     auto truePath = getTruePath(level.path, _projectDirectory);
                     auto saveResult = Projects::saveLevel(truePath, level);
+
+                    createEditorCamera();
                 }
 
                 ImGui::EndMenu();
             }
+
+            if (ImGui::BeginMenu("Assets"))
+            {
+                if (ImGui::MenuItem("Import Model"))
+                {
+                    openModelMenu = true;
+                }
+
+                ImGui::Separator();
+
+                if (ImGui::MenuItem("Import Texture"))
+                {
+                    openTextureMenu = true;
+                }
+
+                ImGui::EndMenu();
+            }
+
             ImGui::EndMenuBar();
+        }
+
+        if (openModelMenu)
+        {
+            ImGui::OpenPopup(IMPORT_MODEL_ID);
+        }
+
+        if (openTextureMenu)
+        {
+            ImGui::OpenPopup(IMPORT_TEXTURE_ID);
         }
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
@@ -827,11 +604,38 @@ namespace exitor
         ImGui::Begin("Render Info");
         ImGui::Text("FPS: %f", 1.0F / deltaTime);
         ImGui::Text("Frame time: %f", deltaTime);
+
+        // Camera position
+        auto camera = Renderer::getSceneCamera(scene);
+        auto& transform = scene.getComponent<Transform3D>(camera);
+
+        ImGui::Text("Camera position: %f, %f, %f",
+                    transform.position.x,
+                    transform.position.y,
+                    transform.position.z);
+
+        // Camera rotation
+        std::optional<glm::vec3> euler = transform.rotation.getEuler();
+        if (!euler.has_value())
+        {
+            euler = {glm::vec3 {0.0F}};
+        }
+
+        ImGui::Text("Camera rotation: %f, %f, %f", euler->x, euler->y, euler->z);
+
         ImGui::End();
 
         exage::Entity selectedEntity = _hierarchyPanel.draw(scene, _editorCameraEntity);
         entt::id_type type = _componentList.draw(scene, selectedEntity);
         _componentEditor.draw(scene, selectedEntity, type, *_project);
+
+        _contentBrowser.render(_projectDirectory, *_project);
+
+        auto modelImportDetails = _assetImport.importAssetScreen(_projectDirectory, *_project);
+        if (modelImportDetails)
+        {
+            processModelImport(*modelImportDetails);
+        }
 
         ImGui::End();
 
@@ -875,8 +679,11 @@ namespace exitor
         _level = Projects::deserializeLevel(*levelResult);
 
         loadLevelAssets();
+        createEditorCamera();
+    }
 
-        _level->scene.updateHierarchy();
+    void Editor::createEditorCamera() noexcept
+    {
         _editorCameraEntity = _level->scene.createEntity();
         auto& camera = _level->scene.addComponent<Renderer::Camera>(_editorCameraEntity);
         camera.fov = glm::radians(45.0F);
@@ -914,6 +721,21 @@ namespace exitor
         auto truePath = getTruePath(path, _projectDirectory);
         auto textureReturn = Renderer::loadTexture(truePath);
         debugAssume(textureReturn.has_value(), "Failed to load texture");
+
+        // Renderer::Texture& texture = *textureReturn;
+
+        // auto newCommandBuffer = _context->createCommandBuffer();
+        // newCommandBuffer->begin();
+
+        // // Upload texture
+        // Renderer::TextureUploadOptions uploadOptions {
+        //     .context = *_context, .commandBuffer = *newCommandBuffer, .useCompressedFormat =
+        //     false};
+        // Renderer::GPUTexture gpuTexture = Renderer::uploadTexture(texture, uploadOptions);
+
+        // newCommandBuffer->end();
+
+        // _context->getQueue().submitTemporary(std::move(newCommandBuffer));
 
         Renderer::Texture& texture = *textureReturn;
         // Upload texture
@@ -1020,4 +842,302 @@ namespace exitor
         _editorCameraEntity = entt::null;
     }
 
+    void Editor::processModelImport(const ModelImportDetails& details) noexcept
+    {
+        std::filesystem::path truePath = getTruePath(details.modelPath, _projectDirectory);
+        auto importResult = Renderer::importAsset2(truePath);
+
+        if (!importResult.has_value())
+        {
+            return;
+        }
+
+        Renderer::AssetImportResult2& import = *importResult;
+
+        // Save each texture
+        std::string textureDirectory = details.outputDirectory + "textures/";
+        std::filesystem::create_directories(getTruePath(textureDirectory, _projectDirectory));
+
+        std::unordered_map<size_t, std::string> textureIndices;
+
+        for (size_t i = 0; i < importResult->textures.size(); i++)
+        {
+            auto& importTexturePath = importResult->textures[i];
+            std::string outputTexturePath =
+                textureDirectory + std::to_string(i).append(Renderer::TEXTURE_EXTENSION);
+            std::filesystem::path trueTexturePath =
+                getTruePath(outputTexturePath, _projectDirectory);
+
+            auto textureReturn = Renderer::importTexture(importTexturePath);
+            if (!textureReturn.has_value())
+            {
+                continue;
+            }
+
+            Renderer::Texture& texture = *textureReturn;
+            texture.path = outputTexturePath;
+
+            Renderer::AssetFile assetFile = Renderer::saveTexture(texture);
+            auto saveResult = Renderer::saveAssetFile(trueTexturePath, assetFile);
+
+            if (!saveResult.has_value())
+            {
+                continue;
+            }
+
+            // Add texture to project
+            _project->texturePaths.insert(outputTexturePath);
+
+            textureIndices[i] = outputTexturePath;
+        }
+
+        // Save each material
+        std::string materialDirectory = details.outputDirectory + "materials/";
+        std::filesystem::create_directories(getTruePath(materialDirectory, _projectDirectory));
+
+        std::unordered_map<size_t, std::string> materialIndices;
+
+        for (size_t i = 0; i < importResult->materials.size(); i++)
+        {
+            auto& importMaterial = importResult->materials[i];
+            std::string outputMaterialPath =
+                materialDirectory + std::to_string(i).append(Renderer::MATERIAL_EXTENSION);
+            std::filesystem::path trueMaterialPath =
+                getTruePath(outputMaterialPath, _projectDirectory);
+
+            Renderer::Material material {};
+            material.path = outputMaterialPath;
+
+            if (textureIndices.contains(importMaterial.albedoTextureIndex))
+            {
+                material.albedoTexturePath = textureIndices[importMaterial.albedoTextureIndex];
+                material.albedoUseTexture = true;
+            }
+
+            if (textureIndices.contains(importMaterial.emissiveTextureIndex))
+            {
+                material.emissiveTexturePath = textureIndices[importMaterial.emissiveTextureIndex];
+                material.emissiveUseTexture = true;
+            }
+
+            if (textureIndices.contains(importMaterial.normalTextureIndex))
+            {
+                material.normalTexturePath = textureIndices[importMaterial.normalTextureIndex];
+                material.normalUseTexture = true;
+            }
+
+            if (textureIndices.contains(importMaterial.metallicTextureIndex))
+            {
+                material.metallicTexturePath = textureIndices[importMaterial.metallicTextureIndex];
+                material.metallicUseTexture = true;
+            }
+
+            if (textureIndices.contains(importMaterial.roughnessTextureIndex))
+            {
+                material.roughnessTexturePath =
+                    textureIndices[importMaterial.roughnessTextureIndex];
+                material.roughnessUseTexture = true;
+            }
+
+            if (textureIndices.contains(importMaterial.aoTextureIndex))
+            {
+                material.occlusionTexturePath = textureIndices[importMaterial.aoTextureIndex];
+                material.occlusionUseTexture = true;
+            }
+
+            Renderer::AssetFile assetFile = Renderer::saveMaterial(material);
+            auto saveResult = Renderer::saveAssetFile(trueMaterialPath, assetFile);
+
+            if (!saveResult.has_value())
+            {
+                continue;
+            }
+
+            // Add material to project
+            _project->materialPaths.insert(outputMaterialPath);
+
+            materialIndices[i] = outputMaterialPath;
+        }
+
+        // Save each mesh
+        std::string meshDirectory = details.outputDirectory + "meshes/";
+        std::filesystem::create_directories(getTruePath(meshDirectory, _projectDirectory));
+
+        std::unordered_map<size_t, std::string> meshIndices;
+
+        for (size_t i = 0; i < importResult->meshes.size(); i++)
+        {
+            auto& importMesh = importResult->meshes[i];
+            std::string outputMeshPath =
+                meshDirectory + std::to_string(i).append(Renderer::MESH_EXTENSION);
+            std::filesystem::path trueMeshPath = getTruePath(outputMeshPath, _projectDirectory);
+
+            Renderer::StaticMesh mesh {};
+            mesh.path = outputMeshPath;
+            if (materialIndices.contains(importMesh.materialIndex))
+            {
+                mesh.materialPath = materialIndices[importMesh.materialIndex];
+            }
+
+            mesh.vertices = std::move(importMesh.vertices);
+            mesh.indices = std::move(importMesh.indices);
+
+            mesh.aabb = importMesh.aabb;
+
+            mesh.lods.resize(1);
+            mesh.lods[0].indexCount = static_cast<uint32_t>(mesh.indices.size());
+            mesh.lods[0].indexOffset = 0;
+            mesh.lods[0].vertexCount = static_cast<uint32_t>(mesh.vertices.size());
+            mesh.lods[0].vertexOffset = 0;
+
+            Renderer::AssetFile assetFile = Renderer::saveMesh(mesh);
+            auto saveResult = Renderer::saveAssetFile(trueMeshPath, assetFile);
+
+            if (!saveResult.has_value())
+            {
+                continue;
+            }
+
+            // Add mesh to project
+            _project->meshPaths.insert(outputMeshPath);
+
+            meshIndices[i] = outputMeshPath;
+        }
+
+        deduplicateProjectAssets();
+
+        auto saveResult = Projects::saveProject(_projectPath, *_project);
+        debugAssume(saveResult.has_value(), "Failed to save project");
+
+        // import into level if selected
+        if (!details.importIntoScene)
+        {
+            return;
+        }
+
+        // search to find necessary assets
+        std::vector<std::string> texturePaths;
+        std::vector<std::string> materialPaths;
+        std::vector<std::string> meshPaths;
+
+        for (size_t i = 0; i < importResult->nodes.size(); i++)
+        {
+            auto& node = importResult->nodes[i];
+
+            if (meshIndices.contains(node.meshIndex))
+            {
+                std::string meshPath = meshIndices[node.meshIndex];
+
+                auto& mesh = importResult->meshes[node.meshIndex];
+                if (materialIndices.contains(mesh.materialIndex))
+                {
+                    std::string materialPath = materialIndices[mesh.materialIndex];
+                    materialPaths.push_back(materialPath);
+
+                    auto& material = importResult->materials[mesh.materialIndex];
+
+                    auto eachTexture = [&](size_t textureIndex) -> void
+                    {
+                        if (textureIndices.contains(textureIndex))
+                        {
+                            std::string texturePath = textureIndices[textureIndex];
+                            texturePaths.push_back(texturePath);
+                        }
+                    };
+
+                    eachTexture(material.albedoTextureIndex);
+                    eachTexture(material.emissiveTextureIndex);
+                    eachTexture(material.normalTextureIndex);
+                    eachTexture(material.metallicTextureIndex);
+                    eachTexture(material.roughnessTextureIndex);
+                    eachTexture(material.aoTextureIndex);
+                }
+
+                meshPaths.push_back(meshPath);
+            }
+        }
+
+        // Add assets to level if they don't exist
+        for (const auto& texturePath : texturePaths)
+        {
+            _level->texturePaths.insert(texturePath);
+        }
+
+        for (const auto& materialPath : materialPaths)
+        {
+            _level->materialPaths.insert(materialPath);
+        }
+
+        for (const auto& meshPath : meshPaths)
+        {
+            _level->meshPaths.insert(meshPath);
+        }
+
+        // Load textures
+        for (const auto& texturePath : texturePaths)
+        {
+            loadTexture(texturePath);
+        }
+
+        for (const auto& materialPath : materialPaths)
+        {
+            loadMaterial(materialPath);
+        }
+
+        for (const auto& meshPath : meshPaths)
+        {
+            loadMesh(meshPath);
+        }
+
+        // Add nodes to scene
+        auto& nodes = importResult->nodes;
+        createChildrenImportedNodes(meshIndices, entt::null, importResult->rootNodes, nodes);
+    }
+
+    void Editor::createChildrenImportedNodes(
+        const std::unordered_map<size_t, std::string>& meshIndices,
+        exage::Entity parent,
+        std::span<const size_t> children,
+        const std::vector<Renderer::AssetImportResult2::Node>& nodes) noexcept
+    {
+        Scene& scene = _level->scene;
+
+        for (const auto& child : children)
+        {
+            const auto& node = nodes[child];
+            auto entity = scene.createEntity(parent);
+            scene.addComponent<Transform3D>(entity, node.transform);
+
+            std::string meshPath = meshIndices.at(node.meshIndex);
+            if (_assetCache.hasMesh(meshPath))
+            {
+                const Renderer::GPUStaticMesh& mesh = _assetCache.getMesh(meshPath);
+                Renderer::StaticMeshComponent meshComponent = {.path = mesh.path,
+                                                               .pathHash = mesh.pathHash};
+                scene.addComponent<Renderer::StaticMeshComponent>(entity, meshComponent);
+            }
+
+            createChildrenImportedNodes(meshIndices, entity, node.childrenIndices, nodes);
+        }
+    }
+
+    void Editor::deduplicateProjectAssets() noexcept
+    {
+        // // Remove duplicate mesh paths
+        // std::sort(_project->meshPaths.begin(), _project->meshPaths.end());
+        // auto meshEnd = std::unique(_project->meshPaths.begin(), _project->meshPaths.end());
+        // _project->meshPaths.erase(meshEnd, _project->meshPaths.end());
+
+        // // Remove duplicate material paths
+        // std::sort(_project->materialPaths.begin(), _project->materialPaths.end());
+        // auto materialEnd =
+        //     std::unique(_project->materialPaths.begin(), _project->materialPaths.end());
+        // _project->materialPaths.erase(materialEnd, _project->materialPaths.end());
+
+        // // Remove duplicate texture paths
+        // std::sort(_project->texturePaths.begin(), _project->texturePaths.end());
+        // auto textureEnd = std::unique(_project->texturePaths.begin(),
+        // _project->texturePaths.end()); _project->texturePaths.erase(textureEnd,
+        // _project->texturePaths.end());
+    }
 }  // namespace exitor

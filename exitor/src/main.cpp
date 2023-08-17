@@ -13,7 +13,7 @@ auto main(int /*argc*/, char* /*argv*/[]) -> int
     editor.run();
 
     // exage::Projects::Level level {};
-    // level.path = "project/assets/levels/default.exlevel";
+    // level.path = "assets/levels/default.exlevel";
 
     // [[maybe_unused]] auto result = exage::Projects::saveLevel("default.exlevel", level);
 

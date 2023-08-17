@@ -64,8 +64,9 @@ namespace exage
             auto child = relationship.firstChild;
             for (size_t i = 0; i < relationship.childCount; i++)
             {
+                Entity next = getComponent<EntityRelationship>(child).nextSibling;
                 func(child);
-                child = getComponent<EntityRelationship>(child).nextSibling;
+                child = next;
             }
         }
 

@@ -25,10 +25,28 @@ namespace exitor
 
         auto& reg = scene.registry();
 
-        //
-        if (ImGui::Button("Add Component", ImVec2(ImGui::GetContentRegionAvail().x, 0.0f)))
+        bool isNull = _selectedTypeID == entt::null;
+        auto contentRegion = isNull ? ImVec2(ImGui::GetContentRegionAvail().x, 0.0F)
+                                    : ImVec2(ImGui::GetContentRegionAvail().x / 2.0F, 0.0F);
+        if (ImGui::Button("Add Component", contentRegion))
         {
             ImGui::OpenPopup("Add Component");
+        }
+
+        if (!isNull)
+        {
+            ImGui::SameLine();
+
+            if (ImGui::Button("Remove Component", contentRegion))
+            {
+                auto* storage = reg.storage(_selectedTypeID);
+                if (storage != nullptr && storage->contains(selectedEntity))
+                {
+                    storage->remove(selectedEntity);
+                }
+
+                _selectedTypeID = entt::null;
+            }
         }
 
         if (ImGui::BeginPopup("Add Component"))

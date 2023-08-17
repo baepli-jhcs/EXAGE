@@ -12,7 +12,7 @@ endif()
 
 add_subdirectory(external)
 
-add_executable(EXitor src/main.cpp src/Dialogs/FolderDialog.cpp src/Editor.cpp src/Panels/Hierarchy.cpp src/Panels/ComponentList.cpp src/Panels/ComponentEditor.cpp src/Stages/ProjectSelector.cpp)
+add_executable(EXitor src/main.cpp src/Dialogs/FileDialog.cpp src/Dialogs/FolderDialog.cpp src/Editor.cpp src/Filesystem/VFS.cpp src/Panels/Hierarchy.cpp src/Panels/ComponentList.cpp src/Panels/ComponentEditor.cpp src/Panels/ContentBrowser.cpp src/Stages/AssetImport.cpp src/Stages/ProjectSelector.cpp)
 
 target_include_directories(EXitor PRIVATE src)
 

@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.14)
 
-cmake_policy(SET CMP0091 NEW)
+if (POLICY CMP0091)
+    cmake_policy(SET CMP0091 NEW)
+endif()
 
 include(cmake/prelude.cmake)
 
@@ -17,7 +19,13 @@ set(CMAKE_CXX_STANDARD 20)
 include(cmake/project-is-top-level.cmake)
 include(cmake/variables.cmake)
 
+include(cmake/conan.cmake)
 include(cmake/CPM.cmake)
+
+# ---- Conan ----
+conan_cmake_run(CONANFILE conanfile.txt
+                BASIC_SETUP CMAKE_TARGETS
+                BUILD missing)
 
 # ---- Declare library ----
 add_library(
@@ -48,6 +56,7 @@ add_library(
     src/platform/Vulkan/VulkanSwapchain.cpp
     src/platform/Vulkan/VulkanTexture.cpp
     src/Projects/Level.cpp
+    src/Projects/Project.cpp
     src/Projects/Serialization.cpp
     src/Renderer/Renderer.cpp
     src/Renderer/GeometryPass/GeometryRenderer.cpp
@@ -118,7 +127,7 @@ find_package(EnTT REQUIRED)
 find_package(fmt REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(glm REQUIRED)
-find_package(Ktx REQUIRED)
+# find_package(Ktx REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(portable-file-dialogs REQUIRED)
 find_package(Stb REQUIRED)
@@ -137,7 +146,7 @@ target_link_libraries(EXAGE_EXAGE PUBLIC
     glfw
     glm::glm
     ImGui
-    KTX::ktx
+    # KTX::ktx
     nfd
     nlohmann_json::nlohmann_json
     portable-file-dialogs::portable-file-dialogs

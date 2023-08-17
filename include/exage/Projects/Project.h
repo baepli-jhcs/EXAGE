@@ -2,8 +2,12 @@
 
 #include <filesystem>
 #include <string>
+#include <unordered_set>
+
+#include <tl/expected.hpp>
 
 #include "exage/Core/Core.h"
+#include "exage/Core/Errors.h"
 
 namespace exage::Projects
 {
@@ -12,11 +16,11 @@ namespace exage::Projects
         std::string name;
 
         std::string defaultLevelPath;
-        std::vector<std::string> levelPaths;
+        std::unordered_set<std::string> levelPaths;
 
-        std::vector<std::string> texturePaths;
-        std::vector<std::string> meshPaths;
-        std::vector<std::string> materialPaths;
+        std::unordered_set<std::string> texturePaths;
+        std::unordered_set<std::string> meshPaths;
+        std::unordered_set<std::string> materialPaths;
 
         // TODO: add more configuration options, including scripts
 
@@ -26,4 +30,10 @@ namespace exage::Projects
             archive(name, defaultLevelPath, levelPaths, texturePaths, meshPaths, materialPaths);
         }
     };
+
+    [[nodiscard]] auto loadProject(const std::filesystem::path& path) noexcept
+        -> tl::expected<Project, Error>;
+    [[nodiscard]] auto saveProject(const std::filesystem::path& path,
+                                   const Project& project) noexcept -> tl::expected<void, Error>;
+
 }  // namespace exage::Projects

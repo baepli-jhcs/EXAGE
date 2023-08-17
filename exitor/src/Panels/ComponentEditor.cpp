@@ -58,6 +58,11 @@ namespace exitor
     auto ComponentEditor::drawTransform3D(exage::Scene& scene,
                                           exage::Entity selectedEntity) noexcept -> void
     {
+        if (!scene.hasComponent<exage::Transform3D>(selectedEntity))
+        {
+            return;
+        }
+
         auto& transform = scene.getComponent<exage::Transform3D>(selectedEntity);
 
         ImGui::DragFloat3("Position", glm::value_ptr(transform.position), 0.1f);
@@ -136,6 +141,11 @@ namespace exitor
     auto ComponentEditor::drawCamera(exage::Scene& scene, exage::Entity selectedEntity) noexcept
         -> void
     {
+        if (!scene.hasComponent<exage::Renderer::Camera>(selectedEntity))
+        {
+            return;
+        }
+
         auto& camera = scene.getComponent<exage::Renderer::Camera>(selectedEntity);
 
         // fov between 1 and 179 degrees
@@ -150,6 +160,11 @@ namespace exitor
                                    exage::Entity selectedEntity,
                                    exage::Projects::Project& project) noexcept -> void
     {
+        if (!scene.hasComponent<exage::Renderer::StaticMeshComponent>(selectedEntity))
+        {
+            return;
+        }
+
         auto& meshComponent =
             scene.getComponent<exage::Renderer::StaticMeshComponent>(selectedEntity);
 
@@ -176,6 +191,11 @@ namespace exitor
     auto ComponentEditor::drawDirectionalLight(exage::Scene& scene,
                                                exage::Entity selectedEntity) noexcept -> void
     {
+        if (!scene.hasComponent<exage::Renderer::DirectionalLight>(selectedEntity))
+        {
+            return;
+        }
+
         auto& light = scene.getComponent<exage::Renderer::DirectionalLight>(selectedEntity);
 
         ImGui::ColorEdit3("Color", glm::value_ptr(light.color));
@@ -186,6 +206,11 @@ namespace exitor
 
     void ComponentEditor::drawPointLight(exage::Scene& scene, exage::Entity selectedEntity) noexcept
     {
+        if (!scene.hasComponent<exage::Renderer::PointLight>(selectedEntity))
+        {
+            return;
+        }
+
         auto& light = scene.getComponent<exage::Renderer::PointLight>(selectedEntity);
 
         ImGui::ColorEdit3("Color", glm::value_ptr(light.color));

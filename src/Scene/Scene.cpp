@@ -13,11 +13,11 @@ namespace exage
 
         relationship.parent = parent;
 
-        if (isValid(parent))
+        if (parent != entt::null)
         {
             auto& parentRelationship = getComponent<EntityRelationship>(parent);
 
-            if (isValid(parentRelationship.firstChild))
+            if (parentRelationship.firstChild != entt::null)
             {
                 auto& firstChildRelationship =
                     getComponent<EntityRelationship>(parentRelationship.firstChild);
@@ -68,7 +68,6 @@ namespace exage
         }
 
         _registry.destroy(entity);
-        entity = entt::null;
     }
 
     void Scene::calculateChildTransform(Transform3D& parentTransform, Entity entity) noexcept
@@ -154,11 +153,11 @@ namespace exage
         relationship.nextSibling = entt::null;
         relationship.previousSibling = entt::null;
 
-        if (isValid(parent))
+        if (parent != entt::null)
         {
             auto& parentRelationship = getComponent<EntityRelationship>(parent);
 
-            if (isValid(parentRelationship.firstChild))
+            if (parentRelationship.firstChild != entt::null)
             {
                 auto& firstChildRelationship =
                     getComponent<EntityRelationship>(parentRelationship.firstChild);

@@ -138,22 +138,29 @@ namespace exage::Renderer
                            colorTexture->getExtent());
 
         commandBuffer.textureBarrier(colorTexture,
-                                     Graphics::Texture::Layout::eColorAttachment,
+                                     Graphics::Texture::Layout::eShaderReadOnly,
                                      Graphics::PipelineStageFlags::eTransfer,
-                                     Graphics::PipelineStageFlags::eColorAttachmentOutput,
-                                     Graphics::AccessFlags::eTransferWrite,
-                                     Graphics::AccessFlags::eColorAttachmentWrite);
+                                     Graphics::PipelineStageFlags::eFragmentShader,
+                                     Graphics::AccessFlags::eTransferRead,
+                                     Graphics::AccessFlags::eShaderRead);
 
-        Graphics::ClearColor clearColor;
-        clearColor.clear = false;
-        clearColor.color = {0.0f, 0.0f, 0.0f, 1.0f};
+        // commandBuffer.textureBarrier(colorTexture,
+        //                              Graphics::Texture::Layout::eColorAttachment,
+        //                              Graphics::PipelineStageFlags::eTransfer,
+        //                              Graphics::PipelineStageFlags::eColorAttachmentOutput,
+        //                              Graphics::AccessFlags::eTransferWrite,
+        //                              Graphics::AccessFlags::eColorAttachmentWrite);
 
-        Graphics::ClearDepthStencil clearDepthStencil;
-        clearDepthStencil.clear = false;
+        // Graphics::ClearColor clearColor;
+        // clearColor.clear = false;
+        // clearColor.color = {0.0f, 0.0f, 0.0f, 1.0f};
 
-        commandBuffer.beginRendering(_frameBuffer, {clearColor}, clearDepthStencil);
+        // Graphics::ClearDepthStencil clearDepthStencil;
+        // clearDepthStencil.clear = false;
 
-        commandBuffer.endRendering();
+        // commandBuffer.beginRendering(_frameBuffer, {clearColor}, clearDepthStencil);
+
+        // commandBuffer.endRendering();
     }
 
     void Renderer::prepareData(Graphics::CommandBuffer& commandBuffer, Scene& scene) noexcept

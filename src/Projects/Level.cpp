@@ -5,6 +5,7 @@
 #include "exage/Projects/Level.h"
 
 #include <cereal/types/unordered_map.hpp>
+#include <cereal/types/unordered_set.hpp>
 #include <cereal/types/vector.hpp>
 #include <exage/utils/serialization.h>
 #include <nlohmann/json.hpp>

@@ -15,12 +15,6 @@ namespace exitor
                             const std::filesystem::path& rootDirectory) noexcept
         -> std::filesystem::path
     {
-        if (path.starts_with("project/"))
-        {
-            return rootDirectory / std::filesystem::u8path(path.substr(8));
-        }
-
-        // engine/
-        return std::filesystem::u8path(path.substr(7));
+        return rootDirectory / std::filesystem::u8path(path);
     }
 }  // namespace exitor

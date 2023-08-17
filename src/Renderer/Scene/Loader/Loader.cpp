@@ -207,6 +207,7 @@ namespace exage::Renderer
         }
 
         Texture texture;
+        texture.path = json["path"].get<std::string>();
         texture.mips.resize(json["mips"].size());
 
         for (size_t i = 0; i < json["mips"].size(); i++)
@@ -252,6 +253,7 @@ namespace exage::Renderer
         }
 
         Material material;
+        material.path = json["path"].get<std::string>();
         material.albedoColor = json["albedoColor"];
         material.emissiveColor = json["emissiveColor"];
         material.metallicValue = json["metallicValue"];
@@ -289,6 +291,7 @@ namespace exage::Renderer
         }
 
         StaticMesh mesh;
+        mesh.path = json["path"].get<std::string>();
         mesh.materialPath = json["materialPath"].get<std::string>();
         mesh.aabb.max = json["aabb"]["max"];
         mesh.aabb.min = json["aabb"]["min"];

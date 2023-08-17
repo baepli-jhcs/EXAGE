@@ -12,7 +12,7 @@
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 #include <exage/utils/serialization.h>
-#include <ktx.h>
+// #include <ktx.h>
 #include <stb_image.h>
 #include <tl/expected.hpp>
 #include <zstd.h>
@@ -26,7 +26,7 @@
 #include "exage/Renderer/Scene/Mesh.h"
 #include "exage/Scene/Hierarchy.h"
 #include "exage/platform/Vulkan/VulkanUtils.h"
-#include "ktxvulkan.h"
+// #include "ktxvulkan.h"
 
 namespace exage::Renderer
 {
@@ -298,51 +298,53 @@ namespace exage::Renderer
         -> tl::expected<Texture, Error>
     {
         // Load using stb_image or ktx depending on file extension
-        if (texturePath.extension() == ".ktx")
-        {
-            ktxTexture* ktxTexture = nullptr;
-            ktxResult result = ktxTexture_CreateFromNamedFile(
-                texturePath.string().c_str(), KTX_TEXTURE_CREATE_LOAD_IMAGE_DATA_BIT, &ktxTexture);
+        // if (texturePath.extension() == ".ktx")
+        // {
+        //     ktxTexture* ktxTexture = nullptr;
+        //     ktxResult result = ktxTexture_CreateFromNamedFile(
+        //         texturePath.string().c_str(), KTX_TEXTURE_CREATE_LOAD_IMAGE_DATA_BIT,
+        //         &ktxTexture);
 
-            if (result != KTX_SUCCESS)
-            {
-                return tl::make_unexpected(Errors::FileFormat {});
-            }
+        //     if (result != KTX_SUCCESS)
+        //     {
+        //         return tl::make_unexpected(Errors::FileFormat {});
+        //     }
 
-            Texture texture;
-            texture.type = Graphics::Texture::Type::e2D;
-            texture.mips.resize(ktxTexture->numLevels);
+        //     Texture texture;
+        //     texture.type = Graphics::Texture::Type::e2D;
+        //     texture.mips.resize(ktxTexture->numLevels);
 
-            for (ktx_uint32_t i = 0; i < ktxTexture->numLevels; i++)
-            {
-                texture.mips[i].extent.x = std::max(ktxTexture->baseWidth >> i, 1U);
-                texture.mips[i].extent.y = std::max(ktxTexture->baseHeight >> i, 1U);
-                texture.mips[i].extent.z = 1;
-                ktx_size_t offset = 0;
-                ktxTexture_GetImageOffset(ktxTexture, i, 0, 0, &offset);
-                texture.mips[i].offset = offset;
-                texture.mips[i].size = ktxTexture_GetImageSize(ktxTexture, i);
-            }
+        //     for (ktx_uint32_t i = 0; i < ktxTexture->numLevels; i++)
+        //     {
+        //         texture.mips[i].extent.x = std::max(ktxTexture->baseWidth >> i, 1U);
+        //         texture.mips[i].extent.y = std::max(ktxTexture->baseHeight >> i, 1U);
+        //         texture.mips[i].extent.z = 1;
+        //         ktx_size_t offset = 0;
+        //         ktxTexture_GetImageOffset(ktxTexture, i, 0, 0, &offset);
+        //         texture.mips[i].offset = offset;
+        //         texture.mips[i].size = ktxTexture_GetImageSize(ktxTexture, i);
+        //     }
 
-            texture.data = std::vector<std::byte>(ktxTexture_GetDataSize(ktxTexture));
+        //     texture.data = std::vector<std::byte>(ktxTexture_GetDataSize(ktxTexture));
 
-            auto vkFormat = static_cast<vk::Format>(ktxTexture_GetVkFormat(ktxTexture));
-            auto [channels, bitsPerChannel] = Graphics::vulkanFormatToChannelsAndBits(vkFormat);
-            if (channels == 0 || bitsPerChannel == 0)
-            {
-                std::cout << "Unsupported format: " << vk::to_string(vkFormat) << std::endl;
-                return tl::make_unexpected(Errors::FileFormat {});
-            }
+        //     auto vkFormat = static_cast<vk::Format>(ktxTexture_GetVkFormat(ktxTexture));
+        //     auto [channels, bitsPerChannel] = Graphics::vulkanFormatToChannelsAndBits(vkFormat);
+        //     if (channels == 0 || bitsPerChannel == 0)
+        //     {
+        //         std::cout << "Unsupported format: " << vk::to_string(vkFormat) << std::endl;
+        //         return tl::make_unexpected(Errors::FileFormat {});
+        //     }
 
-            texture.channels = channels;
-            texture.bitsPerChannel = bitsPerChannel;
+        //     texture.channels = channels;
+        //     texture.bitsPerChannel = bitsPerChannel;
 
-            std::memcpy(texture.data.data(), ktxTexture_GetData(ktxTexture), texture.data.size());
+        //     std::memcpy(texture.data.data(), ktxTexture_GetData(ktxTexture),
+        //     texture.data.size());
 
-            ktxTexture_Destroy(ktxTexture);
+        //     ktxTexture_Destroy(ktxTexture);
 
-            return texture;
-        }
+        //     return texture;
+        // }
 
         int width = 0;
         int height = 0;
@@ -378,6 +380,7 @@ namespace exage::Renderer
         texture.data = std::vector<std::byte>(texture.mips[0].size);
         texture.channels = static_cast<uint8_t>(channels);
         texture.bitsPerChannel = 8;
+        texture.type = Graphics::Texture::Type::e2D;
 
         std::memcpy(texture.data.data(), pixels, texture.data.size());
 
@@ -392,6 +395,7 @@ namespace exage::Renderer
 
         nlohmann::json json;
         json["dataType"] = "Texture";
+        json["path"] = texture.path;
         json["channels"] = texture.channels;
         json["bitsPerChannel"] = texture.bitsPerChannel;
         json["type"] = static_cast<uint32_t>(texture.type);
@@ -448,6 +452,7 @@ namespace exage::Renderer
 
         nlohmann::json json;
         json["dataType"] = "Material";
+        json["path"] = material.path;
         json["albedoColor"] = material.albedoColor;
         json["emissiveColor"] = material.emissiveColor;
         json["metallicValue"] = material.metallicValue;
@@ -491,6 +496,7 @@ namespace exage::Renderer
 
         nlohmann::json json;
         json["dataType"] = "StaticMesh";
+        json["path"] = mesh.path;
         json["aabb"] = {
             {"min", mesh.aabb.min},
             {"max", mesh.aabb.max},

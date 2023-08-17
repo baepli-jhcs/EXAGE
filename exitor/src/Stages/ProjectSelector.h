@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Dialogs/FileDialog.h"
 #include "Dialogs/FolderDialog.h"
 #include "ImGuiFileDialog.h"
 #include "exage/Core/Core.h"
@@ -65,8 +66,12 @@ namespace exitor
 
         std::reference_wrapper<Renderer::FontManager> _fontManager;
         FolderDialogAsync _folderDialog;
-        IGFD::FileDialog _fileDialog;
+        FileDialogAsync _fileDialog;
+        // IGFD::FileDialog _fileDialog;
         std::vector<ProjectMetadata> _recentProjects {};
+
+        ImFont* _headerFont = nullptr;
+        ImFont* _recentProjectsFont = nullptr;
 
         std::string _projectName {};
         std::string _projectPath {};

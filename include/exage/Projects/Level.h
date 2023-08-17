@@ -18,9 +18,9 @@ namespace exage::Projects
     {
         std::string path;
 
-        std::vector<std::string> texturePaths;
-        std::vector<std::string> materialPaths;
-        std::vector<std::string> meshPaths;
+        std::unordered_set<std::string> texturePaths;
+        std::unordered_set<std::string> materialPaths;
+        std::unordered_set<std::string> meshPaths;
 
         uint32_t entityCount;
         std::unordered_map<std::string, ComponentData> componentData;
@@ -36,9 +36,9 @@ namespace exage::Projects
     {
         std::string path;
 
-        std::vector<std::string> texturePaths;
-        std::vector<std::string> materialPaths;
-        std::vector<std::string> meshPaths;
+        std::unordered_set<std::string> texturePaths;
+        std::unordered_set<std::string> materialPaths;
+        std::unordered_set<std::string> meshPaths;
 
         Scene scene;
     };

@@ -2,7 +2,9 @@
 
 #include "Panels/ComponentEditor.h"
 #include "Panels/ComponentList.h"
+#include "Panels/ContentBrowser.h"
 #include "Panels/Hierarchy.h"
+#include "Stages/AssetImport.h"
 #include "Stages/ProjectSelector.h"
 #include "exage/Core/Core.h"
 #include "exage/Core/Timer.h"
@@ -16,6 +18,8 @@
 #include "exage/Projects/Project.h"
 #include "exage/Renderer/Renderer.h"
 #include "exage/Renderer/Scene/AssetCache.h"
+#include "exage/Renderer/Scene/Loader/Converter.h"
+#include "exage/Renderer/Scene/Material.h"
 #include "exage/Renderer/Scene/SceneBuffer.h"
 #include "exage/Renderer/Utils/Fonts.h"
 #include "exage/utils/classes.h"
@@ -24,11 +28,11 @@ namespace exitor
 {
     using namespace exage;
 
-    class Editor
+    class Editor : public ContentBrowserCallbacks
     {
       public:
         Editor() noexcept;
-        ~Editor();
+        ~Editor() override;
 
         EXAGE_DELETE_COPY(Editor);
         EXAGE_DELETE_MOVE(Editor);
@@ -36,7 +40,10 @@ namespace exitor
         void run() noexcept;
 
       private:
+        void createDefaultAssets() noexcept;
+
         void prepareTestScene() noexcept;
+        void createEditorCamera() noexcept;
 
         void tick(float deltaTime) noexcept;
         void drawGUI(float deltaTime) noexcept;
@@ -52,11 +59,32 @@ namespace exitor
         void loadLevelAssets() noexcept;
         void closeLevel() noexcept;
 
-        void meshSelectionCallback(const std::string& path) noexcept;
+        void onComponentMeshSelection(const std::string& path) noexcept;
+
+        // ContentBrowserCallbacks
+        void recognizeMesh(const std::string& path) noexcept override {}
+        void recognizeMaterial(const std::string& path) noexcept override {}
+        void recognizeTexture(const std::string& path) noexcept override {}
+        void recognizeLevel(const std::string& path) noexcept override {}
+        void onMeshSelection(const std::string& path) noexcept override {}
+        void onMaterialSelection(const std::string& path) noexcept override {}
+        void onTextureSelection(const std::string& path) noexcept override {}
+        void onLevelSelection(const std::string& path) noexcept override {}
+
+        void processModelImport(const ModelImportDetails& details) noexcept;
+        void createChildrenImportedNodes(
+            const std::unordered_map<size_t, std::string>& meshIndices,
+            exage::Entity parent,
+            std::span<const size_t> children,
+            const std::vector<Renderer::AssetImportResult2::Node>& node) noexcept;
+
+        void deduplicateProjectAssets() noexcept;
 
         HierarchyPanel _hierarchyPanel;
         ComponentList _componentList;
         ComponentEditor _componentEditor;
+        ContentBrowser _contentBrowser;
+        AssetImport _assetImport;
 
         std::unique_ptr<Window> _window;
         std::unique_ptr<Graphics::Context> _context;
@@ -68,6 +96,11 @@ namespace exitor
         Graphics::ImGuiTexture _renderTexture;
         std::optional<Graphics::ImGuiInstance> _imGui;
         std::optional<Renderer::FontManager> _fontManager;
+
+        ImFont* _defaultFont = nullptr;
+
+        Renderer::GPUTexture _defaultTexture;
+        Renderer::GPUMaterial _defaultMaterial;
 
         std::optional<Renderer::SceneBuffer> _sceneBuffer;
         std::optional<Renderer::Renderer> _renderer;

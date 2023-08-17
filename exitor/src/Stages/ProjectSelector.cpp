@@ -3,6 +3,7 @@
 #include "ProjectSelector.h"
 
 #include <cereal/types/chrono.hpp>
+#include <cereal/types/unordered_set.hpp>
 #include <cereal/types/vector.hpp>
 #include <exage/utils/serialization.h>
 #include <misc/cpp/imgui_stdlib.h>
@@ -25,13 +26,13 @@ namespace exitor
         : _fontManager(fontManager)
     {
         getRecentProjects();
+
+        _headerFont = _fontManager.get().getFont("Source Sans Pro Bold", 30.0F);
+        _recentProjectsFont = _fontManager.get().getFont("Source Sans Pro Bold", 20.0F);
     }
 
     auto ProjectSelector::run() noexcept -> std::optional<ProjectReturn>
     {
-        ImFont* headerFont = _fontManager.get().getFont("Source Sans Pro Bold", 30.0F);
-        ImFont* recentProjectsFont = _fontManager.get().getFont("Source Sans Pro Bold", 20.0F);
-
         std::optional<Projects::Project> project = std::nullopt;
         std::filesystem::path projectPath;
 
@@ -53,7 +54,7 @@ namespace exitor
         ImGui::PopStyleVar();
         ImGui::PopStyleVar();
 
-        ImGui::PushFont(headerFont);
+        ImGui::PushFont(_headerFont);
         ImGui::Text("Create or Select a Project");
         ImGui::PopFont();
         ImGui::Separator();
@@ -129,7 +130,7 @@ namespace exitor
         // Recent projects
         if (!_recentProjects.empty())
         {
-            ImGui::PushFont(recentProjectsFont);
+            ImGui::PushFont(_recentProjectsFont);
 
             exage::ImGuiUtils::Spacing(3);
 
@@ -164,19 +165,34 @@ namespace exitor
         // Existing project
         if (ImGui::Button("Open Project"))
         {
-            _fileDialog.OpenDialog("Choose a project file", "Choose", ".exproj", ".");
+            // _fileDialog.OpenDialog("Choose a project file", "Choose", ".exproj", ".");
+
+            std::array<std::string_view, 1> filters = {"*.exproj"};
+            _fileDialog.open("Choose a project file", "", filters, "Project");
         }
 
-        if (_fileDialog.Display("Choose a project file", ImGuiWindowFlags_NoCollapse))
+        if (_fileDialog.isReady())
         {
-            if (_fileDialog.IsOk())
+            std::string result = _fileDialog.getResult();
+            if (!result.empty())
             {
-                projectPath = _fileDialog.GetFilePathName();
+                projectPath = result;
                 project = loadProject(projectPath);
             }
 
-            _fileDialog.Close();
+            _fileDialog.clear();
         }
+
+        // if (_fileDialog.Display("Choose a project file", ImGuiWindowFlags_NoCollapse))
+        // {
+        //     if (_fileDialog.IsOk())
+        //     {
+        //         projectPath = _fileDialog.GetFilePathName();
+        //         project = loadProject(projectPath);
+        //     }
+
+        //     _fileDialog.Close();
+        // }
 
         ImGui::End();
 
@@ -319,8 +335,8 @@ namespace exitor
         // Create project file
         Projects::Project project;
         project.name = _projectName;
-        project.defaultLevelPath = "project/assets/levels/default.exlevel";
-        project.levelPaths.push_back(project.defaultLevelPath);
+        project.defaultLevelPath = "assets/levels/default.exlevel";
+        project.levelPaths.insert(project.defaultLevelPath);
 
         std::filesystem::path projectFile = projectDir / (_projectName + ".exproj");
 
