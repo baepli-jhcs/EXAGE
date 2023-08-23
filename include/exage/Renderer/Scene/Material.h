@@ -26,6 +26,7 @@ namespace exage::Renderer
         std::vector<std::byte> data;
         uint8_t channels;
         uint8_t bitsPerChannel;
+        uint8_t layers;
         Graphics::Texture::Type type;
     };
 

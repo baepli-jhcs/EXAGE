@@ -6,6 +6,7 @@
 #include "Panels/Hierarchy.h"
 #include "Stages/AssetImport.h"
 #include "Stages/ProjectSelector.h"
+#include "Windows/TextureViewer.h"
 #include "exage/Core/Core.h"
 #include "exage/Core/Timer.h"
 #include "exage/Graphics/Context.h"
@@ -78,6 +79,8 @@ namespace exitor
             std::span<const size_t> children,
             const std::vector<Renderer::AssetImportResult2::Node>& node) noexcept;
 
+        void processTextureImport(const TextureImportDetails& details) noexcept;
+
         void deduplicateProjectAssets() noexcept;
 
         HierarchyPanel _hierarchyPanel;
@@ -108,6 +111,8 @@ namespace exitor
         std::optional<ProjectSelector> _projectSelector {};
         std::filesystem::path _projectPath;
         std::filesystem::path _projectDirectory;
+
+        std::optional<TextureViewer> _textureViewer;
 
         std::optional<Projects::Project> _project;
         std::optional<Projects::DeserializedLevel> _level;

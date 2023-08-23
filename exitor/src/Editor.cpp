@@ -106,6 +106,8 @@ namespace exitor
 
         _projectSelector = ProjectSelector {*_fontManager};
 
+        _textureViewer.emplace(*_context, _assetCache);
+
         Renderer::SceneBufferCreateInfo sceneBufferCreateInfo {.context = *_context};
         _sceneBuffer = Renderer::SceneBuffer {sceneBufferCreateInfo};
 
@@ -453,6 +455,22 @@ namespace exitor
                 ImGui::EndMenu();
             }
 
+            if (ImGui::BeginMenu("Windows"))
+            {
+                const char* textureViewerName = "Open Texture Viewer";
+                if (_textureViewer->isOpened())
+                {
+                    textureViewerName = "Close Texture Viewer";
+                }
+
+                if (ImGui::MenuItem(textureViewerName))
+                {
+                    _textureViewer->setOpened(!_textureViewer->isOpened());
+                }
+
+                ImGui::EndMenu();
+            }
+
             ImGui::EndMenuBar();
         }
 
@@ -467,7 +485,8 @@ namespace exitor
         }
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-        ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Begin(
+            "Viewport", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse);
 
         ImVec2 currentMousePosIM = ImGui::GetMousePos();
         glm::vec2 currentMousePos = {currentMousePosIM.x, currentMousePosIM.y};
@@ -631,11 +650,17 @@ namespace exitor
 
         _contentBrowser.render(_projectDirectory, *_project);
 
-        auto modelImportDetails = _assetImport.importAssetScreen(_projectDirectory, *_project);
-        if (modelImportDetails)
+        auto importResult = _assetImport.importAssetScreen(_projectDirectory, *_project);
+        if (importResult.first)
         {
-            processModelImport(*modelImportDetails);
+            processModelImport(*importResult.first);
         }
+        if (importResult.second)
+        {
+            processTextureImport(*importResult.second);
+        }
+
+        _textureViewer->draw(_queueCommandRepo->current(), *_project, _projectDirectory);
 
         ImGui::End();
 
@@ -855,7 +880,7 @@ namespace exitor
         Renderer::AssetImportResult2& import = *importResult;
 
         // Save each texture
-        std::string textureDirectory = details.outputDirectory + "textures/";
+        std::string textureDirectory = appendFolder(details.outputDirectory, "textures");
         std::filesystem::create_directories(getTruePath(textureDirectory, _projectDirectory));
 
         std::unordered_map<size_t, std::string> textureIndices;
@@ -872,6 +897,11 @@ namespace exitor
             if (!textureReturn.has_value())
             {
                 continue;
+            }
+
+            if (details.optimizeTexturePrecision)
+            {
+                Renderer::optimizePrecision(*textureReturn);
             }
 
             Renderer::Texture& texture = *textureReturn;
@@ -892,7 +922,7 @@ namespace exitor
         }
 
         // Save each material
-        std::string materialDirectory = details.outputDirectory + "materials/";
+        std::string materialDirectory = appendFolder(details.outputDirectory, "materials");
         std::filesystem::create_directories(getTruePath(materialDirectory, _projectDirectory));
 
         std::unordered_map<size_t, std::string> materialIndices;
@@ -960,7 +990,7 @@ namespace exitor
         }
 
         // Save each mesh
-        std::string meshDirectory = details.outputDirectory + "meshes/";
+        std::string meshDirectory = appendFolder(details.outputDirectory, "meshes");
         std::filesystem::create_directories(getTruePath(meshDirectory, _projectDirectory));
 
         std::unordered_map<size_t, std::string> meshIndices;
@@ -1119,6 +1149,33 @@ namespace exitor
 
             createChildrenImportedNodes(meshIndices, entity, node.childrenIndices, nodes);
         }
+    }
+
+    void Editor::processTextureImport(const TextureImportDetails& details) noexcept
+    {
+        auto importResult = Renderer::importTexture(details.texturePath);
+        if (!importResult.has_value())
+        {
+            return;
+        }
+
+        Renderer::Texture& texture = *importResult;
+
+        if (details.optimizePrecision)
+        {
+            Renderer::optimizePrecision(texture);
+        }
+
+        Renderer::AssetFile assetFile = Renderer::saveTexture(texture);
+        auto saveResult = Renderer::saveAssetFile(details.outputPath, assetFile);
+
+        if (!saveResult.has_value())
+        {
+            return;
+        }
+
+        // Add texture to project
+        _project->texturePaths.insert(details.outputPath);
     }
 
     void Editor::deduplicateProjectAssets() noexcept

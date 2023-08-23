@@ -5,6 +5,7 @@
 
 #include <exage/utils/serialization.h>
 
+#include "bc7enc.h"
 #include "exage/Core/Debug.h"
 #include "exage/Core/Errors.h"
 #include "exage/Graphics/Buffer.h"
@@ -157,6 +158,9 @@ namespace exage::Renderer
                         return Graphics::Format::eETC2RGBA8;
                     }
                 }
+
+                default:
+                    break;
             }
 
             return getUncompressedFormat(channels, bitsPerChannel);
@@ -221,6 +225,7 @@ namespace exage::Renderer
         texture.channels = json["channels"];
         texture.bitsPerChannel = json["bitsPerChannel"];
         texture.type = static_cast<Graphics::Texture::Type>(json["type"]);
+        texture.layers = json["layers"];
 
         size_t decompressedSize = json["rawSize"];
         texture.data.resize(decompressedSize);
@@ -387,8 +392,8 @@ namespace exage::Renderer
 
         textureCreateInfo.mipLevels = static_cast<uint32_t>(texture.mips.size());
 
-        textureCreateInfo.type = Graphics::Texture::Type::e2D;
-        textureCreateInfo.arrayLayers = 1;
+        textureCreateInfo.type = texture.type;
+        textureCreateInfo.arrayLayers = texture.layers;
 
         gpuTexture.texture = options.context.createTexture(textureCreateInfo);
 

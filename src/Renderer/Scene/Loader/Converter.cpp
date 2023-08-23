@@ -7,13 +7,18 @@
 
 #include "exage/Renderer/Scene/Loader/Converter.h"
 
+#include <FreeImage.h>
 #include <assimp/Importer.hpp>
 #include <assimp/matrix4x4.h>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 #include <exage/utils/serialization.h>
 // #include <ktx.h>
-#include <stb_image.h>
+// #include <gli/format.hpp>
+// #include <gli/gli.hpp>
+// #include <stb_image.h>
+#include <fp16.h>
+#include <fp16/fp16.h>
 #include <tl/expected.hpp>
 #include <zstd.h>
 
@@ -346,45 +351,348 @@ namespace exage::Renderer
         //     return texture;
         // }
 
-        int width = 0;
-        int height = 0;
-        int channels = 0;
-        stbi_uc* pixels = stbi_load(texturePath.string().c_str(), &width, &height, &channels, 0);
+        // std::string extension = texturePath.extension().string();
+        // if (extension == ".ktx" || extension == ".dds" || extension == ".kmg"
+        //     || extension == ".ktx2")
+        // {
+        //     // Load using gli
+        //     gli::texture texture = gli::load(texturePath.string());
+        //     if (texture.empty())
+        //     {
+        //         return tl::make_unexpected(Errors::FileFormat {});
+        //     }
 
-        if (pixels == nullptr)
+        //     auto bitsPerPixel = gli::detail::bits_per_pixel(texture.format());
+        //     auto channels = gli::component_count(texture.format());
+        //     auto bitsPerChannel = bitsPerPixel / channels;
+
+        //     uint8_t bpcAfter = 0;
+
+        //     // Handle compressed formats by reencoding
+        //     switch (bitsPerChannel)
+        //     {
+        //         case 8:
+        //         {
+        //             texture = gli::convert(texture, gli::FORMAT_RGBA8_UNORM_PACK8);
+        //             bpcAfter = 8;
+        //             break;
+        //         }
+        //         case 16:
+        //         {
+        //             texture = gli::convert(texture, gli::FORMAT_RGBA16_SFLOAT_PACK16);
+        //             bpcAfter = 16;
+        //             break;
+        //         }
+        //         case 32:
+        //         {
+        //             texture = gli::convert(texture, gli::FORMAT_RGBA16_SFLOAT_PACK16);
+        //             bpcAfter = 16;
+        //             break;
+        //         }
+
+        //         default:
+        //         {
+        //             return tl::make_unexpected(Errors::FileFormat {});
+        //         }
+        //     }
+
+        //     Texture result;
+        //     result.channels = 4;
+        //     result.bitsPerChannel = bpcAfter;
+        //     result.data = std::vector<std::byte>(texture.size());
+        //     result.layers = texture.layers();
+
+        //     switch (texture.target())
+        //     {
+        //         case gli::TARGET_1D:
+        //         {
+        //             result.type = Graphics::Texture::Type::e1D;
+        //             break;
+        //         }
+        //         case gli::TARGET_1D_ARRAY:
+        //         {
+        //             result.type = Graphics::Texture::Type::e1D;
+        //             break;
+        //         }
+        //         case gli::TARGET_2D:
+        //         {
+        //             result.type = Graphics::Texture::Type::e2D;
+        //             break;
+        //         }
+        //         case gli::TARGET_2D_ARRAY:
+        //         {
+        //             result.type = Graphics::Texture::Type::e3D;
+        //             break;
+        //         }
+        //         case gli::TARGET_3D:
+        //         {
+        //             result.type = Graphics::Texture::Type::e3D;
+        //             break;
+        //         }
+        //         case gli::TARGET_CUBE:
+        //         {
+        //             result.type = Graphics::Texture::Type::eCube;
+        //             break;
+        //         }
+        //         case gli::TARGET_CUBE_ARRAY:
+        //         {
+        //             result.type = Graphics::Texture::Type::eCube;
+        //             break;
+        //         }
+        //         default:
+        //         {
+        //             return tl::make_unexpected(Errors::FileFormat {});
+        //         }
+        //     }
+
+        //     size_t offset = 0;
+        //     for (size_t i = 0; i < texture.levels(); i++)
+        //     {
+        //         result.mips[i].extent = texture.extent(i);
+        //         result.mips[i].offset = offset;
+        //         result.mips[i].size = texture.size(i);
+
+        //         offset += texture.size(i);
+        //     }
+
+        //     std::memcpy(result.data.data(), texture.data(), result.data.size());
+
+        //     return result;
+        // }
+
+        // int width = 0;
+        // int height = 0;
+        // int channels = 0;
+        // stbi_uc* pixels = stbi_load(texturePath.string().c_str(), &width, &height, &channels, 0);
+
+        // if (pixels == nullptr)
+        // {
+        //     return tl::make_unexpected(Errors::FileFormat {});
+        // }
+
+        // if (channels == 3)
+        // {
+        //     auto* newPixels = new stbi_uc[static_cast<size_t>(width) * height * 4];
+        //     for (size_t i = 0; i < width * height; i++)
+        //     {
+        //         newPixels[i * 4] = pixels[i * 3];
+        //         newPixels[i * 4 + 1] = pixels[i * 3 + 1];
+        //         newPixels[i * 4 + 2] = pixels[i * 3 + 2];
+        //         newPixels[i * 4 + 3] = 255;
+        //     }
+
+        //     stbi_image_free(pixels);
+        //     pixels = newPixels;
+        //     channels = 4;
+        // }
+
+        // Texture texture;
+        // texture.mips.resize(1);
+        // texture.mips[0].extent = glm::uvec3(width, height, 1);
+        // texture.mips[0].offset = 0;
+        // texture.mips[0].size = static_cast<size_t>(width) * height * channels;
+        // texture.data = std::vector<std::byte>(texture.mips[0].size);
+        // texture.channels = static_cast<uint8_t>(channels);
+        // texture.bitsPerChannel = 8;
+        // texture.type = Graphics::Texture::Type::e2D;
+        // texture.layers = 1;
+
+        // std::memcpy(texture.data.data(), pixels, texture.data.size());
+
+        // stbi_image_free(pixels);
+
+        // return texture;
+
+        // FreeImage
+        // fipImage image {};
+        // bool success = image.load(texturePath.string().c_str());
+        // if (!success)
+        // {
+        //     return tl::make_unexpected(Errors::FileFormat {});
+        // }
+
+        // Texture texture;
+        // texture.mips.resize(1);
+        // texture.mips[0].extent = glm::uvec3(image.getWidth(), image.getHeight(), 1);
+        // texture.mips[0].offset = 0;
+
+        // auto imageType = image.getImageType();
+        // switch (imageType)
+        // {
+        //     case FIT_BITMAP:
+        //     {
+        //         texture.mips[0].size =
+        //             static_cast<size_t>(image.getWidth()) * image.getHeight() * 4;
+        //         texture.channels = 4;
+        //         texture.bitsPerChannel = 8;
+        //         break;
+        //     }
+        //     case FIT_RGB16:
+        //     case FIT_RGBA16:
+        //     case FIT_RGBF:
+        //     {
+        //         bool converted = image.convertToRGBF();
+        //         if (!converted)
+        //         {
+        //             return tl::make_unexpected(Errors::FileFormat {});
+        //         }
+        //     }
+        //     case FIT_RGBAF:
+        //     {
+        //         texture.mips[0].size =
+        //             static_cast<size_t>(image.getWidth()) * image.getHeight() * 4 *
+        //             sizeof(float);
+        //         texture.channels = 4;
+        //         texture.bitsPerChannel = 32;
+        //         break;
+        //     }
+        //     case FIT_UINT16:
+        //     case FIT_INT16:
+        //     case FIT_UINT32:
+        //     case FIT_INT32:
+        //     case FIT_DOUBLE:
+        //     {
+        //         bool converted = image.convertToFloat();
+        //         if (!converted)
+        //         {
+        //             return tl::make_unexpected(Errors::FileFormat {});
+        //         }
+        //     }
+        //     case FIT_FLOAT:
+        //     {
+        //         texture.mips[0].size =
+        //             static_cast<size_t>(image.getWidth()) * image.getHeight() * sizeof(float);
+        //         texture.channels = 1;
+        //         texture.bitsPerChannel = 32;
+        //         break;
+        //     }
+
+        //     default:
+        //     {
+        //         return tl::make_unexpected(Errors::FileFormat {});
+        //     }
+        // }
+
+        // texture.data = std::vector<std::byte>(image.getImageMemorySize());
+        // std::memcpy(texture.data.data(), image.accessPixels(), texture.data.size());
+
+        // texture.type = Graphics::Texture::Type::e2D;
+        // texture.layers = 1;
+
+        // return texture;
+
+        FREE_IMAGE_FORMAT type = FreeImage_GetFileType(texturePath.string().c_str());
+
+        FIBITMAP* image = FreeImage_Load(type, texturePath.string().c_str(), 0);
+        if (image == nullptr)
         {
             return tl::make_unexpected(Errors::FileFormat {});
         }
 
-        if (channels == 3)
-        {
-            auto* newPixels = new stbi_uc[static_cast<size_t>(width) * height * 4];
-            for (size_t i = 0; i < width * height; i++)
-            {
-                newPixels[i * 4] = pixels[i * 3];
-                newPixels[i * 4 + 1] = pixels[i * 3 + 1];
-                newPixels[i * 4 + 2] = pixels[i * 3 + 2];
-                newPixels[i * 4 + 3] = 255;
-            }
-
-            stbi_image_free(pixels);
-            pixels = newPixels;
-            channels = 4;
-        }
-
         Texture texture;
         texture.mips.resize(1);
-        texture.mips[0].extent = glm::uvec3(width, height, 1);
+        texture.mips[0].extent =
+            glm::uvec3(FreeImage_GetWidth(image), FreeImage_GetHeight(image), 1);
         texture.mips[0].offset = 0;
-        texture.mips[0].size = static_cast<size_t>(width) * height * channels;
-        texture.data = std::vector<std::byte>(texture.mips[0].size);
-        texture.channels = static_cast<uint8_t>(channels);
-        texture.bitsPerChannel = 8;
+
+        // Get the image type
+        FREE_IMAGE_TYPE imageType = FreeImage_GetImageType(image);
+        switch (imageType)
+        {
+            case FIT_BITMAP:
+            {
+                // Convert to 32-bit RGBA format
+                FIBITMAP* temp = FreeImage_ConvertTo32Bits(image);
+                FreeImage_Unload(image);
+                image = temp;
+
+                texture.mips[0].size =
+                    static_cast<size_t>(FreeImage_GetWidth(image)) * FreeImage_GetHeight(image) * 4;
+                texture.channels = 4;
+                texture.bitsPerChannel = 8;
+                break;
+            }
+            case FIT_RGB16:
+            case FIT_RGBA16:
+            case FIT_RGBF:
+            {
+                // Convert to 128-bit RGBAF format
+                FIBITMAP* temp = FreeImage_ConvertToRGBAF(image);
+                FreeImage_Unload(image);
+                image = temp;
+            }
+            case FIT_RGBAF:
+            {
+                texture.mips[0].size = static_cast<size_t>(FreeImage_GetWidth(image))
+                    * FreeImage_GetHeight(image) * 4 * sizeof(float);
+                texture.channels = 4;
+                texture.bitsPerChannel = 32;
+                break;
+            }
+            case FIT_UINT16:
+            case FIT_INT16:
+            case FIT_UINT32:
+            case FIT_INT32:
+            case FIT_DOUBLE:
+            {
+                // Convert to 32-bit float format
+                FIBITMAP* temp = FreeImage_ConvertToFloat(image);
+                FreeImage_Unload(image);
+                image = temp;
+            }
+            case FIT_FLOAT:
+            {
+                texture.mips[0].size = static_cast<size_t>(FreeImage_GetWidth(image))
+                    * FreeImage_GetHeight(image) * sizeof(float);
+                texture.channels = 1;
+                texture.bitsPerChannel = 32;
+                break;
+            }
+
+            default:
+            {
+                return tl::make_unexpected(Errors::FileFormat {});
+            }
+        }
+
+        auto size = texture.mips[0].size;
+
+        // Copy the pixel data to the texture
+        texture.data = std::vector<std::byte>(size);
+        // std::memcpy(texture.data.data(), FreeImage_GetBits(image), texture.data.size());
+
+        // if type is FIT_BITMAP, don't copy directly, but get each pixel individually since
+        // freeimage stores in either BGRA or RGBA format
+        if (imageType == FIT_BITMAP)
+        {
+            for (size_t i = 0; i < FreeImage_GetWidth(image); i++)
+            {
+                for (size_t j = 0; j < FreeImage_GetHeight(image); j++)
+                {
+                    RGBQUAD color;
+                    FreeImage_GetPixelColor(image, i, j, &color);
+
+                    texture.data[(j * FreeImage_GetWidth(image) + i) * 4] =
+                        static_cast<std::byte>(color.rgbRed);
+                    texture.data[(j * FreeImage_GetWidth(image) + i) * 4 + 1] =
+                        static_cast<std::byte>(color.rgbGreen);
+                    texture.data[(j * FreeImage_GetWidth(image) + i) * 4 + 2] =
+                        static_cast<std::byte>(color.rgbBlue);
+                    texture.data[(j * FreeImage_GetWidth(image) + i) * 4 + 3] =
+                        static_cast<std::byte>(color.rgbReserved);
+                }
+            }
+        }
+        else
+        {
+            std::memcpy(texture.data.data(), FreeImage_GetBits(image), texture.data.size());
+        }
+
+        // Unload the image
+        FreeImage_Unload(image);
+
         texture.type = Graphics::Texture::Type::e2D;
-
-        std::memcpy(texture.data.data(), pixels, texture.data.size());
-
-        stbi_image_free(pixels);
+        texture.layers = 1;
 
         return texture;
     }
@@ -398,6 +706,7 @@ namespace exage::Renderer
         json["path"] = texture.path;
         json["channels"] = texture.channels;
         json["bitsPerChannel"] = texture.bitsPerChannel;
+        json["layers"] = texture.layers;
         json["type"] = static_cast<uint32_t>(texture.type);
         json["mips"] = nlohmann::json::array();
         json["rawSize"] = texture.data.size();
@@ -429,6 +738,28 @@ namespace exage::Renderer
         assetFile.binary = std::move(binary);
 
         return assetFile;
+    }
+
+    void optimizePrecision(Texture& texture) noexcept
+    {
+        // Convert 32 bit floats to 16 bit floats
+        if (!(texture.bitsPerChannel == 32))
+        {
+            return;
+        }
+
+        std::span<uint16_t> newPixels =
+            std::span(reinterpret_cast<uint16_t*>(texture.data.data()), texture.data.size() / 4);
+        std::span<const float> oldPixels = std::span(reinterpret_cast<float*>(texture.data.data()),
+                                                     texture.data.size() / sizeof(float));
+
+        for (size_t i = 0; i < oldPixels.size(); i++)
+        {
+            newPixels[i] = fp16_ieee_from_fp32_value(oldPixels[i]);
+        }
+
+        texture.bitsPerChannel = 16;
+        texture.data.resize(texture.data.size() / 2);
     }
 
     auto saveTexture(Texture& texture, const std::filesystem::path& savePath) noexcept

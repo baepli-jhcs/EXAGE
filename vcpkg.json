@@ -1,0 +1,105 @@
+{
+  "name": "exage",
+  "version-semver": "0.1.0",
+  "dependencies": [
+    {
+      "name": "alpaca",
+      "version>=": "0.2.1"
+    },
+    {
+      "name": "assimp",
+      "version>=": "5.2.5"
+    },
+    {
+      "name": "cereal",
+      "version>=": "1.3.2"
+    },
+    {
+      "name": "draco",
+      "version>=": "1.4.3"
+    },
+    {
+      "name": "entt",
+      "version>=": "3.11.1"
+    },
+    {
+      "name": "fmt",
+      "version>=": "9.1.0"
+    },
+    {
+      "name": "fp16",
+      "version>=": "2021-02-21#2"
+    },
+    {
+      "name": "freeimage",
+      "version>=": "3.18.0#25"
+    },
+    {
+      "name": "glfw3",
+      "version>=": "3.3.8"
+    },
+    {
+      "name": "glm",
+      "version>=": "0.9.9.8#2"
+    },
+    {
+      "name": "nlohmann-json",
+      "version>=": "3.11.2"
+    },
+    {
+      "name": "rmlui",
+      "version>=": "5.1"
+    },
+    {
+      "name": "rttr",
+      "version>=": "0.9.6+20210811"
+    },
+    {
+      "name": "stb",
+      "version>=": "2023-04-11"
+    },
+    {
+      "name": "shaderc",
+      "version>=": "2021.1"
+    },
+    {
+      "name": "tinyfiledialogs",
+      "version>=": "3.8.8#4"
+    },
+    {
+      "name": "tl-expected",
+      "version>=": "1.1.0"
+    },
+    {
+      "name": "vulkan-headers",
+      "version>=": "1.3.243#2"
+    },
+    {
+      "name": "vulkan-memory-allocator",
+      "version>=": "3.0.1"
+    },
+    {
+      "name": "zstd",
+      "version>=": "1.5.5"
+    }
+  ],
+  "overrides": [
+    {
+      "name": "entt",
+      "version": "3.11.1"
+    }
+  ],
+  "default-features": [],
+  "features": {
+    "test": {
+      "description": "Dependencies for testing",
+      "dependencies": [
+        {
+          "name": "catch2",
+          "version>=": "3.3.2#1"
+        }
+      ]
+    }
+  },
+  "builtin-baseline": "9055f88ba53a99f51e3c733fe9c79703dc23d57d"
+}

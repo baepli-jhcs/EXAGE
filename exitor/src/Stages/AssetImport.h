@@ -14,6 +14,14 @@ namespace exitor
         std::string modelPath;
         std::string outputDirectory;
         bool importIntoScene = false;
+        bool optimizeTexturePrecision = false;
+    };
+
+    struct TextureImportDetails
+    {
+        std::string texturePath;
+        std::string outputPath;
+        bool optimizePrecision = false;
     };
 
     class AssetImport
@@ -27,7 +35,7 @@ namespace exitor
 
         [[nodiscard]] auto importAssetScreen(const std::filesystem::path& basePath,
                                              const exage::Projects::Project& project) noexcept
-            -> std::optional<ModelImportDetails>;
+            -> std::pair<std::optional<ModelImportDetails>, std::optional<TextureImportDetails>>;
 
       private:
         std::string _modelPath;
@@ -35,9 +43,14 @@ namespace exitor
 
         std::string _currentModelOutputPath;
         std::string _outputDirectory;
-        std::string _outputPath;
+        std::string _currentTextureOutputPath;
+        std::string _outputTextureDirectory;
+        std::string _outputTextureName;
 
         bool _importIntoScene = false;
+        bool _optimizeTexturePrecision = false;
+
+        bool _optimizePrecision = false;
 
         FileDialogAsync _dialog;
     };

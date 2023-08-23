@@ -206,7 +206,18 @@ namespace exitor::VFS
         }
 
         static std::vector<std::string> folders;
-        static std::string currentPath = path;
+
+        if (!path.empty() && !path.ends_with('/'))
+        {
+            path += '/';
+        }
+
+        if (!std::filesystem::exists(getTruePath(path, basePath)))
+        {
+            path.clear();
+        }
+
+        std::string& currentPath = path;
 
         bool returnValue = false;
 
@@ -221,7 +232,6 @@ namespace exitor::VFS
         if (ImGui::Button("Select"))
         {
             ImGui::CloseCurrentPopup();
-            selectedPath = currentPath;
             returnValue = true;
         }
 
@@ -279,7 +289,7 @@ namespace exitor::VFS
 
         for (const auto& folder : folders)
         {
-            std::string folderPath = currentPath + folder + '/';
+            std::string folderPath = appendFolder(currentPath, folder);
             bool selected = folderPath == selectedPath;
             if (ImGui::Selectable(folder.c_str(), selected))
             {

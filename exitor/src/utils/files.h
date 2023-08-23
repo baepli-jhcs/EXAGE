@@ -17,4 +17,20 @@ namespace exitor
     {
         return rootDirectory / std::filesystem::u8path(path);
     }
+
+    inline auto appendFolder(const std::string& path, const std::string& folder) noexcept
+        -> std::string
+    {
+        if (path.empty())
+        {
+            return folder + "/";
+        }
+
+        if (path.ends_with("/"))
+        {
+            return path + folder + "/";
+        }
+
+        return path + "/" + folder + "/";
+    }
 }  // namespace exitor

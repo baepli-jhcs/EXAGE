@@ -1,5 +1,7 @@
 ﻿#include "exage/Core/Core.h"
 
+#include <FreeImage.h>
+
 #include "exage/platform/GLFW/GLFWindow.h"
 
 namespace exage
@@ -8,5 +10,8 @@ namespace exage
     {
         // Initialize the engine
         GLFWindow::init();
+
+        // Initialize FreeImage
+        FreeImage_Initialise();
     }
 }  // namespace exage

@@ -2,6 +2,7 @@
 add_definitions(-w)
 
 add_subdirectory(VulkanMemoryAllocator-Hpp)
+add_subdirectory(bc7enc_rdo)
 add_subdirectory(imgui)
 
 add_subdirectory(slot_map)

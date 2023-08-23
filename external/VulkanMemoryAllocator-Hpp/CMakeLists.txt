@@ -11,7 +11,7 @@ find_package(VulkanHeaders REQUIRED)
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/VulkanMemoryAllocator/CMakeLists.txt)
     add_subdirectory(VulkanMemoryAllocator)
 else()
-    find_package(vulkan-memory-allocator REQUIRED)
+    find_package(unofficial-vulkan-memory-allocator REQUIRED)
 endif()
 
 add_library(VulkanMemoryAllocator-Hpp INTERFACE)
@@ -24,8 +24,8 @@ target_include_directories(VulkanMemoryAllocator-Hpp
 
 target_link_libraries(VulkanMemoryAllocator-Hpp
     INTERFACE
-        vulkan-headers::vulkan-headers
-        vulkan-memory-allocator::vulkan-memory-allocator
+        Vulkan::Headers
+        unofficial::vulkan-memory-allocator::vulkan-memory-allocator
 )
 
 install(

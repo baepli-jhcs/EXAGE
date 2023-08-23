@@ -7,10 +7,25 @@
   },
   "configurePresets": [
     {
+      "name": "vcpkg",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+      }
+    },
+    {
+      "name": "vcpkg-win64-static",
+      "hidden": true,
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "x64-windows-static"
+      }
+    },
+    {
       "name": "dev-mode",
       "hidden": true,
       "cacheVariables": {
-        "EXAGE_DEVELOPER_MODE": "ON"
+        "EXAGE_DEVELOPER_MODE": "ON",
+        "VCPKG_MANIFEST_FEATURES": "test"
       }
     },
     {

@@ -19,13 +19,13 @@ set(CMAKE_CXX_STANDARD 20)
 include(cmake/project-is-top-level.cmake)
 include(cmake/variables.cmake)
 
-include(cmake/conan.cmake)
+# include(cmake/conan.cmake)
 include(cmake/CPM.cmake)
 
-# ---- Conan ----
-conan_cmake_run(CONANFILE conanfile.txt
-                BASIC_SETUP CMAKE_TARGETS
-                BUILD missing)
+# # ---- Conan ----
+# conan_cmake_run(CONANFILE conanfile.txt
+#                 BASIC_SETUP CMAKE_TARGETS
+#                 BUILD missing)
 
 # ---- Declare library ----
 add_library(
@@ -116,30 +116,36 @@ target_include_directories(
 
 target_compile_features(EXAGE_EXAGE PUBLIC cxx_std_20)
 
-CPMAddPackage(NAME assimp GITHUB_REPOSITORY assimp/assimp VERSION 5.2.5)
-CPMAddPackage(NAME nativefiledialog-extended GITHUB_REPOSITORY btzy/nativefiledialog-extended VERSION 1.1.0)
-
 add_subdirectory(external)
 
 find_package(alpaca REQUIRED)
+find_package(assimp REQUIRED)
 find_package(cereal REQUIRED)
 find_package(EnTT REQUIRED)
 find_package(fmt REQUIRED)
+find_package(freeimage REQUIRED)
+find_path(FP16_INCLUDE_DIRS "fp16.h")
 find_package(glfw3 REQUIRED)
 find_package(glm REQUIRED)
 # find_package(Ktx REQUIRED)
 find_package(nlohmann_json REQUIRED)
-find_package(portable-file-dialogs REQUIRED)
 find_package(Stb REQUIRED)
-find_package(shaderc REQUIRED)
+find_package(unofficial-shaderc REQUIRED)
 find_package(tl-expected REQUIRED)
 find_package(VulkanHeaders REQUIRED)
-find_package(vulkan-memory-allocator REQUIRED)
+find_package(unofficial-vulkan-memory-allocator REQUIRED)
 find_package(zstd REQUIRED)
+
+target_link_libraries(EXAGE_EXAGE PRIVATE
+    assimp::assimp
+    bc7enc_rdo
+    freeimage::FreeImage
+)
+
+
 
 target_link_libraries(EXAGE_EXAGE PUBLIC
     alpaca::alpaca
-    assimp
     cereal::cereal
     EnTT::EnTT
     fmt::fmt
@@ -147,19 +153,17 @@ target_link_libraries(EXAGE_EXAGE PUBLIC
     glm::glm
     ImGui
     # KTX::ktx
-    nfd
     nlohmann_json::nlohmann_json
-    portable-file-dialogs::portable-file-dialogs
-    shaderc::shaderc
-    stb::stb
-    slot_map
+    unofficial::shaderc::shaderc
     tl::expected
     tinyfiledialogs
-    vulkan-headers::vulkan-headers
-    vulkan-memory-allocator::vulkan-memory-allocator
+    Vulkan::Headers
+    unofficial::vulkan-memory-allocator::vulkan-memory-allocator
     VulkanMemoryAllocator-Hpp
     $<IF:$<TARGET_EXISTS:zstd::libzstd_shared>,zstd::libzstd_shared,zstd::libzstd_static>
 )
+
+target_include_directories(EXAGE_EXAGE PRIVATE ${FP16_INCLUDE_DIRS} ${Stb_INCLUDE_DIR})
 
 target_compile_definitions(EXAGE_EXAGE PUBLIC GLM_FORCE_DEPTH_ZERO_TO_ONE VULKAN_HPP_NO_EXCEPTIONS)
 

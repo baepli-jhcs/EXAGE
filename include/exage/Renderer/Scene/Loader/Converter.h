@@ -99,6 +99,8 @@ namespace exage::Renderer
     [[nodiscard]] auto importTexture(const std::filesystem::path& texturePath) noexcept
         -> tl::expected<Texture, Error>;
 
+    void optimizePrecision(Texture& texture) noexcept;
+
     [[nodiscard]] auto saveTexture(Texture& texture) noexcept -> AssetFile;
     [[nodiscard]] auto saveMaterial(Material& material) noexcept -> AssetFile;
     [[nodiscard]] auto saveMesh(StaticMesh& mesh) noexcept -> AssetFile;

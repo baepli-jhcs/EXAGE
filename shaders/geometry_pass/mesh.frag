@@ -3,7 +3,6 @@
 #extension GL_GOOGLE_include_directive : enable
 
 #include "../bindless.shader"
-#include "../debug.shader"
     
 struct Material 
 {
@@ -118,6 +117,4 @@ void main()
         gEmissive = vec4(material.emissiveColor, 1.0);
     }
 
-    debugPrintfEXT("gAlbedo: %f %f %f\n", gAlbedo.x, gAlbedo.y, gAlbedo.z);
-    debugPrintfEXT("Texture index %d\n", material.albedoTextureIndex);
 }
