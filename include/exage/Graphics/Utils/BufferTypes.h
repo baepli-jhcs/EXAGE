@@ -38,6 +38,7 @@ namespace exage::Graphics
         [[nodiscard]] auto deviceBuffer() const noexcept -> std::shared_ptr<Buffer>;
 
         [[nodiscard]] auto currentBindlessID() const noexcept -> BufferID;
+        [[nodiscard]] auto currentBuffer() const noexcept -> std::shared_ptr<Buffer>;
 
       private:
         std::reference_wrapper<Queue> _queue;
@@ -105,6 +106,7 @@ namespace exage::Graphics
         [[nodiscard]] auto deviceBuffer() const noexcept -> std::shared_ptr<Buffer>;
 
         [[nodiscard]] auto currentBindlessID() const noexcept -> BufferID;
+        [[nodiscard]] auto currentBuffer() const noexcept -> std::shared_ptr<Buffer>;
 
       private:
         std::reference_wrapper<Context> _context;

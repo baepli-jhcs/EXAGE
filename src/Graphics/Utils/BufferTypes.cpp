@@ -99,6 +99,16 @@ namespace exage::Graphics
         return _hostBuffers[_queue.get().currentFrame()]->getBindlessID();
     }
 
+    auto DynamicFixedBuffer::currentBuffer() const noexcept -> std::shared_ptr<Buffer>
+    {
+        if (_deviceBuffer)
+        {
+            return _deviceBuffer;
+        }
+
+        return _hostBuffers[_queue.get().currentFrame()];
+    }
+
     ResizableBuffer::ResizableBuffer(const ResizableBufferCreateInfo& createInfo)
         : _context(createInfo.context)
         , _size(createInfo.size)
@@ -290,6 +300,16 @@ namespace exage::Graphics
         }
 
         return _hostBuffers[_context.get().getQueue().currentFrame()].get()->getBindlessID();
+    }
+
+    auto ResizableDynamicBuffer::currentBuffer() const noexcept -> std::shared_ptr<Buffer>
+    {
+        if (_deviceBuffer)
+        {
+            return _deviceBuffer->get();
+        }
+
+        return _hostBuffers[_context.get().getQueue().currentFrame()].get();
     }
 
 }  // namespace exage::Graphics

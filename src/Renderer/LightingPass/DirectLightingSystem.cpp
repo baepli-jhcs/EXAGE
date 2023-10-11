@@ -131,6 +131,19 @@ namespace exage::Renderer
 
         pushConstant.samplerIndex = _sampler->getBindlessID().id;
 
+        commandBuffer.insertDataDependency(pointLightArray.buffer->currentBuffer());
+        commandBuffer.insertDataDependency(directionalLightArray.buffer->currentBuffer());
+        commandBuffer.insertDataDependency(spotLightArray.buffer->currentBuffer());
+        commandBuffer.insertDataDependency(renderInfo.position);
+        commandBuffer.insertDataDependency(renderInfo.normal);
+        commandBuffer.insertDataDependency(renderInfo.albedo);
+        commandBuffer.insertDataDependency(renderInfo.metallic);
+        commandBuffer.insertDataDependency(renderInfo.roughness);
+        commandBuffer.insertDataDependency(renderInfo.occlusion);
+        commandBuffer.insertDataDependency(renderInfo.emissive);
+        commandBuffer.insertDataDependency(cameraRenderInfo.buffer->currentBuffer());
+        commandBuffer.insertDataDependency(_sampler);
+
         commandBuffer.bindPipeline(_pipeline);
         commandBuffer.setViewport({0.F, 0.F}, renderInfo.extent);
         commandBuffer.setScissor({0, 0}, renderInfo.extent);

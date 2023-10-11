@@ -225,6 +225,9 @@ namespace exage::Renderer
         //                               0);
         // }
 
+        commandBuffer.insertDataDependency(cameraInfo.buffer->currentBuffer());
+        commandBuffer.insertDataDependency(_sampler);
+
         auto func = [&](auto entity)
         {
             const auto& meshComponent = view.get<StaticMeshComponent>(entity);
@@ -264,6 +267,7 @@ namespace exage::Renderer
             commandBuffer.bindIndexBuffer(mesh.indexBuffer, 0);
 
             commandBuffer.insertDataDependency(mesh.material.buffer);
+            commandBuffer.insertDataDependency(transform.buffer->currentBuffer());
 
             commandBuffer.setPushConstant(pushConstantSpan);
 

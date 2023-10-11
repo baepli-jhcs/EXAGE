@@ -136,6 +136,23 @@ namespace exitor
         }
 
         ImGui::DragFloat3("Scale", glm::value_ptr(transform.scale), 0.1f);
+
+        ImGui::Text("Global Position: %f, %f, %f",
+                    transform.globalPosition.x,
+                    transform.globalPosition.y,
+                    transform.globalPosition.z);
+
+        glm::quat globalRotation = transform.globalRotation.getQuaternion();
+        ImGui::Text("Global Rotation: %f, %f, %f, %f",
+                    globalRotation.x,
+                    globalRotation.y,
+                    globalRotation.z,
+                    globalRotation.w);
+
+        ImGui::Text("Global Scale: %f, %f, %f",
+                    transform.globalScale.x,
+                    transform.globalScale.y,
+                    transform.globalScale.z);
     }
 
     auto ComponentEditor::drawCamera(exage::Scene& scene, exage::Entity selectedEntity) noexcept
@@ -178,6 +195,9 @@ namespace exitor
                 if (ImGui::Selectable(meshPath.c_str()))
                 {
                     meshComponent.path = meshPath;
+
+                    std::hash<std::string> hasher;
+                    meshComponent.pathHash = hasher(meshPath);
                     if (_meshSelectionCallback)
                     {
                         _meshSelectionCallback(meshPath);

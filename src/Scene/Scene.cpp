@@ -72,18 +72,27 @@ namespace exage
 
     void Scene::calculateChildTransform(Transform3D& parentTransform, Entity entity) noexcept
     {
-        auto& childTransform = getComponent<Transform3D>(entity);
-        glm::quat childRotation = childTransform.rotation.getQuaternion();
+        Transform3D* newParent = &parentTransform;
 
-        childTransform.globalRotation = parentTransform.globalRotation * childRotation;
-        childTransform.globalPosition = parentTransform.globalPosition
-            + parentTransform.globalRotation.getQuaternion() * childTransform.position;
-        childTransform.globalScale = parentTransform.globalScale * childTransform.scale;
+        if (hasComponent<Transform3D>(entity))
+        {
+            auto& childTransform = getComponent<Transform3D>(entity);
+            glm::quat childRotation = childTransform.rotation.getQuaternion();
 
-        childTransform.matrix = calculateTransformMatrix(childTransform);
-        childTransform.globalMatrix = parentTransform.globalMatrix * childTransform.matrix;
+            childTransform.globalRotation = parentTransform.globalRotation * childRotation;
+            childTransform.globalScale = parentTransform.globalScale * childTransform.scale;
 
-        forEachChild(entity, [&](Entity child) { calculateChildTransform(childTransform, child); });
+            childTransform.matrix = calculateTransformMatrix(childTransform);
+            childTransform.globalMatrix = parentTransform.globalMatrix * childTransform.matrix;
+
+            childTransform.globalPosition = parentTransform.globalPosition
+                + glm::toMat3(parentTransform.globalRotation.getQuaternion())
+                    * (parentTransform.globalScale * childTransform.position);
+
+            newParent = &childTransform;
+        }
+
+        forEachChild(entity, [&](Entity child) { calculateChildTransform(*newParent, child); });
     }
 
     void Scene::updateHierarchy(bool calculateTransforms) noexcept

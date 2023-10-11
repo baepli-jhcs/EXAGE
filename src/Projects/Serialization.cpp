@@ -58,9 +58,9 @@ namespace exage::Projects
                     {
                         componentData[index] = "";
                     }
-
-                    return componentData;
                 }
+
+                return componentData;
             }
 
             return std::nullopt;
@@ -219,7 +219,12 @@ namespace exage::Projects
         std::unordered_map<Entity, uint32_t> entityToIndex;
 
         uint32_t entityCount = 0;
-        reg.each([&](Entity entity) { entityToIndex[entity] = entityCount; entityCount++; });
+        reg.each(
+            [&](Entity entity)
+            {
+                entityToIndex[entity] = entityCount;
+                entityCount++;
+            });
 
         std::unordered_map<std::string, ComponentData> componentData;
 

@@ -92,7 +92,7 @@ namespace exage::Projects
         //     json["componentData"].push_back(componentDataJson);
         // }
 
-        std::ofstream file(path, std::ios::out | std::ios::binary);
+        std::ofstream file(path, std::ios::binary);
         if (!file.is_open())
         {
             return tl::make_unexpected(Errors::FileNotFound {});

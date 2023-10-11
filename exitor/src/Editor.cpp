@@ -28,6 +28,7 @@
 #include "exage/Renderer/Utils/Perspective.h"
 #include "exage/Scene/Hierarchy.h"
 #include "exage/utils/math.h"
+#include "exage/utils/string.h"
 #include "imgui.h"
 #include "utils/files.h"
 
@@ -597,12 +598,17 @@ namespace exitor
                     glm::vec2 mousePos = {currentMousePos.x - windowPos.x,
                                           currentMousePos.y - windowPos.y};
 
+                    std::cout << "Mouse pos: " << mousePos.x << ", " << mousePos.y << std::endl;
+
                     float x = (2.0F * mousePos.x) / viewportSize.x - 1.0F;
                     float y = 1.0F - (2.0F * mousePos.y) / viewportSize.y;
 
                     glm::vec2 ndc = {x, y};
 
-                    _selectedEntity = getSelectedEntity(scene, viewMatrix, projectionMatrix, ndc);
+                    std::cout << "NDC: " << ndc.x << ", " << ndc.y << std::endl;
+
+                    _selectedEntity = getSelectedEntity(
+                        _assetCache, scene, _editorCameraEntity, viewMatrix, projectionMatrix, ndc);
 
                     std::cout << "Selected entity: " << static_cast<uint32_t>(_selectedEntity)
                               << std::endl;
