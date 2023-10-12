@@ -318,7 +318,9 @@ namespace exitor
                            Graphics::PipelineStageFlags::eTopOfPipe,
                            Graphics::PipelineStageFlags::eColorAttachmentOutput,
                            Graphics::Access {},
-                           Graphics::AccessFlags::eColorAttachmentWrite);
+                           Graphics::AccessFlags::eColorAttachmentWrite,
+                           Graphics::QueueOwnership::eUndefined,
+                           Graphics::QueueOwnership::eUndefined);
 
         Graphics::ClearColor const clearColor {.clear = true, .color = {}};
         Graphics::ClearDepthStencil const clearDepthStencil {.clear = false};
@@ -335,7 +337,9 @@ namespace exitor
                            Graphics::PipelineStageFlags::eColorAttachmentOutput,
                            Graphics::PipelineStageFlags::eTransfer,
                            Graphics::AccessFlags::eColorAttachmentWrite,
-                           Graphics::AccessFlags::eTransferWrite);
+                           Graphics::AccessFlags::eTransferWrite,
+                           Graphics::QueueOwnership::eUndefined,
+                           Graphics::QueueOwnership::eUndefined);
 
         _swapchain->drawImage(cmd, texture);
 

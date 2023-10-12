@@ -40,7 +40,9 @@ namespace exage::Renderer
                                         Graphics::PipelineStageFlags::eTransfer,
                                         pipelineStage,
                                         Graphics::AccessFlags::eTransferWrite,
-                                        access);
+                                        access,
+                                        Graphics::QueueOwnership::eUndefined,
+                                        Graphics::QueueOwnership::eUndefined);
         }
 
         return buffer;

@@ -40,7 +40,9 @@ namespace exage::Renderer
                                          Graphics::PipelineStageFlags::eColorAttachmentOutput,
                                          Graphics::PipelineStageFlags::eFragmentShader,
                                          Graphics::AccessFlags::eColorAttachmentWrite,
-                                         Graphics::AccessFlags::eShaderRead);
+                                         Graphics::AccessFlags::eShaderRead,
+                                         Graphics::QueueOwnership::eUndefined,
+                                         Graphics::QueueOwnership::eUndefined);
         };
 
         transitionFunc(renderInfo.position);
@@ -59,7 +61,9 @@ namespace exage::Renderer
                                          Graphics::PipelineStageFlags::eTopOfPipe,
                                          Graphics::PipelineStageFlags::eColorAttachmentOutput,
                                          Graphics::Access {},
-                                         Graphics::AccessFlags::eColorAttachmentWrite);
+                                         Graphics::AccessFlags::eColorAttachmentWrite,
+                                         Graphics::QueueOwnership::eUndefined,
+                                         Graphics::QueueOwnership::eUndefined);
         }
 
         Graphics::ClearColor clearColor {};

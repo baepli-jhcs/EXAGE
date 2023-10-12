@@ -8,6 +8,7 @@
 
 namespace exage::Graphics
 {
+
     class Queue
     {
       public:

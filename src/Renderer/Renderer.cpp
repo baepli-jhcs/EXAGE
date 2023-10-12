@@ -114,7 +114,9 @@ namespace exage::Renderer
                                      Graphics::PipelineStageFlags::eTopOfPipe,
                                      Graphics::PipelineStageFlags::eTransfer,
                                      Graphics::Access {},
-                                     Graphics::AccessFlags::eTransferWrite);
+                                     Graphics::AccessFlags::eTransferWrite,
+                                     Graphics::QueueOwnership::eUndefined,
+                                     Graphics::QueueOwnership::eUndefined);
 
         auto albedo = _geometryRenderer.getFrameBuffer().getTexture(2);
         auto lightingResult = _lightingRenderer.getFrameBuffer().getTexture(0);
@@ -125,7 +127,9 @@ namespace exage::Renderer
                                      Graphics::PipelineStageFlags::eColorAttachmentOutput,
                                      Graphics::PipelineStageFlags::eTransfer,
                                      Graphics::AccessFlags::eColorAttachmentWrite,
-                                     Graphics::AccessFlags::eTransferRead);
+                                     Graphics::AccessFlags::eTransferRead,
+                                     Graphics::QueueOwnership::eUndefined,
+                                     Graphics::QueueOwnership::eUndefined);
 
         commandBuffer.blit(lightingResult,
                            colorTexture,
@@ -145,7 +149,9 @@ namespace exage::Renderer
                                      Graphics::PipelineStageFlags::eTransfer,
                                      Graphics::PipelineStageFlags::eFragmentShader,
                                      Graphics::AccessFlags::eTransferRead,
-                                     Graphics::AccessFlags::eShaderRead);
+                                     Graphics::AccessFlags::eShaderRead,
+                                     Graphics::QueueOwnership::eUndefined,
+                                     Graphics::QueueOwnership::eUndefined);
 
         // commandBuffer.textureBarrier(colorTexture,
         //                              Graphics::Texture::Layout::eColorAttachment,

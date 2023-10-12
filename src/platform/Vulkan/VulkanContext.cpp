@@ -1,6 +1,4 @@
-﻿#include <vulkan/vulkan_core.h>
-
-#include "exage/Graphics/Context.h"
+﻿#include "exage/Graphics/Context.h"
 #include "exage/Graphics/Error.h"
 #include "exage/platform/Vulkan/VkBootstrap.h"
 #define VMA_IMPLEMENTATION

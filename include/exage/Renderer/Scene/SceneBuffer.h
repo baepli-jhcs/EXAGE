@@ -99,7 +99,9 @@ namespace exage::Renderer
                                             Graphics::PipelineStageFlags::eTransfer,
                                             pipelineStage,
                                             Graphics::AccessFlags::eTransferWrite,
-                                            access);
+                                            access,
+                                            Graphics::QueueOwnership::eUndefined,
+                                            Graphics::QueueOwnership::eUndefined);
             }
 
             _usedBlocks.push_back(usedBlock);

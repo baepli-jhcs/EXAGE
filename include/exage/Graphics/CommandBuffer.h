@@ -3,6 +3,7 @@
 #include <memory_resource>
 #include <optional>
 #include <thread>
+#include <utility>
 
 #include "Commands.h"
 #include "Error.h"
@@ -42,13 +43,17 @@ namespace exage::Graphics
                                     PipelineStage srcStage,
                                     PipelineStage dstStage,
                                     Access srcAccess,
-                                    Access dstAccess) noexcept = 0;
+                                    Access dstAccess,
+                                    QueueOwnership initialQueue,
+                                    QueueOwnership finalQueue) noexcept = 0;
 
         virtual void bufferBarrier(std::shared_ptr<Buffer> buffer,
                                    PipelineStage srcStage,
                                    PipelineStage dstStage,
                                    Access srcAccess,
-                                   Access dstAccess) noexcept = 0;
+                                   Access dstAccess,
+                                   QueueOwnership initialQueue,
+                                   QueueOwnership finalQueue) noexcept = 0;
 
         virtual void blit(std::shared_ptr<Texture> srcTexture,
                           std::shared_ptr<Texture> dstTexture,

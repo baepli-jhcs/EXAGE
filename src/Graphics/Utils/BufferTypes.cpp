@@ -75,7 +75,9 @@ namespace exage::Graphics
                                         PipelineStageFlags::eTransfer,
                                         pipelineStage,
                                         AccessFlags::eTransferWrite,
-                                        access);
+                                        access,
+                                        QueueOwnership::eUndefined,
+                                        QueueOwnership::eUndefined);
         }
     }
 
@@ -138,7 +140,9 @@ namespace exage::Graphics
                                     PipelineStageFlags::eTransfer,
                                     pipelineStage,
                                     AccessFlags::eTransferWrite,
-                                    access);
+                                    access,
+                                    QueueOwnership::eUndefined,
+                                    QueueOwnership::eUndefined);
 
         _buffer = std::move(newBuffer);
     }
@@ -267,7 +271,9 @@ namespace exage::Graphics
                                         PipelineStageFlags::eTransfer,
                                         pipelineStage,
                                         AccessFlags::eTransferWrite,
-                                        access);
+                                        access,
+                                        QueueOwnership::eUndefined,
+                                        QueueOwnership::eUndefined);
         }
     }
 

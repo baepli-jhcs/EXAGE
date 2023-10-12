@@ -403,7 +403,9 @@ namespace exage::Renderer
                                              Graphics::PipelineStageFlags::eTopOfPipe,
                                              Graphics::PipelineStageFlags::eTransfer,
                                              Graphics::Access {},
-                                             Graphics::AccessFlags::eTransferWrite);
+                                             Graphics::AccessFlags::eTransferWrite,
+                                             Graphics::QueueOwnership::eUndefined,
+                                             Graphics::QueueOwnership::eUndefined);
 
         for (uint32_t i = 0; i < texture.mips.size(); i++)
         {
@@ -421,7 +423,9 @@ namespace exage::Renderer
                                              Graphics::PipelineStageFlags::eTransfer,
                                              options.pipelineStage,
                                              Graphics::AccessFlags::eTransferRead,
-                                             options.access);
+                                             options.access,
+                                             Graphics::QueueOwnership::eUndefined,
+                                             Graphics::QueueOwnership::eUndefined);
 
         return gpuTexture;
     }
@@ -478,7 +482,9 @@ namespace exage::Renderer
                                                 Graphics::PipelineStageFlags::eTransfer,
                                                 options.pipelineStage,
                                                 Graphics::AccessFlags::eTransferWrite,
-                                                options.access);
+                                                options.access,
+                                                Graphics::QueueOwnership::eUndefined,
+                                                Graphics::QueueOwnership::eUndefined);
         }
 
         if (gpuMesh.indexBuffer->isMapped())
@@ -501,7 +507,9 @@ namespace exage::Renderer
                                                 Graphics::PipelineStageFlags::eTransfer,
                                                 options.pipelineStage,
                                                 Graphics::AccessFlags::eTransferWrite,
-                                                options.access);
+                                                options.access,
+                                                Graphics::QueueOwnership::eUndefined,
+                                                Graphics::QueueOwnership::eUndefined);
         }
 
         // for (size_t i = 0; i < mesh.lods.size(); i++)

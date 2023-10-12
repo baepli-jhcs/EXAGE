@@ -15,6 +15,13 @@ namespace exage::Graphics
 {
     class CommandBuffer;
 
+    enum class QueueOwnership
+    {
+        eUndefined,
+        eGraphics,
+        eTransfer
+    };
+
     // use enum class instead
     enum class PipelineStageFlags : uint32_t
     {
@@ -102,6 +109,8 @@ namespace exage::Graphics
             PipelineStage dstStage;
             Access srcAccess;
             Access dstAccess;
+            QueueOwnership initialQueue;
+            QueueOwnership finalQueue;
         };
 
         struct BufferBarrierCommand
@@ -111,6 +120,8 @@ namespace exage::Graphics
             PipelineStage dstStage;
             Access srcAccess;
             Access dstAccess;
+            QueueOwnership initialQueue;
+            QueueOwnership finalQueue;
         };
 
         struct BlitCommand

@@ -78,6 +78,9 @@ namespace exage::Graphics
 
         void submit(CommandBuffer& commandBuffer, Fence* fence) noexcept override;
 
+        [[nodiscard]] auto getVulkanQueue() const noexcept -> vk::Queue { return _queue; }
+        [[nodiscard]] auto getFamilyIndex() const noexcept -> uint32_t { return _familyIndex; }
+
         EXAGE_VULKAN_DERIVED;
 
       private:

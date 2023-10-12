@@ -60,7 +60,9 @@ namespace exitor
                                          exage::Graphics::PipelineStageFlags::eTopOfPipe,
                                          exage::Graphics::PipelineStageFlags::eTransfer,
                                          exage::Graphics::Access {},
-                                         exage::Graphics::AccessFlags::eTransferWrite);
+                                         exage::Graphics::AccessFlags::eTransferWrite,
+                                         exage::Graphics::QueueOwnership::eUndefined,
+                                         exage::Graphics::QueueOwnership::eUndefined);
 
             commandBuffer.copyBufferToTexture(
                 stagingBuffer, _defaultTexture, 0, {0, 0, 0}, 0, 0, 1, {1, 1, 1});
@@ -71,7 +73,9 @@ namespace exitor
                                          exage::Graphics::PipelineStageFlags::eTransfer,
                                          exage::Graphics::PipelineStageFlags::eFragmentShader,
                                          exage::Graphics::AccessFlags::eTransferWrite,
-                                         exage::Graphics::AccessFlags::eShaderRead);
+                                         exage::Graphics::AccessFlags::eShaderRead,
+                                         exage::Graphics::QueueOwnership::eUndefined,
+                                         exage::Graphics::QueueOwnership::eUndefined);
 
             _defaultImGuiTexture = {
                 _defaultTexture, _sampler, exage::Graphics::Texture::Aspect::eColor};

@@ -134,7 +134,9 @@ namespace exage::Graphics
                                              PipelineStage srcStage,
                                              PipelineStage dstStage,
                                              Access srcAccess,
-                                             Access dstAccess) noexcept
+                                             Access dstAccess,
+                                             QueueOwnership initialQueue,
+                                             QueueOwnership finalQueue) noexcept
     {
         TextureBarrierCommand textureBarrierCommand;
         textureBarrierCommand.texture = texture;
@@ -144,6 +146,8 @@ namespace exage::Graphics
         textureBarrierCommand.dstStage = dstStage;
         textureBarrierCommand.srcAccess = srcAccess;
         textureBarrierCommand.dstAccess = dstAccess;
+        textureBarrierCommand.initialQueue = initialQueue;
+        textureBarrierCommand.finalQueue = finalQueue;
 
         _commands.emplace_back(textureBarrierCommand);
     }
@@ -152,7 +156,9 @@ namespace exage::Graphics
                                             PipelineStage srcStage,
                                             PipelineStage dstStage,
                                             Access srcAccess,
-                                            Access dstAccess) noexcept
+                                            Access dstAccess,
+                                            QueueOwnership initialQueue,
+                                            QueueOwnership finalQueue) noexcept
     {
         BufferBarrierCommand bufferBarrierCommand;
         bufferBarrierCommand.buffer = buffer;
@@ -160,6 +166,8 @@ namespace exage::Graphics
         bufferBarrierCommand.dstStage = dstStage;
         bufferBarrierCommand.srcAccess = srcAccess;
         bufferBarrierCommand.dstAccess = dstAccess;
+        bufferBarrierCommand.initialQueue = initialQueue;
+        bufferBarrierCommand.finalQueue = finalQueue;
 
         _commands.emplace_back(bufferBarrierCommand);
     }
@@ -432,8 +440,10 @@ namespace exage::Graphics
                     vk::ImageMemoryBarrier imageMemoryBarrier;
                     imageMemoryBarrier.oldLayout = toVulkanImageLayout(barrier.oldLayout);
                     imageMemoryBarrier.newLayout = toVulkanImageLayout(barrier.newLayout);
-                    imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-                    imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+                    imageMemoryBarrier.srcQueueFamilyIndex =
+                        getQueueFamilyIndex(barrier.initialQueue);
+                    imageMemoryBarrier.dstQueueFamilyIndex =
+                        getQueueFamilyIndex(barrier.finalQueue);
                     imageMemoryBarrier.image = texture.getImage();
                     imageMemoryBarrier.subresourceRange.aspectMask =
                         toVulkanImageAspectFlags(texture.getUsage());
@@ -459,8 +469,10 @@ namespace exage::Graphics
                     auto& buffer = *barrier.buffer->as<VulkanBuffer>();
 
                     vk::BufferMemoryBarrier bufferMemoryBarrier;
-                    bufferMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-                    bufferMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+                    bufferMemoryBarrier.srcQueueFamilyIndex =
+                        getQueueFamilyIndex(barrier.initialQueue);
+                    bufferMemoryBarrier.dstQueueFamilyIndex =
+                        getQueueFamilyIndex(barrier.finalQueue);
                     bufferMemoryBarrier.buffer = buffer.getBuffer();
                     bufferMemoryBarrier.offset = 0;
                     bufferMemoryBarrier.size = VK_WHOLE_SIZE;
@@ -814,4 +826,18 @@ namespace exage::Graphics
             },
             command);
     }
+
+    auto VulkanCommandBuffer::getQueueFamilyIndex(QueueOwnership ownership) noexcept -> uint32_t
+    {
+        switch (ownership)
+        {
+            case QueueOwnership::eGraphics:
+                return _context.get().getVulkanQueue().getFamilyIndex();
+            case QueueOwnership::eTransfer:
+                return _context.get().getVulkanTransferQueue().getFamilyIndex();
+        }
+
+        return VK_QUEUE_FAMILY_IGNORED;
+    }
+
 }  // namespace exage::Graphics

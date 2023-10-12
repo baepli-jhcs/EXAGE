@@ -75,7 +75,9 @@ namespace exage::Renderer
                                          Graphics::PipelineStageFlags::eTopOfPipe,
                                          Graphics::PipelineStageFlags::eColorAttachmentOutput,
                                          Graphics::Access {},
-                                         Graphics::AccessFlags::eColorAttachmentWrite);
+                                         Graphics::AccessFlags::eColorAttachmentWrite,
+                                         Graphics::QueueOwnership::eUndefined,
+                                         Graphics::QueueOwnership::eUndefined);
         }
 
         commandBuffer.textureBarrier(_frameBuffer->getDepthStencilTexture(),
@@ -84,7 +86,9 @@ namespace exage::Renderer
                                      Graphics::PipelineStageFlags::eTopOfPipe,
                                      Graphics::PipelineStageFlags::eEarlyFragmentTests,
                                      Graphics::Access {},
-                                     Graphics::AccessFlags::eDepthStencilAttachmentWrite);
+                                     Graphics::AccessFlags::eDepthStencilAttachmentWrite,
+                                     Graphics::QueueOwnership::eUndefined,
+                                     Graphics::QueueOwnership::eUndefined);
 
         Graphics::ClearColor clearColor {};
         clearColor.clear = true;

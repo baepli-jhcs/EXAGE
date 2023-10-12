@@ -43,13 +43,17 @@ namespace exage::Graphics
                             PipelineStage srcStage,
                             PipelineStage dstStage,
                             Access srcAccess,
-                            Access dstAccess) noexcept override;
+                            Access dstAccess,
+                            QueueOwnership initialQueue,
+                            QueueOwnership finalQueue) noexcept override;
 
         void bufferBarrier(std::shared_ptr<Buffer> buffer,
                            PipelineStage srcStage,
                            PipelineStage dstStage,
                            Access srcAccess,
-                           Access dstAccess) noexcept override;
+                           Access dstAccess,
+                           QueueOwnership initialQueue,
+                           QueueOwnership finalQueue) noexcept override;
 
         void blit(std::shared_ptr<Texture> srcTexture,
                   std::shared_ptr<Texture> dstTexture,
@@ -131,6 +135,8 @@ namespace exage::Graphics
 
       private:
         void processCommand(const Commands::GPUCommand& command) noexcept;
+
+        [[nodiscard]] auto getQueueFamilyIndex(QueueOwnership ownership) noexcept -> uint32_t;
 
         std::reference_wrapper<VulkanContext> _context;
         vk::CommandBuffer _commandBuffer;

@@ -148,7 +148,9 @@ namespace exage::Renderer
                                          Graphics::PipelineStageFlags::eTopOfPipe,
                                          Graphics::PipelineStageFlags::eEarlyFragmentTests,
                                          Graphics::Access {},
-                                         Graphics::AccessFlags::eDepthStencilAttachmentWrite);
+                                         Graphics::AccessFlags::eDepthStencilAttachmentWrite,
+                                         Graphics::QueueOwnership::eUndefined,
+                                         Graphics::QueueOwnership::eUndefined);
 
             Graphics::ClearDepthStencil clearDepthStencil {};
             clearDepthStencil.depth = 1.0F;
@@ -170,7 +172,9 @@ namespace exage::Renderer
                                          Graphics::PipelineStageFlags::eLateFragmentTests,
                                          Graphics::PipelineStageFlags::eFragmentShader,
                                          Graphics::AccessFlags::eDepthStencilAttachmentWrite,
-                                         Graphics::AccessFlags::eShaderRead);
+                                         Graphics::AccessFlags::eShaderRead,
+                                         Graphics::QueueOwnership::eUndefined,
+                                         Graphics::QueueOwnership::eUndefined);
         }
     }
 
