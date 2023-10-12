@@ -54,7 +54,7 @@ namespace exage::Projects
                         componentData[index] = ss.str();
                     }
 
-                    catch (const std::exception& e)
+                    catch (const std::exception&)
                     {
                         componentData[index] = "";
                     }
@@ -337,7 +337,7 @@ namespace exage::Projects
                         scene.registry().emplace_or_replace<EntityRelationship>(entity, component);
                     }
 
-                    catch (const std::exception& e)
+                    catch (const std::exception&)
                     {
                         scene.registry().emplace_or_replace<EntityRelationship>(entity);
                     }

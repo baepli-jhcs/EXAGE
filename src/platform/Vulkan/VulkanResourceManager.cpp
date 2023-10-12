@@ -17,20 +17,22 @@ namespace exage::Graphics
             return;
         }
 
-        vk::DescriptorPoolSize const bufferDescriptorPoolSize {vk::DescriptorType::eStorageBuffer,
-                                                               maxBufferCount};
+        vk::DescriptorPoolSize const bufferDescriptorPoolSize {
+            vk::DescriptorType::eStorageBuffer,
+            maxBufferCount + 1};  // +1 because of a bug in AMD driver
 
         vk::DescriptorPoolSize const samplerDescriptorPoolSize {vk::DescriptorType::eSampler,
-                                                                maxSamplerCount};
+                                                                maxSamplerCount + 1};
 
         vk::DescriptorPoolSize const sampledImageDescriptorPoolSize {
-            vk::DescriptorType::eSampledImage, maxTextureCount};
+            vk::DescriptorType::eSampledImage, maxTextureCount + 1};
 
         vk::DescriptorPoolSize const storageImageDescriptorPoolSize {
-            vk::DescriptorType::eStorageImage, maxTextureCount};
+            vk::DescriptorType::eStorageImage, maxTextureCount + 1};
 
-        std::array descriptorPoolSizes {sampledImageDescriptorPoolSize,
-                                        bufferDescriptorPoolSize,
+        std::array descriptorPoolSizes {bufferDescriptorPoolSize,
+                                        samplerDescriptorPoolSize,
+                                        sampledImageDescriptorPoolSize,
                                         storageImageDescriptorPoolSize};
 
         vk::DescriptorPoolCreateInfo descriptorPoolCreateInfo {};
