@@ -31,8 +31,10 @@ namespace exage::Graphics
     };
 
     class CommandBuffer;
+    class Fence;
     class FrameBuffer;
     class Queue;
+    class TransferQueue;
     class Swapchain;
     class Sampler;
     class Texture;
@@ -83,6 +85,9 @@ namespace exage::Graphics
         [[nodiscard]] virtual auto getQueue() noexcept -> Queue& = 0;  // Only one queue per context
         [[nodiscard]] virtual auto getQueue() const noexcept -> const Queue& = 0;
 
+        [[nodiscard]] virtual auto getTransferQueue() noexcept -> TransferQueue& = 0;
+        [[nodiscard]] virtual auto getTransferQueue() const noexcept -> const TransferQueue& = 0;
+
         [[nodiscard]] virtual auto createSwapchain(const SwapchainCreateInfo& createInfo) noexcept
             -> std::unique_ptr<Swapchain> = 0;
         [[nodiscard]] virtual auto createCommandBuffer() noexcept
@@ -101,6 +106,7 @@ namespace exage::Graphics
             -> std::shared_ptr<Shader> = 0;
         [[nodiscard]] virtual auto createPipeline(const PipelineCreateInfo& createInfo) noexcept
             -> std::shared_ptr<Pipeline> = 0;
+        [[nodiscard]] virtual auto createFence() noexcept -> std::unique_ptr<Fence> = 0;
 
         [[nodiscard]] virtual auto getHardwareSupport() const noexcept -> HardwareSupport = 0;
         [[nodiscard]] virtual auto getFormatSupport(Format format) const noexcept

@@ -55,6 +55,7 @@ namespace exitor
             stagingBuffer->write(std::as_bytes(dataBytes), 0);
 
             commandBuffer.textureBarrier(_defaultTexture,
+                                         exage::Graphics::Texture::Layout::eUndefined,
                                          exage::Graphics::Texture::Layout::eTransferDst,
                                          exage::Graphics::PipelineStageFlags::eTopOfPipe,
                                          exage::Graphics::PipelineStageFlags::eTransfer,
@@ -65,6 +66,7 @@ namespace exitor
                 stagingBuffer, _defaultTexture, 0, {0, 0, 0}, 0, 0, 1, {1, 1, 1});
 
             commandBuffer.textureBarrier(_defaultTexture,
+                                         exage::Graphics::Texture::Layout::eTransferDst,
                                          exage::Graphics::Texture::Layout::eShaderReadOnly,
                                          exage::Graphics::PipelineStageFlags::eTransfer,
                                          exage::Graphics::PipelineStageFlags::eFragmentShader,

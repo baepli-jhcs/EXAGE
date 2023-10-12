@@ -70,6 +70,7 @@ namespace exage::Renderer
         for (const auto& texture : _frameBuffer->getTextures())
         {
             commandBuffer.textureBarrier(texture,
+                                         Graphics::Texture::Layout::eUndefined,
                                          Graphics::Texture::Layout::eColorAttachment,
                                          Graphics::PipelineStageFlags::eTopOfPipe,
                                          Graphics::PipelineStageFlags::eColorAttachmentOutput,
@@ -78,6 +79,7 @@ namespace exage::Renderer
         }
 
         commandBuffer.textureBarrier(_frameBuffer->getDepthStencilTexture(),
+                                     Graphics::Texture::Layout::eUndefined,
                                      Graphics::Texture::Layout::eDepthStencilAttachment,
                                      Graphics::PipelineStageFlags::eTopOfPipe,
                                      Graphics::PipelineStageFlags::eEarlyFragmentTests,

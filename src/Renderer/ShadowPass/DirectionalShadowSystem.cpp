@@ -134,6 +134,7 @@ namespace exage::Renderer
             auto texture = lightRenderInfo.shadowMap->getDepthStencilTexture();
 
             commandBuffer.textureBarrier(texture,
+                                         Graphics::Texture::Layout::eUndefined,
                                          Graphics::Texture::Layout::eDepthStencilAttachment,
                                          Graphics::PipelineStageFlags::eTopOfPipe,
                                          Graphics::PipelineStageFlags::eEarlyFragmentTests,
@@ -155,6 +156,7 @@ namespace exage::Renderer
             commandBuffer.endRendering();
 
             commandBuffer.textureBarrier(texture,
+                                         Graphics::Texture::Layout::eDepthStencilAttachment,
                                          Graphics::Texture::Layout::eDepthStencilReadOnly,
                                          Graphics::PipelineStageFlags::eLateFragmentTests,
                                          Graphics::PipelineStageFlags::eFragmentShader,

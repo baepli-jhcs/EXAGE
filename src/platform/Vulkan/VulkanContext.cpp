@@ -1,5 +1,8 @@
-﻿#include "exage/Graphics/Context.h"
+﻿#include <vulkan/vulkan_core.h>
+
+#include "exage/Graphics/Context.h"
 #include "exage/Graphics/Error.h"
+#include "exage/platform/Vulkan/VkBootstrap.h"
 #define VMA_IMPLEMENTATION
 #include <exage/platform/GLFW/GLFWindow.h>
 #include <exage/utils/cast.h>
@@ -14,6 +17,7 @@
 
 #include "exage/platform/Vulkan/VulkanBuffer.h"
 #include "exage/platform/Vulkan/VulkanCommandBuffer.h"
+#include "exage/platform/Vulkan/VulkanFence.h"
 #include "exage/platform/Vulkan/VulkanFrameBuffer.h"
 #include "exage/platform/Vulkan/VulkanPipeline.h"
 #include "exage/platform/Vulkan/VulkanQueue.h"
@@ -262,18 +266,31 @@ namespace exage::Graphics
 
         vkb::destroy_surface(_instance, surface);
 
-        auto graphicsQueueResult = _device.get_queue(vkb::QueueType::graphics);
-        debugAssume(graphicsQueueResult.has_value(), "Failed to create queue");
-        auto graphicsQueueIndex = _device.get_queue_index(vkb::QueueType::graphics);
-        debugAssume(graphicsQueueIndex.has_value(), "Failed to create queue");
+        vkb::Result<vkb::QueueAndIndex> graphicsQueueAndIndex = _device.get_first_queue_and_index(
+            VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT | VK_QUEUE_TRANSFER_BIT);
+        debugAssume(graphicsQueueAndIndex.has_value(), "Failed to create queue");
 
         VulkanQueueCreateInfo const queueCreateInfo {
             .maxFramesInFlight = createInfo.maxFramesInFlight,
-            .queue = graphicsQueueResult.value(),
-            .familyIndex = graphicsQueueIndex.value(),
+            .queue = graphicsQueueAndIndex.value().queue,
+            .familyIndex = graphicsQueueAndIndex.value().index,
         };
 
         _queue = VulkanQueue {*this, queueCreateInfo};
+
+        vkb::Result<vkb::QueueAndIndex> transferQueueAndIndex =
+            _device.get_preferred_queue_and_index(VK_QUEUE_TRANSFER_BIT);
+        debugAssume(transferQueueAndIndex.has_value(), "Failed to create queue");
+
+        VulkanTransferQueueCreateInfo const transferQueueCreateInfo {
+            .queue = transferQueueAndIndex.value().queue,
+            .familyIndex = transferQueueAndIndex.value().index,
+        };
+
+        std::cout << "Transfer Queue Family Index: " << transferQueueAndIndex.value().index
+                  << std::endl;
+
+        _transferQueue = VulkanTransferQueue {*this, transferQueueCreateInfo};
 
         {
             auto depthFormatFirstPick = vk::Format::eD24UnormS8Uint;
@@ -412,6 +429,11 @@ namespace exage::Graphics
         return std::make_shared<VulkanPipeline>(*this, createInfo);
     }
 
+    auto VulkanContext::createFence() noexcept -> std::unique_ptr<Fence>
+    {
+        return std::make_unique<VulkanFence>(*this);
+    }
+
     auto VulkanContext::getHardwareSupport() const noexcept -> HardwareSupport
     {
         return _hardwareSupport;
@@ -487,10 +509,14 @@ namespace exage::Graphics
         -> vk::DescriptorSetLayout
     {
         size_t hash = hashResourceDescriptions(resourceDescriptions);
-        const auto it = _descriptorSetLayoutCache.find(hash);
-        if (it != _descriptorSetLayoutCache.end())
         {
-            return it->second;
+            std::lock_guard<std::mutex> lock(_descriptorSetLayoutCacheMutex);
+
+            const auto it = _descriptorSetLayoutCache.find(hash);
+            if (it != _descriptorSetLayoutCache.end())
+            {
+                return it->second;
+            }
         }
         std::vector<vk::DescriptorSetLayoutBinding> bindings;
         bindings.reserve(resourceDescriptions.size());
@@ -526,7 +552,10 @@ namespace exage::Graphics
 
         vk::DescriptorSetLayout layout;
         checkVulkan(getDevice().createDescriptorSetLayout(&layoutInfo, nullptr, &layout));
-        _descriptorSetLayoutCache[hash] = layout;
+        {
+            std::lock_guard<std::mutex> lock(_descriptorSetLayoutCacheMutex);
+            _descriptorSetLayoutCache[hash] = layout;
+        }
         return layout;
     }
 
@@ -545,10 +574,14 @@ namespace exage::Graphics
         -> vk::PipelineLayout
     {
         size_t hash = hashPipelineLayoutInfo(info);
-        const auto it = _pipelineLayoutCache.find(hash);
-        if (it != _pipelineLayoutCache.end())
         {
-            return it->second;
+            std::lock_guard<std::mutex> lock(_pipelineLayoutCacheMutex);
+
+            const auto it = _pipelineLayoutCache.find(hash);
+            if (it != _pipelineLayoutCache.end())
+            {
+                return it->second;
+            }
         }
 
         vk::DescriptorSetLayout layout;
@@ -573,7 +606,10 @@ namespace exage::Graphics
         vk::PipelineLayout pipelineLayout;
         checkVulkan(
             getDevice().createPipelineLayout(&pipelineLayoutInfo, nullptr, &pipelineLayout));
-        _pipelineLayoutCache[hash] = pipelineLayout;
+        {
+            std::lock_guard<std::mutex> lock(_pipelineLayoutCacheMutex);
+            _pipelineLayoutCache[hash] = pipelineLayout;
+        }
         return pipelineLayout;
     }
 
@@ -604,6 +640,8 @@ namespace exage::Graphics
 
     auto VulkanContext::createVulkanCommandBuffer() noexcept -> vk::CommandBuffer
     {
+        std::lock_guard<std::mutex> lock(_commandPoolMutex);
+
         if (!_freeCommandBuffers.empty())
         {
             vk::CommandBuffer commandBuffer = _freeCommandBuffers.back();
@@ -623,6 +661,8 @@ namespace exage::Graphics
 
     void VulkanContext::destroyCommandBuffer(vk::CommandBuffer commandBuffer) noexcept
     {
+        std::lock_guard<std::mutex> lock(_commandPoolMutex);
+
         commandBuffer.reset();
         _freeCommandBuffers.push_back(commandBuffer);
     }

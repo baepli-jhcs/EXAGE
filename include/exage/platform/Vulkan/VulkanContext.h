@@ -33,6 +33,15 @@ namespace exage::Graphics
         [[nodiscard]] auto getQueue() noexcept -> Queue& override { return *_queue; }
         [[nodiscard]] auto getQueue() const noexcept -> const Queue& override { return *_queue; }
 
+        [[nodiscard]] auto getTransferQueue() noexcept -> TransferQueue& override
+        {
+            return *_transferQueue;
+        }
+        [[nodiscard]] auto getTransferQueue() const noexcept -> const TransferQueue& override
+        {
+            return *_transferQueue;
+        }
+
         [[nodiscard]] auto createSwapchain(const SwapchainCreateInfo& createInfo) noexcept
             -> std::unique_ptr<Swapchain> override;
         [[nodiscard]] auto createCommandBuffer() noexcept
@@ -51,6 +60,7 @@ namespace exage::Graphics
             -> std::shared_ptr<Shader> override;
         [[nodiscard]] auto createPipeline(const PipelineCreateInfo& createInfo) noexcept
             -> std::shared_ptr<Pipeline> override;
+        [[nodiscard]] auto createFence() noexcept -> std::unique_ptr<Fence> override;
 
         [[nodiscard]] auto getHardwareSupport() const noexcept -> HardwareSupport override;
         [[nodiscard]] auto getFormatSupport(Format format) const noexcept
@@ -72,6 +82,15 @@ namespace exage::Graphics
         [[nodiscard]] auto getVulkanQueue() noexcept -> VulkanQueue& { return *_queue; }
         [[nodiscard]] auto getVulkanQueue() const noexcept -> const VulkanQueue& { return *_queue; }
 
+        [[nodiscard]] auto getVulkanTransferQueue() noexcept -> VulkanTransferQueue&
+        {
+            return *_transferQueue;
+        }
+        [[nodiscard]] auto getVulkanTransferQueue() const noexcept -> const VulkanTransferQueue&
+        {
+            return *_transferQueue;
+        }
+
         [[nodiscard]] auto getResourceManager() noexcept -> VulkanResourceManager&
         {
             return *_resourceManager;
@@ -84,6 +103,11 @@ namespace exage::Graphics
         [[nodiscard]] auto getCommandPool() const noexcept -> vk::CommandPool
         {
             return _commandPool;
+        }
+
+        [[nodiscard]] auto getCommandPoolMutex() noexcept -> std::mutex&
+        {
+            return _commandPoolMutex;
         }
 
         [[nodiscard]] auto createVulkanCommandBuffer() noexcept -> vk::CommandBuffer;
@@ -108,12 +132,17 @@ namespace exage::Graphics
         vkb::PhysicalDevice _physicalDevice;
         vkb::Device _device;
         std::optional<VulkanQueue> _queue = std::nullopt;
+        std::optional<VulkanTransferQueue> _transferQueue = std::nullopt;
         std::optional<VulkanResourceManager> _resourceManager = std::nullopt;
+
+        std::mutex _commandPoolMutex;
         vk::CommandPool _commandPool;
 
         HardwareSupport _hardwareSupport;
 
+        std::mutex _descriptorSetLayoutCacheMutex;
         std::unordered_map<size_t, vk::DescriptorSetLayout> _descriptorSetLayoutCache;
+        std::mutex _pipelineLayoutCacheMutex;
         std::unordered_map<size_t, vk::PipelineLayout> _pipelineLayoutCache;
 
         std::vector<vk::CommandBuffer> _freeCommandBuffers;

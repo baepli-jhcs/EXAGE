@@ -35,6 +35,7 @@ namespace exage::Renderer
         const auto transitionFunc = [&](const auto& texture)
         {
             commandBuffer.textureBarrier(texture,
+                                         Graphics::Texture::Layout::eUndefined,
                                          Graphics::Texture::Layout::eShaderReadOnly,
                                          Graphics::PipelineStageFlags::eColorAttachmentOutput,
                                          Graphics::PipelineStageFlags::eFragmentShader,
@@ -53,6 +54,7 @@ namespace exage::Renderer
         for (const auto& texture : _frameBuffer->getTextures())
         {
             commandBuffer.textureBarrier(texture,
+                                         Graphics::Texture::Layout::eUndefined,
                                          Graphics::Texture::Layout::eColorAttachment,
                                          Graphics::PipelineStageFlags::eTopOfPipe,
                                          Graphics::PipelineStageFlags::eColorAttachmentOutput,

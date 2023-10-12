@@ -1,4 +1,6 @@
-﻿#include "exage/platform/Vulkan/VulkanCommandBuffer.h"
+﻿#include <mutex>
+
+#include "exage/platform/Vulkan/VulkanCommandBuffer.h"
 
 #include "exage/Graphics/Commands.h"
 #include "exage/Graphics/Texture.h"
@@ -66,6 +68,8 @@ namespace exage::Graphics
 
     void VulkanCommandBuffer::begin() noexcept
     {
+        std::lock_guard<std::mutex> lock(_context.get().getCommandPoolMutex());
+
         _commandBuffer.reset();
         _commands.clear();
         _dataDependencies.clear();
@@ -73,6 +77,8 @@ namespace exage::Graphics
 
     void VulkanCommandBuffer::end() noexcept
     {
+        std::lock_guard<std::mutex> lock(_context.get().getCommandPoolMutex());
+
         vk::CommandBufferBeginInfo beginInfo;
         beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
 
@@ -123,6 +129,7 @@ namespace exage::Graphics
     }
 
     void VulkanCommandBuffer::textureBarrier(std::shared_ptr<Texture> texture,
+                                             Texture::Layout oldLayout,
                                              Texture::Layout newLayout,
                                              PipelineStage srcStage,
                                              PipelineStage dstStage,
@@ -131,14 +138,12 @@ namespace exage::Graphics
     {
         TextureBarrierCommand textureBarrierCommand;
         textureBarrierCommand.texture = texture;
+        textureBarrierCommand.oldLayout = oldLayout;
         textureBarrierCommand.newLayout = newLayout;
-        textureBarrierCommand.oldLayout = texture->getLayout();
         textureBarrierCommand.srcStage = srcStage;
         textureBarrierCommand.dstStage = dstStage;
         textureBarrierCommand.srcAccess = srcAccess;
         textureBarrierCommand.dstAccess = dstAccess;
-
-        texture->_layout = newLayout;
 
         _commands.emplace_back(textureBarrierCommand);
     }
@@ -213,8 +218,6 @@ namespace exage::Graphics
     {
         debugAssume(texture->getUsage().none(Texture::UsageFlags::eDepthStencilAttachment),
                     "Depth textures cannot be cleared");
-        debugAssume(texture->getLayout() == Texture::Layout::eTransferDst,
-                    "Image must be in transfer layout");
 
         ClearTextureCommand clearTextureCommand;
         clearTextureCommand.texture = texture;
@@ -278,9 +281,6 @@ namespace exage::Graphics
                                                   uint32_t layerCount,
                                                   glm::uvec3 extent) noexcept
     {
-        debugAssume(dstTexture->getLayout() == Texture::Layout::eTransferDst,
-                    "Image must be in transfer layout");
-
         CopyBufferToTextureCommand copyBufferToTextureCommand;
         copyBufferToTextureCommand.srcBuffer = srcBuffer;
         copyBufferToTextureCommand.dstTexture = dstTexture;
@@ -303,9 +303,6 @@ namespace exage::Graphics
                                                   glm::uvec3 extent,
                                                   uint64_t dstOffset) noexcept
     {
-        debugAssume(srcTexture->getLayout() == Texture::Layout::eTransferSrc,
-                    "Image must be in transfer layout");
-
         CopyTextureToBufferCommand copyTextureToBufferCommand;
         copyTextureToBufferCommand.srcTexture = srcTexture;
         copyTextureToBufferCommand.dstBuffer = dstBuffer;

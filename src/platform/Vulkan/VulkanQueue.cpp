@@ -1,8 +1,11 @@
 ﻿#include "exage/platform/Vulkan/VulkanQueue.h"
 
+#include "exage/Graphics/CommandBuffer.h"
 #include "exage/Graphics/Error.h"
+#include "exage/Graphics/Swapchain.h"
 #include "exage/platform/Vulkan/VulkanCommandBuffer.h"
 #include "exage/platform/Vulkan/VulkanContext.h"
+#include "exage/platform/Vulkan/VulkanFence.h"
 #include "exage/platform/Vulkan/VulkanSwapchain.h"
 
 namespace exage::Graphics
@@ -119,15 +122,15 @@ namespace exage::Graphics
         checkVulkan(result);
     }
 
-    void VulkanQueue::submit(QueueSubmitInfo& submitInfo) noexcept
+    void VulkanQueue::submit(CommandBuffer& commandBuffer) noexcept
     {
         vk::SubmitInfo vkSubmitInfo;
         vkSubmitInfo.commandBufferCount = 1;
 
-        auto* queueCommandBuffer = submitInfo.commandBuffer.as<VulkanCommandBuffer>();
+        auto* queueCommandBuffer = commandBuffer.as<VulkanCommandBuffer>();
 
-        auto commandBuffer = queueCommandBuffer->getCommandBuffer();
-        vkSubmitInfo.pCommandBuffers = &commandBuffer;
+        auto vkCommandBuffer = queueCommandBuffer->getCommandBuffer();
+        vkSubmitInfo.pCommandBuffers = &vkCommandBuffer;
         vkSubmitInfo.waitSemaphoreCount = 1;
         vkSubmitInfo.pWaitSemaphores = &_presentSemaphores[_currentFrame];
         vkSubmitInfo.signalSemaphoreCount = 1;
@@ -140,17 +143,17 @@ namespace exage::Graphics
         checkVulkan(result);
     }
 
-    auto VulkanQueue::present(QueuePresentInfo& presentInfo) noexcept -> tl::expected<void, Error>
+    auto VulkanQueue::present(Swapchain& swapchain) noexcept -> tl::expected<void, Error>
     {
-        auto* swapchain = presentInfo.swapchain.as<VulkanSwapchain>();
+        auto* vulkanSwapchain = swapchain.as<VulkanSwapchain>();
 
         vk::PresentInfoKHR presentInfoKHR;
         presentInfoKHR.swapchainCount = 1;
 
-        vk::SwapchainKHR const swapchainKHR = swapchain->getSwapchain();
+        vk::SwapchainKHR const swapchainKHR = vulkanSwapchain->getSwapchain();
         presentInfoKHR.pSwapchains = &swapchainKHR;
 
-        auto imageIndex = static_cast<uint32_t>(swapchain->getCurrentImage());
+        auto imageIndex = static_cast<uint32_t>(vulkanSwapchain->getCurrentImage());
         presentInfoKHR.pImageIndices = &imageIndex;
         presentInfoKHR.waitSemaphoreCount = 1;
         presentInfoKHR.pWaitSemaphores = &_renderSemaphores[_currentFrame];
@@ -206,5 +209,59 @@ namespace exage::Graphics
     auto VulkanQueue::getCurrentFence() const noexcept -> vk::Fence
     {
         return _renderFences[_currentFrame];
+    }
+
+    VulkanTransferQueue::VulkanTransferQueue(
+        VulkanContext& context, const VulkanTransferQueueCreateInfo& createInfo) noexcept
+        : _context(context)
+        , _queue(createInfo.queue)
+        , _familyIndex(createInfo.familyIndex)
+    {
+    }
+
+    VulkanTransferQueue::~VulkanTransferQueue()
+    {
+        cleanup();
+    }
+
+    VulkanTransferQueue::VulkanTransferQueue(VulkanTransferQueue&& old) noexcept
+        : _context(old._context)
+        , _queue(old._queue)
+        , _familyIndex(old._familyIndex)
+    {
+    }
+
+    void VulkanTransferQueue::cleanup() noexcept {}
+
+    auto VulkanTransferQueue::operator=(VulkanTransferQueue&& old) noexcept -> VulkanTransferQueue&
+    {
+        if (this == &old)
+        {
+            return *this;
+        }
+
+        cleanup();
+
+        _context = old._context;
+        _queue = old._queue;
+        _familyIndex = old._familyIndex;
+
+        return *this;
+    }
+
+    void VulkanTransferQueue::submit(CommandBuffer& commandBuffer, Fence* fence) noexcept
+    {
+        vk::Fence vkFence = fence != nullptr ? fence->as<VulkanFence>()->getVulkanFence() : nullptr;
+
+        vk::SubmitInfo vkSubmitInfo;
+        vkSubmitInfo.commandBufferCount = 1;
+
+        auto* queueCommandBuffer = commandBuffer.as<VulkanCommandBuffer>();
+
+        auto vkCommandBuffer = queueCommandBuffer->getCommandBuffer();
+        vkSubmitInfo.pCommandBuffers = &vkCommandBuffer;
+
+        vk::Result const result = _queue.submit(1, &vkSubmitInfo, vkFence);
+        checkVulkan(result);
     }
 }  // namespace exage::Graphics

@@ -311,15 +311,9 @@ namespace exitor
         drawGUI(deltaTime);
         _imGui->end();
 
-        cmd.textureBarrier(_renderer->getFrameBuffer().getTexture(0),
-                           Graphics::Texture::Layout::eShaderReadOnly,
-                           Graphics::PipelineStageFlags::eColorAttachmentOutput,
-                           Graphics::PipelineStageFlags::eFragmentShader,
-                           Graphics::AccessFlags::eColorAttachmentWrite,
-                           Graphics::AccessFlags::eShaderRead);
-
         std::shared_ptr<Graphics::Texture> const texture = _frameBuffer->getTexture(0);
         cmd.textureBarrier(texture,
+                           Graphics::Texture::Layout::eUndefined,
                            Graphics::Texture::Layout::eColorAttachment,
                            Graphics::PipelineStageFlags::eTopOfPipe,
                            Graphics::PipelineStageFlags::eColorAttachmentOutput,
@@ -336,6 +330,7 @@ namespace exitor
         cmd.endRendering();
 
         cmd.textureBarrier(texture,
+                           Graphics::Texture::Layout::eColorAttachment,
                            Graphics::Texture::Layout::eTransferSrc,
                            Graphics::PipelineStageFlags::eColorAttachmentOutput,
                            Graphics::PipelineStageFlags::eTransfer,
@@ -346,13 +341,11 @@ namespace exitor
 
         cmd.end();
 
-        Graphics::QueueSubmitInfo submitInfo {.commandBuffer = cmd};
-        _context->getQueue().submit(submitInfo);
+        _context->getQueue().submit(cmd);
 
         _imGui->renderAdditional();
 
-        Graphics::QueuePresentInfo presentInfo {.swapchain = *_swapchain};
-        swapError = _context->getQueue().present(presentInfo);
+        swapError = _context->getQueue().present(*_swapchain);
     }
 
     void Editor::resizeCallback(glm::uvec2 extent) noexcept

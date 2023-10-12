@@ -171,8 +171,6 @@ namespace exage::Graphics
                                     const std::shared_ptr<Texture>& texture) noexcept
     {
         const auto* vulkanTexture = texture->as<VulkanTexture>();
-        debugAssume(vulkanTexture->getLayout() == Texture::Layout::eTransferSrc,
-                    "Wrong texture layout");
         debugAssume(vulkanTexture->getType() == Texture::Type::e2D, "Wrong texture type");
 
         bool const transitioned = _swapchainTransitioned[_currentImage];

@@ -38,6 +38,7 @@ namespace exage::Graphics
                          uint32_t firstInstance) noexcept override;
 
         void textureBarrier(std::shared_ptr<Texture> texture,
+                            Texture::Layout oldLayout,
                             Texture::Layout newLayout,
                             PipelineStage srcStage,
                             PipelineStage dstStage,

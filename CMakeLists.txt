@@ -47,6 +47,7 @@ add_library(
     src/platform/Vulkan/VulkanBuffer.cpp
     src/platform/Vulkan/VulkanCommandBuffer.cpp
     src/platform/Vulkan/VulkanContext.cpp
+    src/platform/Vulkan/VulkanFence.cpp
     src/platform/Vulkan/VulkanFrameBuffer.cpp
     src/platform/Vulkan/VulkanPipeline.cpp
     src/platform/Vulkan/VulkanQueue.cpp

@@ -1,5 +1,3 @@
-// NOLINTBEGIN
-
 /*
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
  * associated documentation files (the “Software”), to deal in the Software without restriction,
@@ -572,6 +570,7 @@ namespace vkb
             CASE_TO_STRING(QueueError, graphics_unavailable)
             CASE_TO_STRING(QueueError, compute_unavailable)
             CASE_TO_STRING(QueueError, transfer_unavailable)
+            CASE_TO_STRING(QueueError, queue_type_unavailable)
             CASE_TO_STRING(QueueError, queue_index_out_of_range)
             CASE_TO_STRING(QueueError, invalid_queue_family_index)
             default:
@@ -722,6 +721,11 @@ namespace vkb
         return this->instance;
     }
 
+    InstanceDispatchTable Instance::make_table() const
+    {
+        return {instance, fp_vkGetInstanceProcAddr};
+    }
+
     InstanceBuilder::InstanceBuilder(PFN_vkGetInstanceProcAddr fp_vkGetInstanceProcAddr)
     {
         info.fp_vkGetInstanceProcAddr = fp_vkGetInstanceProcAddr;
@@ -790,7 +794,8 @@ namespace vkb
 
         for (auto& ext : info.extensions)
             extensions.push_back(ext);
-        if (info.debug_callback != nullptr && system.debug_utils_available)
+        if (info.debug_callback != nullptr && info.use_debug_messenger
+            && system.debug_utils_available)
         {
             extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         }
@@ -1055,6 +1060,7 @@ namespace vkb
         info.request_validation_layers = enable_validation;
         return *this;
     }
+
     InstanceBuilder& InstanceBuilder::use_default_debug_messenger()
     {
         info.use_debug_messenger = true;
@@ -1219,6 +1225,7 @@ bool supports_features(VkPhysicalDeviceFeatures supported,
 	return true;
 }
         // clang-format on
+
         // Finds the first queue which supports the desired operations. Returns
         // QUEUE_INDEX_MAX_VALUE if none is found
         uint32_t get_first_queue_index(std::vector<VkQueueFamilyProperties> const& families,
@@ -1231,29 +1238,37 @@ bool supports_features(VkPhysicalDeviceFeatures supported,
             }
             return QUEUE_INDEX_MAX_VALUE;
         }
-        // Finds the queue which is separate from the graphics queue and has the desired flag and
-        // not the undesired flag, but will select it if no better options are available compute
-        // support. Returns QUEUE_INDEX_MAX_VALUE if none is found.
+
+        // Finds the that has the desired flag and the least number of undesired flags.
+        // Returns QUEUE_INDEX_MAX_VALUE if none is found.
         uint32_t get_separate_queue_index(std::vector<VkQueueFamilyProperties> const& families,
                                           VkQueueFlags desired_flags,
                                           VkQueueFlags undesired_flags)
         {
             uint32_t index = QUEUE_INDEX_MAX_VALUE;
+            uint32_t least_undesired_flags_count = QUEUE_INDEX_MAX_VALUE;
             for (uint32_t i = 0; i < static_cast<uint32_t>(families.size()); i++)
             {
-                if ((families[i].queueFlags & desired_flags) == desired_flags
-                    && ((families[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) == 0))
+                if ((families[i].queueFlags & desired_flags) == desired_flags)
                 {
-                    if ((families[i].queueFlags & undesired_flags) == 0)
+                    uint32_t undesired_flag_count = 0;
+                    // Count the number of flags which are supported by the queue family but are
+                    // undesired
+                    for (uint32_t j = VK_QUEUE_FLAG_BITS_MAX_ENUM; j != 0; j >>= 1)
                     {
-                        return i;
+                        if (families[i].queueFlags & undesired_flags & j)
+                        {
+                            undesired_flag_count++;
+                        }
                     }
-                    else
+                    if (undesired_flag_count < least_undesired_flags_count)
                     {
+                        least_undesired_flags_count = undesired_flag_count;
                         index = i;
                     }
                 }
             }
+
             return index;
         }
 
@@ -1266,8 +1281,7 @@ bool supports_features(VkPhysicalDeviceFeatures supported,
             for (uint32_t i = 0; i < static_cast<uint32_t>(families.size()); i++)
             {
                 if ((families[i].queueFlags & desired_flags) == desired_flags
-                    && (families[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) == 0
-                    && (families[i].queueFlags & undesired_flags) == 0)
+                    && ((families[i].queueFlags & undesired_flags) == 0))
                     return i;
             }
             return QUEUE_INDEX_MAX_VALUE;
@@ -1386,18 +1400,25 @@ bool supports_features(VkPhysicalDeviceFeatures supported,
         if (criteria.desired_version > pd.properties.apiVersion)
             suitable = PhysicalDevice::Suitable::partial;
 
-        bool dedicated_compute = detail::get_dedicated_queue_index(
-                                     pd.queue_families, VK_QUEUE_COMPUTE_BIT, VK_QUEUE_TRANSFER_BIT)
+        bool dedicated_compute =
+            detail::get_dedicated_queue_index(pd.queue_families,
+                                              VK_QUEUE_COMPUTE_BIT,
+                                              VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_TRANSFER_BIT)
             != detail::QUEUE_INDEX_MAX_VALUE;
         bool dedicated_transfer =
-            detail::get_dedicated_queue_index(
-                pd.queue_families, VK_QUEUE_TRANSFER_BIT, VK_QUEUE_COMPUTE_BIT)
+            detail::get_dedicated_queue_index(pd.queue_families,
+                                              VK_QUEUE_TRANSFER_BIT,
+                                              VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT)
             != detail::QUEUE_INDEX_MAX_VALUE;
-        bool separate_compute = detail::get_separate_queue_index(
-                                    pd.queue_families, VK_QUEUE_COMPUTE_BIT, VK_QUEUE_TRANSFER_BIT)
+        bool separate_compute =
+            detail::get_separate_queue_index(pd.queue_families,
+                                             VK_QUEUE_COMPUTE_BIT,
+                                             VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_TRANSFER_BIT)
             != detail::QUEUE_INDEX_MAX_VALUE;
-        bool separate_transfer = detail::get_separate_queue_index(
-                                     pd.queue_families, VK_QUEUE_TRANSFER_BIT, VK_QUEUE_COMPUTE_BIT)
+        bool separate_transfer =
+            detail::get_separate_queue_index(pd.queue_families,
+                                             VK_QUEUE_TRANSFER_BIT,
+                                             VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT)
             != detail::QUEUE_INDEX_MAX_VALUE;
 
         bool present_queue = detail::get_present_queue_index(
@@ -1505,11 +1526,11 @@ bool supports_features(VkPhysicalDeviceFeatures supported,
         for (const auto& node : criteria.extended_features_chain)
         {
             assert(node.sType != static_cast<VkStructureType>(0) &&
-		       "Features struct sType must be filled with the struct's "
-		       "corresponding VkStructureType enum");
+               "Features struct sType must be filled with the struct's "
+               "corresponding VkStructureType enum");
             assert(node.sType != VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2 &&
-		       "Do not pass VkPhysicalDeviceFeatures2 as a required extension feature structure. An "
-		       "instance of this is managed internally for selection criteria and device creation.");
+               "Do not pass VkPhysicalDeviceFeatures2 as a required extension feature structure. An "
+               "instance of this is managed internally for selection criteria and device creation.");
         }
 #endif
 
@@ -1801,26 +1822,30 @@ bool supports_features(VkPhysicalDeviceFeatures supported,
     // PhysicalDevice
     bool PhysicalDevice::has_dedicated_compute_queue() const
     {
-        return detail::get_dedicated_queue_index(
-                   queue_families, VK_QUEUE_COMPUTE_BIT, VK_QUEUE_TRANSFER_BIT)
+        return detail::get_dedicated_queue_index(queue_families,
+                                                 VK_QUEUE_COMPUTE_BIT,
+                                                 VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_TRANSFER_BIT)
             != detail::QUEUE_INDEX_MAX_VALUE;
     }
     bool PhysicalDevice::has_separate_compute_queue() const
     {
-        return detail::get_separate_queue_index(
-                   queue_families, VK_QUEUE_COMPUTE_BIT, VK_QUEUE_TRANSFER_BIT)
+        return detail::get_separate_queue_index(queue_families,
+                                                VK_QUEUE_COMPUTE_BIT,
+                                                VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_TRANSFER_BIT)
             != detail::QUEUE_INDEX_MAX_VALUE;
     }
     bool PhysicalDevice::has_dedicated_transfer_queue() const
     {
-        return detail::get_dedicated_queue_index(
-                   queue_families, VK_QUEUE_TRANSFER_BIT, VK_QUEUE_COMPUTE_BIT)
+        return detail::get_dedicated_queue_index(queue_families,
+                                                 VK_QUEUE_TRANSFER_BIT,
+                                                 VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT)
             != detail::QUEUE_INDEX_MAX_VALUE;
     }
     bool PhysicalDevice::has_separate_transfer_queue() const
     {
-        return detail::get_separate_queue_index(
-                   queue_families, VK_QUEUE_TRANSFER_BIT, VK_QUEUE_COMPUTE_BIT)
+        return detail::get_separate_queue_index(queue_families,
+                                                VK_QUEUE_TRANSFER_BIT,
+                                                VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT)
             != detail::QUEUE_INDEX_MAX_VALUE;
     }
     std::vector<VkQueueFamilyProperties> PhysicalDevice::get_queue_families() const
@@ -1838,6 +1863,7 @@ bool supports_features(VkPhysicalDeviceFeatures supported,
 
     // ---- Queues ---- //
 
+    // Legacy queue function
     Result<uint32_t> Device::get_queue_index(QueueType type) const
     {
         uint32_t index = detail::QUEUE_INDEX_MAX_VALUE;
@@ -1855,36 +1881,18 @@ bool supports_features(VkPhysicalDeviceFeatures supported,
                     return Result<uint32_t> {QueueError::graphics_unavailable};
                 break;
             case QueueType::compute:
-                index = detail::get_separate_queue_index(
-                    queue_families, VK_QUEUE_COMPUTE_BIT, VK_QUEUE_TRANSFER_BIT);
+                index =
+                    detail::get_separate_queue_index(queue_families,
+                                                     VK_QUEUE_COMPUTE_BIT,
+                                                     VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_TRANSFER_BIT);
                 if (index == detail::QUEUE_INDEX_MAX_VALUE)
                     return Result<uint32_t> {QueueError::compute_unavailable};
                 break;
             case QueueType::transfer:
-                index = detail::get_separate_queue_index(
-                    queue_families, VK_QUEUE_TRANSFER_BIT, VK_QUEUE_COMPUTE_BIT);
-                if (index == detail::QUEUE_INDEX_MAX_VALUE)
-                    return Result<uint32_t> {QueueError::transfer_unavailable};
-                break;
-            default:
-                return Result<uint32_t> {QueueError::invalid_queue_family_index};
-        }
-        return index;
-    }
-    Result<uint32_t> Device::get_dedicated_queue_index(QueueType type) const
-    {
-        uint32_t index = detail::QUEUE_INDEX_MAX_VALUE;
-        switch (type)
-        {
-            case QueueType::compute:
-                index = detail::get_dedicated_queue_index(
-                    queue_families, VK_QUEUE_COMPUTE_BIT, VK_QUEUE_TRANSFER_BIT);
-                if (index == detail::QUEUE_INDEX_MAX_VALUE)
-                    return Result<uint32_t> {QueueError::compute_unavailable};
-                break;
-            case QueueType::transfer:
-                index = detail::get_dedicated_queue_index(
-                    queue_families, VK_QUEUE_TRANSFER_BIT, VK_QUEUE_COMPUTE_BIT);
+                index =
+                    detail::get_separate_queue_index(queue_families,
+                                                     VK_QUEUE_TRANSFER_BIT,
+                                                     VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
                 if (index == detail::QUEUE_INDEX_MAX_VALUE)
                     return Result<uint32_t> {QueueError::transfer_unavailable};
                 break;
@@ -1894,6 +1902,35 @@ bool supports_features(VkPhysicalDeviceFeatures supported,
         return index;
     }
 
+    // Legacy queue function
+    Result<uint32_t> Device::get_dedicated_queue_index(QueueType type) const
+    {
+        uint32_t index = detail::QUEUE_INDEX_MAX_VALUE;
+        switch (type)
+        {
+            case QueueType::compute:
+                index = detail::get_dedicated_queue_index(
+                    queue_families,
+                    VK_QUEUE_COMPUTE_BIT,
+                    VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_TRANSFER_BIT);
+                if (index == detail::QUEUE_INDEX_MAX_VALUE)
+                    return Result<uint32_t> {QueueError::compute_unavailable};
+                break;
+            case QueueType::transfer:
+                index =
+                    detail::get_dedicated_queue_index(queue_families,
+                                                      VK_QUEUE_TRANSFER_BIT,
+                                                      VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
+                if (index == detail::QUEUE_INDEX_MAX_VALUE)
+                    return Result<uint32_t> {QueueError::transfer_unavailable};
+                break;
+            default:
+                return Result<uint32_t> {QueueError::invalid_queue_family_index};
+        }
+        return index;
+    }
+
+    // Legacy queue function
     Result<VkQueue> Device::get_queue(QueueType type) const
     {
         auto index = get_queue_index(type);
@@ -1903,14 +1940,57 @@ bool supports_features(VkPhysicalDeviceFeatures supported,
         internal_table.fp_vkGetDeviceQueue(device, index.value(), 0, &out_queue);
         return out_queue;
     }
+
+    // Legacy queue function
     Result<VkQueue> Device::get_dedicated_queue(QueueType type) const
     {
         auto index = get_dedicated_queue_index(type);
         if (!index.has_value())
             return {index.error()};
-        VkQueue out_queue;
+        VkQueue out_queue {};
         internal_table.fp_vkGetDeviceQueue(device, index.value(), 0, &out_queue);
         return out_queue;
+    }
+
+    Result<QueueAndIndex> Device::get_first_queue_and_index(VkQueueFlags queue_flags) const
+    {
+        uint32_t index = detail::get_first_queue_index(queue_families, queue_flags);
+        if (index == detail::QUEUE_INDEX_MAX_VALUE)
+            return Result<QueueAndIndex> {QueueError::queue_type_unavailable};
+
+        VkQueue out_queue {};
+        internal_table.fp_vkGetDeviceQueue(device, index, 0, &out_queue);
+        return QueueAndIndex {out_queue, index};
+    }
+
+    Result<QueueAndIndex> Device::get_preferred_queue_and_index(VkQueueFlags queue_flags) const
+    {
+        uint32_t index =
+            detail::get_separate_queue_index(queue_families, queue_flags, ~queue_flags);
+        if (index == detail::QUEUE_INDEX_MAX_VALUE)
+            return Result<QueueAndIndex> {QueueError::queue_type_unavailable};
+
+        VkQueue out_queue {};
+        internal_table.fp_vkGetDeviceQueue(device, index, 0, &out_queue);
+        return QueueAndIndex {out_queue, index};
+    }
+
+    Result<QueueAndIndex> Device::get_first_presentation_queue_and_index(
+        VkSurfaceKHR surface_to_check) const
+    {
+        VkSurfaceKHR surface_to_use = surface;
+        if (surface_to_check != VK_NULL_HANDLE)
+        {
+            surface_to_use = surface_to_check;
+        }
+        uint32_t index = detail::get_present_queue_index(
+            physical_device.physical_device, surface_to_use, queue_families);
+        if (index == detail::QUEUE_INDEX_MAX_VALUE)
+            return Result<QueueAndIndex> {QueueError::present_unavailable};
+
+        VkQueue out_queue {};
+        internal_table.fp_vkGetDeviceQueue(device, index, 0, &out_queue);
+        return QueueAndIndex {out_queue, index};
     }
 
     // ---- Dispatch ---- //
@@ -2679,5 +2759,3 @@ bool supports_features(VkPhysicalDeviceFeatures supported,
         modes.push_back(VK_PRESENT_MODE_FIFO_KHR);
     }
 }  // namespace vkb
-
-// NOLINTEND

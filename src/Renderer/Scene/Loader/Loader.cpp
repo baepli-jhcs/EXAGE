@@ -398,6 +398,7 @@ namespace exage::Renderer
         gpuTexture.texture = options.context.createTexture(textureCreateInfo);
 
         options.commandBuffer.textureBarrier(gpuTexture.texture,
+                                             Graphics::Texture::Layout::eUndefined,
                                              Graphics::Texture::Layout::eTransferDst,
                                              Graphics::PipelineStageFlags::eTopOfPipe,
                                              Graphics::PipelineStageFlags::eTransfer,
@@ -415,6 +416,7 @@ namespace exage::Renderer
         }
 
         options.commandBuffer.textureBarrier(gpuTexture.texture,
+                                             Graphics::Texture::Layout::eTransferDst,
                                              options.layout,
                                              Graphics::PipelineStageFlags::eTransfer,
                                              options.pipelineStage,

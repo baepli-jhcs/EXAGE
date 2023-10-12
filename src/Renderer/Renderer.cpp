@@ -109,6 +109,7 @@ namespace exage::Renderer
         _lightingRenderer.render(commandBuffer, scene, lightingRenderInfo);
 
         commandBuffer.textureBarrier(colorTexture,
+                                     Graphics::Texture::Layout::eUndefined,
                                      Graphics::Texture::Layout::eTransferDst,
                                      Graphics::PipelineStageFlags::eTopOfPipe,
                                      Graphics::PipelineStageFlags::eTransfer,
@@ -119,6 +120,7 @@ namespace exage::Renderer
         auto lightingResult = _lightingRenderer.getFrameBuffer().getTexture(0);
 
         commandBuffer.textureBarrier(lightingResult,
+                                     Graphics::Texture::Layout::eColorAttachment,
                                      Graphics::Texture::Layout::eTransferSrc,
                                      Graphics::PipelineStageFlags::eColorAttachmentOutput,
                                      Graphics::PipelineStageFlags::eTransfer,
@@ -138,6 +140,7 @@ namespace exage::Renderer
                            colorTexture->getExtent());
 
         commandBuffer.textureBarrier(colorTexture,
+                                     Graphics::Texture::Layout::eTransferDst,
                                      Graphics::Texture::Layout::eShaderReadOnly,
                                      Graphics::PipelineStageFlags::eTransfer,
                                      Graphics::PipelineStageFlags::eFragmentShader,

@@ -72,7 +72,6 @@ namespace exage::Graphics
         [[nodiscard]] auto getExtent() const noexcept -> TextureExtent { return _extent; }
         [[nodiscard]] auto getFormat() const noexcept -> Format { return _format; }
         [[nodiscard]] auto getType() const noexcept -> Type { return _type; }
-        [[nodiscard]] auto getLayout() const noexcept -> Layout { return _layout; }
         [[nodiscard]] auto getUsage() const noexcept -> Usage { return _usage; }
 
         [[nodiscard]] auto getLayerCount() const noexcept -> uint32_t { return _layerCount; }
@@ -122,7 +121,6 @@ namespace exage::Graphics
         TextureExtent _extent;
         Format _format;
         Type _type;
-        Layout _layout = Layout::eUndefined;
         Usage _usage;
         uint32_t _layerCount;
         uint32_t _mipLevelCount;

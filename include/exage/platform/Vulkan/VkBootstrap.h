@@ -1,5 +1,3 @@
-// NOLINTBEGIN
-
 /*
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
  * associated documentation files (the “Software”), to deal in the Software without restriction,
@@ -30,7 +28,7 @@
 
 #include <vulkan/vulkan.h>
 
-#include "exage/platform/Vulkan/VkBootstrapDispatch.h"
+#include "VkBootstrapDispatch.h"
 
 #ifdef VK_MAKE_API_VERSION
 #    define VKB_MAKE_VK_VERSION(variant, major, minor, patch) \
@@ -107,8 +105,6 @@ namespace vkb
                 new (&m_value) T {result.m_value};
             else
                 m_error = result.m_error;
-
-            return *this;
         }
         Result(Result&& expected) noexcept
             : m_init(expected.m_init)
@@ -126,8 +122,6 @@ namespace vkb
                 new (&m_value) T {std::move(result.m_value)};
             else
                 m_error = std::move(result.m_error);
-
-            return *this;
         }
         Result& operator=(const T& expect) noexcept
         {
@@ -250,6 +244,7 @@ namespace vkb
         graphics_unavailable,
         compute_unavailable,
         transfer_unavailable,
+        queue_type_unavailable,
         queue_index_out_of_range,
         invalid_queue_family_index
     };
@@ -344,6 +339,9 @@ namespace vkb
         // A conversion function which allows this Instance to be used
         // in places where VkInstance would have been used.
         operator VkInstance() const;
+
+        // Return a loaded instance dispatch table
+        InstanceDispatchTable make_table() const;
 
       private:
         bool headless = false;
@@ -790,12 +788,13 @@ namespace vkb
     };
 
     // ---- Queue ---- //
+
     enum class QueueType
     {
         present,
         graphics,
         compute,
-        transfer
+        transfer,
     };
 
     namespace detail
@@ -803,6 +802,12 @@ namespace vkb
         // Sentinel value, used in implementation only
         const uint32_t QUEUE_INDEX_MAX_VALUE = 65536;
     }  // namespace detail
+
+    struct QueueAndIndex
+    {
+        VkQueue queue = VK_NULL_HANDLE;
+        uint32_t index = detail::QUEUE_INDEX_MAX_VALUE;
+    };
 
     // ---- Device ---- //
 
@@ -816,15 +821,37 @@ namespace vkb
         PFN_vkGetDeviceProcAddr fp_vkGetDeviceProcAddr = nullptr;
         uint32_t instance_version = VKB_VK_API_VERSION_1_0;
 
-        Result<uint32_t> get_queue_index(QueueType type) const;
-        // Only a compute or transfer queue type is valid. All other queue types do not support a
-        // 'dedicated' queue index
-        Result<uint32_t> get_dedicated_queue_index(QueueType type) const;
+        // Legacy function - gets the queue which supports queue_type operations using the following
+        // rules: If queue_type is graphics, return the first queue that supports graphics
+        // operations If queue_type is compute, return a queue that supports compute operations but
+        // not graphics, if one exists If queue_type is transfer, return a queue that supports
+        // transfer operations but not graphics, if one exists If queue_type is present, return the
+        // first queue that supports presentation with the VkSurfaceKHR given during physical device
+        // selection
+        Result<uint32_t> get_queue_index(QueueType queue_type) const;
+        Result<VkQueue> get_queue(QueueType queue_type) const;
 
-        Result<VkQueue> get_queue(QueueType type) const;
-        // Only a compute or transfer queue type is valid. All other queue types do not support a
-        // 'dedicated' queue
-        Result<VkQueue> get_dedicated_queue(QueueType type) const;
+        // Legacy function - gets the queue which supports only the queue_type operations using the
+        // following rules: If queue_type is compute, return a queue that supports compute
+        // operations but not graphics or transfer, if one exists If queue_type is transfer, return
+        // a queue that supports transfer operations but not graphics or compute, if one exists If
+        // queue_type is any other type, return an error code
+        Result<VkQueue> get_dedicated_queue(QueueType queue_type) const;
+        Result<uint32_t> get_dedicated_queue_index(QueueType queue_type) const;
+
+        // Returns the first queue which supports the operations specified by queue_flags
+        Result<QueueAndIndex> get_first_queue_and_index(VkQueueFlags queue_flags) const;
+
+        // Returns the queue which supports the operations specified by queue_flags and the least
+        // number of operations not specified by queue_flags
+        Result<QueueAndIndex> get_preferred_queue_and_index(VkQueueFlags queue_flags) const;
+
+        // Get the first queue which supports presentation
+        // If surface_to_check is not VK_NULL_HANDLE, it will make sure the surface is compatible
+        // with the queue Otherwise if surface_to_check is VK_NULL_HANDLE, it will use the
+        // VkSurfaceKHR used duing physical device selection
+        Result<QueueAndIndex> get_first_presentation_queue_and_index(
+            VkSurfaceKHR surface_to_check = VK_NULL_HANDLE) const;
 
         // Return a loaded dispatch table
         DispatchTable make_table() const;
@@ -1116,5 +1143,3 @@ namespace std
     {
     };
 }  // namespace std
-
-// NOLINTEND
