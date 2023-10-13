@@ -130,6 +130,7 @@ find_package(glfw3 REQUIRED)
 find_package(glm REQUIRED)
 # find_package(Ktx REQUIRED)
 find_package(nlohmann_json REQUIRED)
+find_package(rttr REQUIRED)
 find_package(Stb REQUIRED)
 find_package(unofficial-shaderc REQUIRED)
 find_package(tl-expected REQUIRED)
@@ -155,6 +156,7 @@ target_link_libraries(EXAGE_EXAGE PUBLIC
     ImGui
     # KTX::ktx
     nlohmann_json::nlohmann_json
+    RTTR::Core_Lib
     unofficial::shaderc::shaderc
     tl::expected
     tinyfiledialogs

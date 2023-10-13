@@ -15,7 +15,6 @@ namespace exage::Projects
     {
         std::string name;
 
-        std::string defaultLevelPath;
         std::unordered_set<std::string> levelPaths;
 
         std::unordered_set<std::string> texturePaths;
@@ -27,7 +26,7 @@ namespace exage::Projects
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(name, defaultLevelPath, levelPaths, texturePaths, meshPaths, materialPaths);
+            archive(name, levelPaths, texturePaths, meshPaths, materialPaths);
         }
     };
 

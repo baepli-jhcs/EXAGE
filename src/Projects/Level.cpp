@@ -17,7 +17,7 @@
 
 namespace exage::Projects
 {
-    auto loadLevel(const std::filesystem::path& path) noexcept -> tl::expected<Level, Error>
+    auto loadLevel(const std::filesystem::path& path) noexcept -> tl::expected<SerializedLevel, Error>
     {
         std::ifstream file(path, std::ios::in | std::ios::binary);
 
@@ -26,7 +26,7 @@ namespace exage::Projects
             return tl::make_unexpected(Errors::FileNotFound {});
         }
 
-        Level level;
+        SerializedLevel level;
 
         try
         {
@@ -67,7 +67,7 @@ namespace exage::Projects
         return level;
     }
 
-    auto saveLevel(const std::filesystem::path& path, const Level& level) noexcept
+    auto saveLevel(const std::filesystem::path& path, const SerializedLevel& level) noexcept
         -> tl::expected<void, Error>
     {
         // nlohmann::json json;
@@ -112,9 +112,9 @@ namespace exage::Projects
         return {};
     }
 
-    auto deserializeLevel(Level& level) noexcept -> DeserializedLevel
+    auto deserializeLevel(SerializedLevel& level) noexcept -> Level
     {
-        DeserializedLevel deserializedLevel;
+        Level deserializedLevel;
         deserializedLevel.path = level.path;
         deserializedLevel.texturePaths = level.texturePaths;
         deserializedLevel.materialPaths = level.materialPaths;
@@ -124,9 +124,9 @@ namespace exage::Projects
         return deserializedLevel;
     }
 
-    auto serializeLevel(const DeserializedLevel& level) noexcept -> Level
+    auto serializeLevel(const Level& level) noexcept -> SerializedLevel
     {
-        Level serializedLevel;
+        SerializedLevel serializedLevel;
         serializedLevel.path = level.path;
         serializedLevel.texturePaths = level.texturePaths;
         serializedLevel.materialPaths = level.materialPaths;

@@ -14,7 +14,7 @@ namespace exage::Projects
 {
     using ComponentData = std::unordered_map<uint32_t, std::string>;
 
-    struct Level
+    struct SerializedLevel
     {
         std::string path;
 
@@ -32,7 +32,7 @@ namespace exage::Projects
         }
     };
 
-    struct DeserializedLevel
+    struct Level
     {
         std::string path;
 
@@ -44,12 +44,12 @@ namespace exage::Projects
     };
 
     [[nodiscard]] auto loadLevel(const std::filesystem::path& path) noexcept
-        -> tl::expected<Level, Error>;
-    [[nodiscard]] auto saveLevel(const std::filesystem::path& path, const Level& level) noexcept
+        -> tl::expected<SerializedLevel, Error>;
+    [[nodiscard]] auto saveLevel(const std::filesystem::path& path, const SerializedLevel& level) noexcept
         -> tl::expected<void, Error>;
 
-    [[nodiscard]] auto deserializeLevel(Level& level) noexcept -> DeserializedLevel;
-    [[nodiscard]] auto serializeLevel(const DeserializedLevel& level) noexcept -> Level;
+    [[nodiscard]] auto deserializeLevel(SerializedLevel& level) noexcept -> Level;
+    [[nodiscard]] auto serializeLevel(const Level& level) noexcept -> SerializedLevel;
 
     constexpr std::string_view LEVEL_EXTENSION = ".exlevel";
 }  // namespace exage::Projects

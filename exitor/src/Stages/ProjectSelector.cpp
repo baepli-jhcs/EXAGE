@@ -335,8 +335,7 @@ namespace exitor
         // Create project file
         Projects::Project project;
         project.name = _projectName;
-        project.defaultLevelPath = "assets/levels/default.exlevel";
-        project.levelPaths.insert(project.defaultLevelPath);
+        project.levelPaths.insert("assets/levels/default.exlevel");
 
         std::filesystem::path projectFile = projectDir / (_projectName + ".exproj");
 
