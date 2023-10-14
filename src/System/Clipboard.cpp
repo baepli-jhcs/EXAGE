@@ -4,11 +4,11 @@
 
 namespace exage::System
 {
-    void setClipboard(WindowAPI api, std::string_view text) noexcept
+    void setClipboard(API api, std::string_view text) noexcept
     {
         switch (api)
         {
-            case WindowAPI::eGLFW:
+            case API::eGLFW:
                 setClipboardGLFW(text);
                 break;
             default:
@@ -16,11 +16,11 @@ namespace exage::System
         }
     }
 
-    auto getClipboard(WindowAPI api) noexcept -> std::string
+    auto getClipboard(API api) noexcept -> std::string
     {
         switch (api)
         {
-            case WindowAPI::eGLFW:
+            case API::eGLFW:
                 return getClipboardGLFW();
             default:
                 return "";

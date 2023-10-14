@@ -29,15 +29,15 @@
 // NOLINTBEGIN
 
 #include "exage/System/Event.h"
-#include "exage/platform/GLFW/GLFWindow.h"
+#include "exage/platform/GLFW/GLFWWindow.h"
 #include "imgui.h"  // IMGUI_IMPL_API
 
 struct GLFWwindow;
 struct GLFWmonitor;
 
-IMGUI_IMPL_API bool ImGui_ImplGlfw_InitForOpenGL(exage::System::GLFWindow* window);
-IMGUI_IMPL_API bool ImGui_ImplGlfw_InitForVulkan(exage::System::GLFWindow* window);
-IMGUI_IMPL_API bool ImGui_ImplGlfw_InitForOther(exage::System::GLFWindow* window);
+IMGUI_IMPL_API bool ImGui_ImplGlfw_InitForOpenGL(exage::System::GLFWWindow* window);
+IMGUI_IMPL_API bool ImGui_ImplGlfw_InitForVulkan(exage::System::GLFWWindow* window);
+IMGUI_IMPL_API bool ImGui_ImplGlfw_InitForOther(exage::System::GLFWWindow* window);
 IMGUI_IMPL_API void ImGui_ImplGlfw_Shutdown();
 IMGUI_IMPL_API void ImGui_ImplGlfw_NewFrame();
 IMGUI_IMPL_API void ImGui_ImplGlfw_ProcessEvent(const exage::System::Event& event);

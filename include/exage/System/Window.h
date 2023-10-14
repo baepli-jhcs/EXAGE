@@ -81,18 +81,18 @@ namespace exage::System
         [[nodiscard]] virtual auto shouldClose() const noexcept -> bool = 0;
         [[nodiscard]] virtual auto isIconified() const noexcept -> bool = 0;
 
-        EXAGE_BASE_API(WindowAPI, Window);
-        [[nodiscard]] static auto create(const WindowInfo& info, WindowAPI api) noexcept
+        EXAGE_BASE_API(API, Window);
+        [[nodiscard]] static auto create(const WindowInfo& info, API api) noexcept
             -> tl::expected<std::unique_ptr<Window>, WindowError>;
     };
 
-    [[nodiscard]] auto getWindowByID(uint32_t id, WindowAPI api) noexcept -> Window*;
+    [[nodiscard]] auto getWindowByID(uint32_t id, API api) noexcept -> Window*;
 
-    [[nodiscard]] auto getMonitorCount(WindowAPI api) noexcept -> uint32_t;
-    [[nodiscard]] auto getMonitor(uint32_t index, WindowAPI api) noexcept -> Monitor;
-    [[nodiscard]] auto getMonitors(WindowAPI api) noexcept -> std::vector<Monitor>;
+    [[nodiscard]] auto getMonitorCount(API api) noexcept -> uint32_t;
+    [[nodiscard]] auto getMonitor(uint32_t index, API api) noexcept -> Monitor;
+    [[nodiscard]] auto getMonitors(API api) noexcept -> std::vector<Monitor>;
 
-    [[nodiscard]] inline auto getDefaultMonitor(WindowAPI api) noexcept -> Monitor
+    [[nodiscard]] inline auto getDefaultMonitor(API api) noexcept -> Monitor
     {
         return getMonitor(0, api);
     }

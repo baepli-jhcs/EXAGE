@@ -32,7 +32,7 @@
 #include "imgui.h"
 #include "utils/files.h"
 
-constexpr static auto WINDOW_API = exage::System::WindowAPI::eGLFW;
+constexpr static auto WINDOW_API = exage::System::API::eGLFW;
 constexpr static auto GRAPHICS_API = exage::Graphics::API::eVulkan;
 
 namespace exitor

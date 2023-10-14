@@ -9,14 +9,14 @@ struct GLFWmonitor;
 
 namespace exage::System
 {
-    class GLFWindow final : public Window
+    class GLFWWindow final : public Window
     {
       public:
-        explicit GLFWindow(const WindowInfo& info) noexcept;
-        ~GLFWindow() noexcept override;
+        explicit GLFWWindow(const WindowInfo& info) noexcept;
+        ~GLFWWindow() noexcept override;
 
-        EXAGE_DELETE_COPY(GLFWindow);
-        EXAGE_DELETE_MOVE(GLFWindow);
+        EXAGE_DELETE_COPY(GLFWWindow);
+        EXAGE_DELETE_MOVE(GLFWWindow);
 
         void close() noexcept override;
 
@@ -77,12 +77,12 @@ namespace exage::System
         static auto getMonitor(uint32_t index) noexcept -> Monitor;
         static auto getMonitors() noexcept -> std::vector<Monitor>;
 
-        static auto getWindowByID(uint32_t id) noexcept -> GLFWindow*;
-        static auto getWindowMap() noexcept -> std::unordered_map<GLFWwindow*, GLFWindow*>;
+        static auto getWindowByID(uint32_t id) noexcept -> GLFWWindow*;
+        static auto getWindowMap() noexcept -> std::unordered_map<GLFWwindow*, GLFWWindow*>;
 
         static auto nextEvent() noexcept -> std::optional<Event>;
 
-        EXAGE_DERIVED_API(WindowAPI, eGLFW);
+        EXAGE_DERIVED_API(API, eGLFW);
 
       private:
         [[nodiscard]] auto exclusiveMonitor() const noexcept -> GLFWmonitor*;

@@ -2,7 +2,7 @@
 #include "exage/Graphics/Error.h"
 #include "exage/platform/Vulkan/VkBootstrap.h"
 #define VMA_IMPLEMENTATION
-#include <exage/platform/GLFW/GLFWindow.h>
+#include <exage/platform/GLFW/GLFWWindow.h>
 #include <exage/utils/cast.h>
 
 #include "exage/System/Window.h"
@@ -474,9 +474,9 @@ namespace exage::Graphics
         VkSurfaceKHR surface = nullptr;
         switch (window.getAPI())
         {
-            case System::WindowAPI::eGLFW:
+            case System::API::eGLFW:
             {
-                const auto* glfWindow = window.as<System::GLFWindow>();
+                const auto* glfWindow = window.as<System::GLFWWindow>();
                 debugAssume(glfWindow != nullptr, "Invalid window type");
                 glfwCreateWindowSurface(
                     _instance.instance, glfWindow->getGLFWWindow(), nullptr, &surface);

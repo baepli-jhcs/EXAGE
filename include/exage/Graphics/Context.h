@@ -24,7 +24,7 @@ namespace exage::Graphics
     struct ContextCreateInfo
     {
         API api = API::eVulkan;
-        System::WindowAPI windowAPI;
+        System::API windowAPI;
 
         System::Window* optionalWindow = nullptr;
         uint32_t maxFramesInFlight = 2;

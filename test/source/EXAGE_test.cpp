@@ -14,7 +14,7 @@ TEST_CASE("Creating GLFW Window", "[Window]")
     };
 
     tl::expected<std::unique_ptr<Window>, WindowError> windowReturn =
-        Window::create(info, WindowAPI::eGLFW);
+        Window::create(info, API::eGLFW);
     REQUIRE(windowReturn.has_value());
     windowReturn.value()->close();
 }

@@ -2,7 +2,7 @@
 
 #include "ImGuiPlatform/imgui_impl_glfw.h"
 #include "ImGuiPlatform/imgui_impl_vulkan.h"
-#include "exage/platform/GLFW/GLFWindow.h"
+#include "exage/platform/GLFW/GLFWWindow.h"
 #include "exage/platform/Vulkan/VulkanCommandBuffer.h"
 #include "exage/platform/Vulkan/VulkanContext.h"
 
@@ -34,7 +34,7 @@ namespace exage::Graphics
 
         switch (_windowAPI)
         {
-            case System::WindowAPI::eGLFW:
+            case System::API::eGLFW:
             {
                 initGLFW(initInfo);
                 break;
@@ -80,7 +80,7 @@ namespace exage::Graphics
 
         switch (_windowAPI)
         {
-            case System::WindowAPI::eGLFW:
+            case System::API::eGLFW:
             {
                 ImGui_ImplGlfw_Shutdown();
                 break;
@@ -138,7 +138,7 @@ namespace exage::Graphics
 
         switch (_windowAPI)
         {
-            case System::WindowAPI::eGLFW:
+            case System::API::eGLFW:
             {
                 ImGui_ImplGlfw_NewFrame();
                 break;
@@ -249,7 +249,7 @@ namespace exage::Graphics
     {
         switch (_windowAPI)
         {
-            case System::WindowAPI::eGLFW:
+            case System::API::eGLFW:
             {
                 ImGui_ImplGlfw_ProcessEvent(event);
                 break;
@@ -261,7 +261,7 @@ namespace exage::Graphics
 
     void ImGuiInstance::initGLFW(const ImGuiInitInfo& initInfo) noexcept
     {
-        auto* window = initInfo.window.as<System::GLFWindow>();
+        auto* window = initInfo.window.as<System::GLFWWindow>();
         switch (_api)
         {
             case API::eVulkan:

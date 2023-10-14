@@ -24,7 +24,7 @@
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
 
-#include "exage/platform/GLFW/GLFWindow.h"
+#include "exage/platform/GLFW/GLFWWindow.h"
 
 namespace exage::System
 {
@@ -48,15 +48,15 @@ namespace exage::System
         }
 
         uint32_t idCounter = 0;  // NOLINT
-        std::unordered_map<uint32_t, GLFWindow*> windows;  // NOLINT
-        std::unordered_map<GLFWwindow*, GLFWindow*> glfwWindows;  // NOLINT
+        std::unordered_map<uint32_t, GLFWWindow*> windows;  // NOLINT
+        std::unordered_map<GLFWwindow*, GLFWWindow*> glfwWindows;  // NOLINT
 
         auto nextID() noexcept -> uint32_t
         {
             return idCounter++;
         }
 
-        auto getWindow(uint32_t id) noexcept -> GLFWindow*
+        auto getWindow(uint32_t id) noexcept -> GLFWWindow*
         {
             auto it = windows.find(id);
 
@@ -68,7 +68,7 @@ namespace exage::System
             return nullptr;
         }
 
-        auto getWindow(GLFWwindow* glfwWindow) noexcept -> GLFWindow*
+        auto getWindow(GLFWwindow* glfwWindow) noexcept -> GLFWWindow*
         {
             auto it = glfwWindows.find(glfwWindow);
 
@@ -397,7 +397,7 @@ namespace exage::System
             }
         }
 
-        void registerWindow(uint32_t id, GLFWindow* window, GLFWwindow* glfwWindow) noexcept
+        void registerWindow(uint32_t id, GLFWWindow* window, GLFWwindow* glfwWindow) noexcept
         {
             windows[id] = window;
             glfwWindows[glfwWindow] = window;
@@ -424,14 +424,14 @@ namespace exage::System
         }
     }  // namespace
 
-    void GLFWindow::init() noexcept
+    void GLFWWindow::init() noexcept
     {
         glfwInit();
         glfwSetMonitorCallback(monitorCallback);
         glfwSetJoystickCallback(joystickCallback);
     }
 
-    GLFWindow::GLFWindow(const WindowInfo& info) noexcept
+    GLFWWindow::GLFWWindow(const WindowInfo& info) noexcept
         : _id(nextID())
         , _name(info.name)
         , _extent(info.extent)
@@ -478,19 +478,19 @@ namespace exage::System
         registerWindow(_id, this, _window);
     }
 
-    GLFWindow::~GLFWindow() noexcept
+    GLFWWindow::~GLFWWindow() noexcept
     {
         glfwDestroyWindow(_window);
 
         unregisterWindow(_id, _window);
     }
 
-    void GLFWindow::close() noexcept
+    void GLFWWindow::close() noexcept
     {
         glfwSetWindowShouldClose(_window, GLFW_TRUE);
     }
 
-    auto GLFWindow::getExtent() const noexcept -> glm::uvec2
+    auto GLFWWindow::getExtent() const noexcept -> glm::uvec2
     {
         int width = 0;
         int height = 0;
@@ -499,7 +499,7 @@ namespace exage::System
         return {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
     }
 
-    auto GLFWindow::getPosition() const noexcept -> glm::ivec2
+    auto GLFWWindow::getPosition() const noexcept -> glm::ivec2
     {
         int xpos = 0;
         int ypos = 0;
@@ -508,17 +508,17 @@ namespace exage::System
         return {xpos, ypos};
     }
 
-    auto GLFWindow::isHidden() const noexcept -> bool
+    auto GLFWWindow::isHidden() const noexcept -> bool
     {
         return glfwGetWindowAttrib(_window, GLFW_VISIBLE) == GLFW_FALSE;
     }
 
-    auto GLFWindow::isResizable() const noexcept -> bool
+    auto GLFWWindow::isResizable() const noexcept -> bool
     {
         return glfwGetWindowAttrib(_window, GLFW_RESIZABLE) == GLFW_TRUE;
     }
 
-    void GLFWindow::setHidden(bool hidden) noexcept
+    void GLFWWindow::setHidden(bool hidden) noexcept
     {
         if (hidden)
         {
@@ -530,12 +530,12 @@ namespace exage::System
         }
     }
 
-    void GLFWindow::setResizable(bool resizable) noexcept
+    void GLFWWindow::setResizable(bool resizable) noexcept
     {
         glfwSetWindowAttrib(_window, GLFW_RESIZABLE, resizable ? GLFW_TRUE : GLFW_FALSE);
     }
 
-    auto GLFWindow::getModifiers() noexcept -> Modifiers
+    auto GLFWWindow::getModifiers() noexcept -> Modifiers
     {
         Modifiers modifiers {};
         if (glfwGetKey(_window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
@@ -591,7 +591,7 @@ namespace exage::System
         return modifiers;
     }
 
-    auto GLFWindow::exclusiveMonitor() const noexcept -> GLFWmonitor*
+    auto GLFWWindow::exclusiveMonitor() const noexcept -> GLFWmonitor*
     {
         int monitorCount = 0;
         GLFWmonitor** monitors = glfwGetMonitors(&monitorCount);
@@ -609,12 +609,12 @@ namespace exage::System
         return nullptr;
     }
 
-    auto GLFWindow::getID() const noexcept -> uint32_t
+    auto GLFWWindow::getID() const noexcept -> uint32_t
     {
         return _id;
     }
 
-    auto GLFWindow::getNativeHandle() const noexcept -> void*
+    auto GLFWWindow::getNativeHandle() const noexcept -> void*
     {
 #ifdef EXAGE_WINDOWS
         return glfwGetWin32Window(_window);
@@ -628,12 +628,12 @@ namespace exage::System
 #endif
     }
 
-    void GLFWindow::resize(glm::uvec2 extent) noexcept
+    void GLFWWindow::resize(glm::uvec2 extent) noexcept
     {
         glfwSetWindowSize(_window, static_cast<int>(extent.x), static_cast<int>(extent.y));
     }
 
-    void GLFWindow::setFullScreen(bool fullScreen) noexcept
+    void GLFWWindow::setFullScreen(bool fullScreen) noexcept
     {
         _fullScreen = fullScreen;
 
@@ -663,14 +663,14 @@ namespace exage::System
         }
     }
 
-    void GLFWindow::setWindowBordered(bool bordered) noexcept
+    void GLFWWindow::setWindowBordered(bool bordered) noexcept
     {
         _windowBordered = bordered;
 
         glfwSetWindowAttrib(_window, GLFW_DECORATED, _windowBordered ? GLFW_TRUE : GLFW_FALSE);
     }
 
-    void GLFWindow::setExclusiveRefreshRate(uint32_t refreshRate) noexcept
+    void GLFWWindow::setExclusiveRefreshRate(uint32_t refreshRate) noexcept
     {
         _exclusiveRefreshRate = refreshRate;
 
@@ -686,7 +686,7 @@ namespace exage::System
         }
     }
 
-    void GLFWindow::setExclusiveMonitor(Monitor monitor) noexcept
+    void GLFWWindow::setExclusiveMonitor(Monitor monitor) noexcept
     {
         _exclusiveMonitor = monitor;
 
@@ -702,34 +702,34 @@ namespace exage::System
         }
     }
 
-    auto GLFWindow::shouldClose() const noexcept -> bool
+    auto GLFWWindow::shouldClose() const noexcept -> bool
     {
         return glfwWindowShouldClose(_window) != 0;
     }
 
-    auto GLFWindow::isIconified() const noexcept -> bool
+    auto GLFWWindow::isIconified() const noexcept -> bool
     {
         return glfwGetWindowAttrib(_window, GLFW_ICONIFIED) == GLFW_TRUE;
     }
 
-    void GLFWindow::pollEvents() noexcept
+    void GLFWWindow::pollEvents() noexcept
     {
         glfwPollEvents();
     }
 
-    void GLFWindow::waitEvents() noexcept
+    void GLFWWindow::waitEvents() noexcept
     {
         glfwWaitEvents();
     }
 
-    auto GLFWindow::getMonitorCount() noexcept -> uint32_t
+    auto GLFWWindow::getMonitorCount() noexcept -> uint32_t
     {
         int count = 0;
         glfwGetMonitors(&count);
         return count;
     }
 
-    auto GLFWindow::getMonitor(uint32_t index) noexcept -> Monitor
+    auto GLFWWindow::getMonitor(uint32_t index) noexcept -> Monitor
     {
         int count = static_cast<int>(getMonitorCount());
         auto countU = static_cast<uint32_t>(count);
@@ -747,7 +747,7 @@ namespace exage::System
         return mon;
     }
 
-    auto GLFWindow::getMonitors() noexcept -> std::vector<Monitor>
+    auto GLFWWindow::getMonitors() noexcept -> std::vector<Monitor>
     {
         int const count = static_cast<int>(getMonitorCount());
 
@@ -762,17 +762,17 @@ namespace exage::System
         return monitors;
     }
 
-    auto GLFWindow::getWindowByID(uint32_t id) noexcept -> GLFWindow*
+    auto GLFWWindow::getWindowByID(uint32_t id) noexcept -> GLFWWindow*
     {
         return getWindow(id);
     }
 
-    auto GLFWindow::getWindowMap() noexcept -> std::unordered_map<GLFWwindow*, GLFWindow*>
+    auto GLFWWindow::getWindowMap() noexcept -> std::unordered_map<GLFWwindow*, GLFWWindow*>
     {
         return glfwWindows;
     }
 
-    auto GLFWindow::nextEvent() noexcept -> std::optional<Event>
+    auto GLFWWindow::nextEvent() noexcept -> std::optional<Event>
     {
         if (events.empty())
         {

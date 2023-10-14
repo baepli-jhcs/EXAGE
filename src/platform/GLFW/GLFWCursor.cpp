@@ -5,7 +5,7 @@
 #include <GLFW/glfw3.h>
 
 #include "exage/System/Window.h"
-#include "exage/platform/GLFW/GLFWindow.h"
+#include "exage/platform/GLFW/GLFWWindow.h"
 
 namespace exage::System
 {
@@ -60,7 +60,7 @@ namespace exage::System
 
     void GLFWCursor::setCurrent(GLFWCursor* cursor) noexcept
     {
-        for (auto&& [window, exageWindow] : GLFWindow::getWindowMap())
+        for (auto&& [window, exageWindow] : GLFWWindow::getWindowMap())
         {
             glfwSetCursor(window, cursor->_cursor);
         }

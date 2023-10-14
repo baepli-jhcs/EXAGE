@@ -11,7 +11,7 @@
 
 namespace exage::System
 {
-    enum class WindowAPI
+    enum class API
     {
         eGLFW,
         eSDL  // TODO: Implement SDL
@@ -171,8 +171,8 @@ namespace exage::System
         EventData data;
     };
 
-    void pollEvents(WindowAPI api) noexcept;
-    void waitEvent(WindowAPI api) noexcept;
+    void pollEvents(API api) noexcept;
+    void waitEvent(API api) noexcept;
 
-    [[nodiscard]] auto nextEvent(WindowAPI api) noexcept -> std::optional<Event>;
+    [[nodiscard]] auto nextEvent(API api) noexcept -> std::optional<Event>;
 }  // namespace exage::System

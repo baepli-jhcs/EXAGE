@@ -56,9 +56,9 @@ namespace exage::Graphics
         , _framesInFlight(old._framesInFlight)
         , _queue(old._queue)
         , _familyIndex(old._familyIndex)
-        , _renderFences(std::move(old._renderFences))
         , _presentSemaphores(std::move(old._presentSemaphores))
         , _renderSemaphores(std::move(old._renderSemaphores))
+        , _renderFences(std::move(old._renderFences))
     {
     }
 

@@ -176,7 +176,7 @@ namespace exage::Graphics::RmlUi
 
       private:
         System::Window* _window;
-        System::WindowAPI _windowAPI;
+        System::API _windowAPI;
 
         std::unique_ptr<System::Cursor> _arrow;
         std::unique_ptr<System::Cursor> _pointer;

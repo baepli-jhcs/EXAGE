@@ -1,91 +1,91 @@
 ﻿#include "exage/System/Window.h"
 
-#include "exage/platform/GLFW/GLFWindow.h"
+#include "exage/platform/GLFW/GLFWWindow.h"
 
 namespace exage::System
 {
-    auto Window::create(const WindowInfo& info, WindowAPI api) noexcept
+    auto Window::create(const WindowInfo& info, API api) noexcept
         -> tl::expected<std::unique_ptr<Window>, WindowError>
     {
         switch (api)
         {
-            case WindowAPI::eGLFW:
-                return std::make_unique<GLFWindow>(info);
-            case WindowAPI::eSDL:
+            case API::eGLFW:
+                return std::make_unique<GLFWWindow>(info);
+            case API::eSDL:
             default:
                 return tl::make_unexpected(WindowError::eInvalidAPI);
         }
     }
 
-    void pollEvents(WindowAPI api) noexcept
+    void pollEvents(API api) noexcept
     {
         switch (api)
         {
-            case WindowAPI::eGLFW:
-                GLFWindow::pollEvents();
+            case API::eGLFW:
+                GLFWWindow::pollEvents();
                 break;
-            case WindowAPI::eSDL:
+            case API::eSDL:
             default:
                 break;
         }
     }
 
-    void waitEvents(WindowAPI api) noexcept
+    void waitEvents(API api) noexcept
     {
         switch (api)
         {
-            case WindowAPI::eGLFW:
-                GLFWindow::waitEvents();
+            case API::eGLFW:
+                GLFWWindow::waitEvents();
                 break;
-            case WindowAPI::eSDL:
+            case API::eSDL:
             default:
                 break;
         }
     }
 
-    auto nextEvent(WindowAPI api) noexcept -> std::optional<Event>
+    auto nextEvent(API api) noexcept -> std::optional<Event>
     {
         switch (api)
         {
-            case WindowAPI::eGLFW:
-                return GLFWindow::nextEvent();
-            case WindowAPI::eSDL:
+            case API::eGLFW:
+                return GLFWWindow::nextEvent();
+            case API::eSDL:
             default:
                 return {};
         }
     }
 
-    auto getMonitorCount(WindowAPI api) noexcept -> uint32_t
+    auto getMonitorCount(API api) noexcept -> uint32_t
     {
         switch (api)
         {
-            case WindowAPI::eGLFW:
-                return GLFWindow::getMonitorCount();
-            case WindowAPI::eSDL:
+            case API::eGLFW:
+                return GLFWWindow::getMonitorCount();
+            case API::eSDL:
             default:
                 return 0;
         }
     }
 
-    auto getMonitor(uint32_t index, WindowAPI api) noexcept -> Monitor
+    auto getMonitor(uint32_t index, API api) noexcept -> Monitor
     {
         switch (api)
         {
-            case WindowAPI::eGLFW:
-                return GLFWindow::getMonitor(index);
-            case WindowAPI::eSDL:
+            case API::eGLFW:
+                return GLFWWindow::getMonitor(index);
+            case API::eSDL:
             default:
                 return {};
         }
     }
 
-    auto getMonitors(WindowAPI api) noexcept -> std::vector<Monitor>
+    auto getMonitors(API api) noexcept -> std::vector<Monitor>
     {
         switch (api)
         {
-            case WindowAPI::eGLFW:
-                return GLFWindow::getMonitors();
-            case WindowAPI::eSDL:
+            case API::eGLFW:
+                return GLFWWindow::getMonitors();
+            case API::eSDL:
             default:
                 return {};
         }

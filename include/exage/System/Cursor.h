@@ -24,7 +24,7 @@ namespace exage::System
         EXAGE_DELETE_COPY(Cursor);
         EXAGE_DEFAULT_MOVE(Cursor);
 
-        EXAGE_BASE_API(WindowAPI, Cursor);
+        EXAGE_BASE_API(API, Cursor);
 
         static auto create(StandardCursor standardCursor) noexcept -> std::unique_ptr<Cursor>;
         static auto create(glm::uvec2 extent, const uint8_t* pixels, glm::uvec2 hotspot) noexcept

@@ -47,7 +47,7 @@ namespace exage::Graphics
         std::reference_wrapper<Context> _context;
 
         API _api;
-        System::WindowAPI _windowAPI;
+        System::API _windowAPI;
 
         ImGuiContext* _imCtx;
     };

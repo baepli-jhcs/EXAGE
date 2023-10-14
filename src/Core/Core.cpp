@@ -3,14 +3,14 @@
 #include <FreeImage.h>
 
 #include "exage/Core/Timer.h"
-#include "exage/platform/GLFW/GLFWindow.h"
+#include "exage/platform/GLFW/GLFWWindow.h"
 
 namespace exage
 {
     void init() noexcept
     {
         // Initialize the engine
-        System::GLFWindow::init();
+        System::GLFWWindow::init();
 
         // Initialize FreeImage
         FreeImage_Initialise();

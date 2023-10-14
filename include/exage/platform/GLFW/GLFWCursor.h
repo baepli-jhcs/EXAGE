@@ -20,7 +20,7 @@ namespace exage::System
 
         static void setCurrent(GLFWCursor* cursor) noexcept;
 
-        EXAGE_DERIVED_API(WindowAPI, eGLFW);
+        EXAGE_DERIVED_API(API, eGLFW);
 
       private:
         GLFWcursor* _cursor = nullptr;
