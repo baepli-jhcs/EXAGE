@@ -3,6 +3,7 @@
 #include <memory_resource>
 #include <variant>
 
+#include <RmlUi/Core/Input.h>
 #include <RmlUi/Core/RenderInterface.h>
 #include <RmlUi/Core/SystemInterface.h>
 #include <RmlUi/Core/Types.h>
@@ -10,6 +11,7 @@
 #include <glm/glm.hpp>
 #include <robin_hood.h>
 
+#include "exage/Input/KeyCode.h"
 #include "exage/System/Cursor.h"
 #include "exage/System/Window.h"
 #include "exage/utils/classes.h"
@@ -147,19 +149,19 @@ namespace exage::Graphics::RmlUi
 
         auto getNextTexture() noexcept -> Rml::TextureHandle
         {
-            return reinterpret_cast<Rml::TextureHandle>(_currentTexture++);
+            return static_cast<Rml::TextureHandle>(_currentTexture++);
         }
 
         auto getNextCompiledGeometry() noexcept -> Rml::CompiledGeometryHandle
         {
-            return reinterpret_cast<Rml::CompiledGeometryHandle>(_currentCompiledGeometry++);
+            return static_cast<Rml::CompiledGeometryHandle>(_currentCompiledGeometry++);
         }
     };
 
     class SystemInterface : public Rml::SystemInterface
     {
       public:
-        explicit SystemInterface(System::WindowAPI api) noexcept;
+        explicit SystemInterface(System::Window& window) noexcept;
         ~SystemInterface() override = default;
 
         EXAGE_DELETE_COPY(SystemInterface);
@@ -173,11 +175,20 @@ namespace exage::Graphics::RmlUi
         void GetClipboardText(Rml::String& text) override;
 
       private:
-        System::WindowAPI _api;
+        System::Window* _window;
+        System::WindowAPI _windowAPI;
 
         std::unique_ptr<System::Cursor> _arrow;
         std::unique_ptr<System::Cursor> _pointer;
         std::unique_ptr<System::Cursor> _crosshair;
         std::unique_ptr<System::Cursor> _text;
     };
+
+    /* Returns true if the event was handled by RmlUi */
+    auto registerEvent(Rml::Context& context, uint32_t windowID, const System::Event& event)
+        -> bool;
+
+    [[nodiscard]] auto toRmlUiKey(KeyCode key) noexcept -> Rml::Input::KeyIdentifier;
+    [[nodiscard]] auto toRmlUiModifiers(Modifiers modifiers) -> int;
+    [[nodiscard]] auto toRmlUiMouseButton(MouseButton button) noexcept -> int;
 }  // namespace exage::Graphics::RmlUi

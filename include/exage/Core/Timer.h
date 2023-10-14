@@ -22,8 +22,15 @@ namespace exage
             return std::chrono::duration<float>(_currentFrameTime - _lastFrameTime).count();
         }
 
+        /* Returns time from start of the program in seconds */
+        [[nodiscard]] static auto getTimeFromStart() noexcept -> double;
+
       private:
+        static void init() noexcept;
+
         std::chrono::time_point<std::chrono::high_resolution_clock> _lastFrameTime;
         std::chrono::time_point<std::chrono::high_resolution_clock> _currentFrameTime;
+
+        friend void init() noexcept;
     };
 }  // namespace exage

@@ -32,6 +32,7 @@ add_library(
     EXAGE_EXAGE
     src/Core/Core.cpp
     src/Core/Debug.cpp
+    src/Core/Timer.cpp
     src/Filesystem/Directories.cpp
     src/Graphics/GraphicsContext.cpp
     src/Graphics/Shader.cpp
@@ -39,8 +40,10 @@ add_library(
     src/Graphics/HLPD/ImGuiTools.cpp
     src/Graphics/HLPD/ImGuiPlatform/imgui_impl_glfw.cpp
     src/Graphics/HLPD/ImGuiPlatform/imgui_impl_vulkan.cpp
+    src/Graphics/HLPD/RmlUi.cpp
     src/Graphics/Utils/BufferTypes.cpp
     src/Graphics/Utils/QueueCommand.cpp
+    src/platform/GLFW/GLFWClipboard.cpp
     src/platform/GLFW/GLFWindow.cpp
     src/platform/Vulkan/VkBootstrap.cpp
     src/platform/Vulkan/VulkanBuffer.cpp
@@ -75,6 +78,7 @@ add_library(
     src/Scene/Hierarchy.cpp
     src/Scene/Rotation3D.cpp
     src/Scene/Scene.cpp
+    src/System/Clipboard.cpp
     src/System/Window.cpp
 )
 add_library(EXAGE::EXAGE ALIAS EXAGE_EXAGE)

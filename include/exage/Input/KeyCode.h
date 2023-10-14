@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "exage/Core/Core.h"
+#include "exage/utils/flags.h"
 
 namespace exage
 {
@@ -157,4 +158,26 @@ namespace exage
 
         uint8_t code;  // 0 = left, 1 = right, 2 = middle, others are unnamed buttons
     };
+
+    enum class ModifierFlags : uint32_t
+    {
+        eLeftShift = 1 << 0,
+        eRightShift = 1 << 1,
+        eLeftControl = 1 << 2,
+        eRightControl = 1 << 3,
+        eLeftAlt = 1 << 4,
+        eRightAlt = 1 << 5,
+        eLeftSuper = 1 << 6,
+        eRightSuper = 1 << 7,
+        eCapsLock = 1 << 8,
+        eNumLock = 1 << 9,
+
+        eShift = eLeftShift | eRightShift,
+        eControl = eLeftControl | eRightControl,
+        eAlt = eLeftAlt | eRightAlt,
+        eSuper = eLeftSuper | eRightSuper,
+    };
+
+    using Modifiers = Flags<ModifierFlags>;
+    EXAGE_ENABLE_FLAGS(Modifiers);
 }  // namespace exage

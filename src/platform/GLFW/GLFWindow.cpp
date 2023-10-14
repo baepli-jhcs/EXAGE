@@ -208,6 +208,7 @@ namespace exage::System
                 case GLFW_PRESS:
                 {
                     Events::MouseButtonPressed event {};
+                    event.modifiers = win->getModifiers();
                     event.button = toMouseButton(button);
                     pushEvent({win->getID(), event});
                     break;
@@ -215,6 +216,7 @@ namespace exage::System
                 case GLFW_RELEASE:
                 {
                     Events::MouseButtonReleased event {};
+                    event.modifiers = win->getModifiers();
                     event.button = toMouseButton(button);
                     pushEvent({win->getID(), event});
                     break;
@@ -234,6 +236,7 @@ namespace exage::System
             }
 
             Events::MouseMoved event {};
+            event.modifiers = win->getModifiers();
             event.position = {static_cast<int>(xpos), static_cast<int>(ypos)};
 
             pushEvent({win->getID(), event});
@@ -249,6 +252,7 @@ namespace exage::System
             }
 
             Events::MouseScrolled event {};
+            event.modifiers = win->getModifiers();
             event.offset = {static_cast<float>(x), static_cast<float>(y)};
 
             pushEvent({win->getID(), event});
@@ -290,6 +294,7 @@ namespace exage::System
                 case GLFW_PRESS:
                 {
                     Events::KeyPressed event {};
+                    event.modifiers = win->getModifiers();
                     event.key = toKeyCode(key);
                     pushEvent({win->getID(), event});
                     break;
@@ -297,6 +302,7 @@ namespace exage::System
                 case GLFW_RELEASE:
                 {
                     Events::KeyReleased event {};
+                    event.modifiers = win->getModifiers();
                     event.key = toKeyCode(key);
                     pushEvent({win->getID(), event});
                     break;
@@ -304,6 +310,7 @@ namespace exage::System
                 case GLFW_REPEAT:
                 {
                     Events::KeyRepeated event {};
+                    event.modifiers = win->getModifiers();
                     event.key = toKeyCode(key);
                     pushEvent({win->getID(), event});
                     break;
@@ -526,6 +533,62 @@ namespace exage::System
     void GLFWindow::setResizable(bool resizable) noexcept
     {
         glfwSetWindowAttrib(_window, GLFW_RESIZABLE, resizable ? GLFW_TRUE : GLFW_FALSE);
+    }
+
+    auto GLFWindow::getModifiers() noexcept -> Modifiers
+    {
+        Modifiers modifiers {};
+        if (glfwGetKey(_window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+        {
+            modifiers |= ModifierFlags::eLeftShift;
+        }
+
+        if (glfwGetKey(_window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS)
+        {
+            modifiers |= ModifierFlags::eRightShift;
+        }
+
+        if (glfwGetKey(_window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
+        {
+            modifiers |= ModifierFlags::eLeftControl;
+        }
+
+        if (glfwGetKey(_window, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS)
+        {
+            modifiers |= ModifierFlags::eRightControl;
+        }
+
+        if (glfwGetKey(_window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS)
+        {
+            modifiers |= ModifierFlags::eLeftAlt;
+        }
+
+        if (glfwGetKey(_window, GLFW_KEY_RIGHT_ALT) == GLFW_PRESS)
+        {
+            modifiers |= ModifierFlags::eRightAlt;
+        }
+
+        if (glfwGetKey(_window, GLFW_KEY_LEFT_SUPER) == GLFW_PRESS)
+        {
+            modifiers |= ModifierFlags::eLeftSuper;
+        }
+
+        if (glfwGetKey(_window, GLFW_KEY_RIGHT_SUPER) == GLFW_PRESS)
+        {
+            modifiers |= ModifierFlags::eRightSuper;
+        }
+
+        if (glfwGetKey(_window, GLFW_KEY_CAPS_LOCK) == GLFW_PRESS)
+        {
+            modifiers |= ModifierFlags::eCapsLock;
+        }
+
+        if (glfwGetKey(_window, GLFW_KEY_NUM_LOCK) == GLFW_PRESS)
+        {
+            modifiers |= ModifierFlags::eNumLock;
+        }
+
+        return modifiers;
     }
 
     auto GLFWindow::exclusiveMonitor() const noexcept -> GLFWmonitor*

@@ -13,5 +13,5 @@
 namespace exage
 {
     // Sets up required engine components
-    void init();
+    void init() noexcept;
 }  // namespace exage

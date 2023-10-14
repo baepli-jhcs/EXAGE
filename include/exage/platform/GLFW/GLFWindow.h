@@ -66,6 +66,8 @@ namespace exage::System
 
         [[nodiscard]] auto getGLFWWindow() const noexcept -> GLFWwindow* { return _window; }
 
+        [[nodiscard]] auto getModifiers() noexcept -> Modifiers;
+
         static void init() noexcept;
 
         static void pollEvents() noexcept;

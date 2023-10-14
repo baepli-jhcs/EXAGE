@@ -65,21 +65,25 @@ namespace exage::System
 
         struct MouseButtonPressed
         {
+            Modifiers modifiers;
             MouseButton button;
         };
 
         struct MouseButtonReleased
         {
+            Modifiers modifiers;
             MouseButton button;
         };
 
         struct MouseMoved
         {
+            Modifiers modifiers;
             glm::ivec2 position;
         };
 
         struct MouseScrolled
         {
+            Modifiers modifiers;
             glm::vec2 offset;
         };
 
@@ -93,16 +97,19 @@ namespace exage::System
 
         struct KeyPressed
         {
+            Modifiers modifiers;
             KeyCode key;
         };
 
         struct KeyReleased
         {
+            Modifiers modifiers;
             KeyCode key;
         };
 
         struct KeyRepeated
         {
+            Modifiers modifiers;
             KeyCode key;
         };
 

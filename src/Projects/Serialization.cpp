@@ -152,7 +152,7 @@ namespace exage::Projects
                         componentData[index] = ss.str();
                     }
 
-                    catch (const std::exception& e)
+                    catch (const std::exception&)
                     {
                         componentData[index] = "";
                     }
@@ -266,7 +266,7 @@ namespace exage::Projects
 
                     reg.emplace_or_replace<T>(entity, std::move(component));
                 }
-                catch (const std::exception& e)
+                catch (const std::exception&)
                 {
                     reg.emplace_or_replace<T>(entity);
                 }
