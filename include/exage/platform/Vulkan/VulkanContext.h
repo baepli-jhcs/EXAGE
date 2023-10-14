@@ -66,7 +66,7 @@ namespace exage::Graphics
         [[nodiscard]] auto getFormatSupport(Format format) const noexcept
             -> std::pair<bool, FormatFeatures> override;
 
-        [[nodiscard]] auto createSurface(Window& window) const noexcept -> vk::SurfaceKHR;
+        [[nodiscard]] auto createSurface(System::Window& window) const noexcept -> vk::SurfaceKHR;
         [[nodiscard]] auto getOrCreateDescriptorSetLayout(
             const std::vector<ResourceDescription>& resourceDescriptions) noexcept
             -> vk::DescriptorSetLayout;

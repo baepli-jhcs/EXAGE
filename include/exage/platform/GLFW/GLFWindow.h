@@ -2,14 +2,12 @@
 
 #include <vector>
 
-#include <stdint.h>
-
-#include "exage/Core/Window.h"
+#include "exage/System/Window.h"
 
 struct GLFWwindow;
 struct GLFWmonitor;
 
-namespace exage
+namespace exage::System
 {
     class GLFWindow final : public Window
     {
@@ -18,7 +16,7 @@ namespace exage
         ~GLFWindow() noexcept override;
 
         EXAGE_DELETE_COPY(GLFWindow);
-        EXAGE_DEFAULT_MOVE(GLFWindow);
+        EXAGE_DELETE_MOVE(GLFWindow);
 
         void close() noexcept override;
 
@@ -78,6 +76,7 @@ namespace exage
         static auto getMonitors() noexcept -> std::vector<Monitor>;
 
         static auto getWindowByID(uint32_t id) noexcept -> GLFWindow*;
+        static auto getWindowMap() noexcept -> std::unordered_map<GLFWwindow*, GLFWindow*>;
 
         static auto nextEvent() noexcept -> std::optional<Event>;
 
@@ -99,4 +98,4 @@ namespace exage
         uint32_t _exclusiveRefreshRate;
         Monitor _exclusiveMonitor;
     };
-}  // namespace exage
+}  // namespace exage::System

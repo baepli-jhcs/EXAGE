@@ -4,7 +4,7 @@
 
 #include "Context.h"
 #include "exage/Core/Core.h"
-#include "exage/Core/Window.h"
+#include "exage/System/Window.h"
 #include "exage/utils/classes.h"
 #include "glm/glm.hpp"
 
@@ -22,7 +22,7 @@ namespace exage::Graphics
 
     struct SwapchainCreateInfo
     {
-        Window& window;
+        System::Window& window;
         PresentMode presentMode = PresentMode::eImmediate;
     };
 

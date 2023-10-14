@@ -1,8 +1,8 @@
 ﻿#pragma once
 
 #include "exage/Core/Core.h"
-#include "exage/Core/Window.h"
 #include "exage/Graphics/Error.h"
+#include "exage/System/Window.h"
 #include "exage/utils/classes.h"
 #include "exage/utils/flags.h"
 
@@ -24,9 +24,9 @@ namespace exage::Graphics
     struct ContextCreateInfo
     {
         API api = API::eVulkan;
-        WindowAPI windowAPI;
+        System::WindowAPI windowAPI;
 
-        Window* optionalWindow = nullptr;
+        System::Window* optionalWindow = nullptr;
         uint32_t maxFramesInFlight = 2;
     };
 

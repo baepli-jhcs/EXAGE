@@ -32,7 +32,6 @@ add_library(
     EXAGE_EXAGE
     src/Core/Core.cpp
     src/Core/Debug.cpp
-    src/Core/Window.cpp
     src/Filesystem/Directories.cpp
     src/Graphics/GraphicsContext.cpp
     src/Graphics/Shader.cpp
@@ -76,6 +75,7 @@ add_library(
     src/Scene/Hierarchy.cpp
     src/Scene/Rotation3D.cpp
     src/Scene/Scene.cpp
+    src/System/Window.cpp
 )
 add_library(EXAGE::EXAGE ALIAS EXAGE_EXAGE)
 
@@ -130,6 +130,7 @@ find_package(glfw3 REQUIRED)
 find_package(glm REQUIRED)
 # find_package(Ktx REQUIRED)
 find_package(nlohmann_json REQUIRED)
+find_package(RmlUi REQUIRED)
 find_package(rttr REQUIRED)
 find_package(Stb REQUIRED)
 find_package(unofficial-shaderc REQUIRED)
@@ -156,6 +157,7 @@ target_link_libraries(EXAGE_EXAGE PUBLIC
     ImGui
     # KTX::ktx
     nlohmann_json::nlohmann_json
+    RmlCore
     RTTR::Core_Lib
     unofficial::shaderc::shaderc
     tl::expected

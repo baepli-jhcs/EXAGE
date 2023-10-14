@@ -1,9 +1,9 @@
 ﻿#pragma once
 
 #include "exage/Core/Core.h"
-#include "exage/Core/Window.h"
 #include "exage/Graphics/Context.h"
 #include "exage/Graphics/Texture.h"
+#include "exage/System/Window.h"
 #include "imgui.h"
 
 namespace exage::Graphics
@@ -11,7 +11,7 @@ namespace exage::Graphics
     struct ImGuiInitInfo
     {
         Context& context;
-        Window& window;
+        System::Window& window;
     };
 
     class ImGuiInstance
@@ -29,7 +29,7 @@ namespace exage::Graphics
 
         void addFont(const std::string& path, float size, bool isDefault = false) noexcept;
 
-        void processEvent(const Event& event) noexcept;
+        void processEvent(const System::Event& event) noexcept;
 
         void renderMainWindow(CommandBuffer& commandBuffer) noexcept;
         void renderAdditional();
@@ -47,7 +47,7 @@ namespace exage::Graphics
         std::reference_wrapper<Context> _context;
 
         API _api;
-        WindowAPI _windowAPI;
+        System::WindowAPI _windowAPI;
 
         ImGuiContext* _imCtx;
     };

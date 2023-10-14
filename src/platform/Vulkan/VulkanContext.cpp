@@ -5,7 +5,7 @@
 #include <exage/platform/GLFW/GLFWindow.h>
 #include <exage/utils/cast.h>
 
-#include "exage/Core/Window.h"
+#include "exage/System/Window.h"
 #include "exage/platform/Vulkan/VulkanContext.h"
 
 #define GLFW_INCLUDE_VULKAN
@@ -122,20 +122,20 @@ namespace exage::Graphics
         VULKAN_HPP_DEFAULT_DISPATCHER.init(_instance.instance);
 
         bool const createWindow = createInfo.optionalWindow == nullptr;
-        Window* window = createInfo.optionalWindow;
-        std::unique_ptr<Window> windowMemory {};
+        System::Window* window = createInfo.optionalWindow;
+        std::unique_ptr<System::Window> windowMemory {};
 
         if (createWindow)
         {
-            constexpr WindowInfo info = {
+            constexpr System::WindowInfo info = {
                 .name = "Setup Window",
                 .extent = {800, 600},
                 .fullScreen = false,
                 .windowBordered = true,
             };
 
-            tl::expected<std::unique_ptr<Window>, WindowError> windowRes =
-                Window::create(info, createInfo.windowAPI);
+            tl::expected<std::unique_ptr<System::Window>, System::WindowError> windowRes =
+                System::Window::create(info, createInfo.windowAPI);
 
             debugAssume(windowRes.has_value(), "Failed to create window");
             windowMemory = std::move(windowRes.value());
@@ -469,14 +469,14 @@ namespace exage::Graphics
         return {true, formatFeatures};
     }
 
-    auto VulkanContext::createSurface(Window& window) const noexcept -> vk::SurfaceKHR
+    auto VulkanContext::createSurface(System::Window& window) const noexcept -> vk::SurfaceKHR
     {
         VkSurfaceKHR surface = nullptr;
         switch (window.getAPI())
         {
-            case WindowAPI::eGLFW:
+            case System::WindowAPI::eGLFW:
             {
-                const auto* glfWindow = window.as<GLFWindow>();
+                const auto* glfWindow = window.as<System::GLFWindow>();
                 debugAssume(glfWindow != nullptr, "Invalid window type");
                 glfwCreateWindowSurface(
                     _instance.instance, glfWindow->getGLFWWindow(), nullptr, &surface);

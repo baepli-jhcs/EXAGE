@@ -45,7 +45,7 @@ namespace exitor
 
         void resizeCallback(glm::uvec2 extent) noexcept;
 
-        std::unique_ptr<Window> _window;
+        std::unique_ptr<System::Window> _window;
         std::unique_ptr<Graphics::Context> _context;
         std::unique_ptr<Graphics::Swapchain> _swapchain;
         std::shared_ptr<Graphics::FrameBuffer> _frameBuffer;

@@ -9,7 +9,7 @@ namespace exage
     void init()
     {
         // Initialize the engine
-        GLFWindow::init();
+        System::GLFWindow::init();
 
         // Initialize FreeImage
         FreeImage_Initialise();

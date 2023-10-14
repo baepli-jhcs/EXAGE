@@ -11,8 +11,6 @@
 #include "MousePicking/MousePicking.h"
 #include "Stages/AssetImport.h"
 #include "exage/Core/Debug.h"
-#include "exage/Core/Event.h"
-#include "exage/Core/Window.h"
 #include "exage/Graphics/Buffer.h"
 #include "exage/Graphics/CommandBuffer.h"
 #include "exage/Projects/Level.h"
@@ -27,12 +25,14 @@
 #include "exage/Renderer/Scene/SceneBuffer.h"
 #include "exage/Renderer/Utils/Perspective.h"
 #include "exage/Scene/Hierarchy.h"
+#include "exage/System/Event.h"
+#include "exage/System/Window.h"
 #include "exage/utils/math.h"
 #include "exage/utils/string.h"
 #include "imgui.h"
 #include "utils/files.h"
 
-constexpr static auto WINDOW_API = exage::WindowAPI::eGLFW;
+constexpr static auto WINDOW_API = exage::System::WindowAPI::eGLFW;
 constexpr static auto GRAPHICS_API = exage::Graphics::API::eVulkan;
 
 namespace exitor
@@ -40,8 +40,8 @@ namespace exitor
 
     Editor::Editor() noexcept
     {
-        Monitor monitor = getDefaultMonitor(WINDOW_API);
-        WindowInfo windowInfo {
+        System::Monitor monitor = getDefaultMonitor(WINDOW_API);
+        System::WindowInfo windowInfo {
             .name = "EXitor",
             .extent = {monitor.extent.x / 2, monitor.extent.y / 2},
             .fullScreen = false,
@@ -51,7 +51,7 @@ namespace exitor
             .resizable = true,
         };
 
-        tl::expected windowResult = Window::create(windowInfo, WINDOW_API);
+        tl::expected windowResult = System::Window::create(windowInfo, WINDOW_API);
         assert(windowResult.has_value());
         _window = std::move(*windowResult);
 
@@ -119,7 +119,8 @@ namespace exitor
 
                     if (_window->getID() == event->pertainingID)
                     {
-                        if (auto* windowResized = std::get_if<Events::WindowResized>(&event->data))
+                        if (auto* windowResized =
+                                std::get_if<System::Events::WindowResized>(&event->data))
                         {
                             resizeCallback(windowResized->extent);
                         }

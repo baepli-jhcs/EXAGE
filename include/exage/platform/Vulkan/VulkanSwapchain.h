@@ -40,7 +40,7 @@ namespace exage::Graphics
         EXAGE_VULKAN_DERIVED;
 
       private:
-        void createSurface(Window& window) noexcept;
+        void createSurface(System::Window& window) noexcept;
         void createSwapchain() noexcept;
 
         std::reference_wrapper<VulkanContext> _context;

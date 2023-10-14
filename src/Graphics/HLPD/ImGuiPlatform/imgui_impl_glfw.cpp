@@ -95,9 +95,9 @@
 
 #include "imgui.h"
 
-#include "exage/Core/Event.h"
-#include "exage/Core/Window.h"
 #include "exage/Input/KeyCode.h"
+#include "exage/System/Event.h"
+#include "exage/System/Window.h"
 #include "exage/platform/GLFW/GLFWindow.h"
 #include "exage/utils/variant.h"
 #include "imgui_impl_glfw.h"
@@ -174,13 +174,13 @@ enum GlfwClientApi
 
 struct ImGui_ImplGlfw_Data
 {
-    exage::GLFWindow* Window;
+    exage::System::GLFWindow* Window;
     GlfwClientApi ClientApi;
     double Time;
-    exage::GLFWindow* MouseWindow;
+    exage::System::GLFWindow* MouseWindow;
     GLFWcursor* MouseCursors[ImGuiMouseCursor_COUNT];
     ImVec2 LastValidMousePos;
-    exage::GLFWindow* KeyOwnerWindows[GLFW_KEY_LAST];
+    exage::System::GLFWindow* KeyOwnerWindows[GLFW_KEY_LAST];
     bool InstalledCallbacks;
     bool CallbacksChainForAllWindows;
     bool WantUpdateMonitors;
@@ -196,7 +196,7 @@ struct ImGui_ImplGlfw_Data
 
 struct ImGui_ImplGlfw_ViewportData
 {
-    exage::GLFWindow* Window;
+    exage::System::GLFWindow* Window;
     bool WindowOwned;
     int IgnoreWindowPosEventFrame;
     int IgnoreWindowSizeEventFrame;
@@ -235,13 +235,13 @@ static void ImGui_ImplGlfw_ShutdownPlatformInterface();
 // Functions
 static const char* ImGui_ImplGlfw_GetClipboardText(void* user_data)
 {
-    auto* window = (exage::GLFWindow*)user_data;
+    auto* window = (exage::System::GLFWindow*)user_data;
     return glfwGetClipboardString(window->getGLFWWindow());
 }
 
 static void ImGui_ImplGlfw_SetClipboardText(void* user_data, const char* text)
 {
-    auto* window = (exage::GLFWindow*)user_data;
+    auto* window = (exage::System::GLFWindow*)user_data;
     glfwSetClipboardString(window->getGLFWWindow(), text);
 }
 
@@ -487,10 +487,10 @@ static void ImGui_ImplGlfw_UpdateKeyModifiers()
 
 namespace
 {
-    void onWindowMove(ImGuiIO&, ImGui_ImplGlfw_Data*, const exage::Event& event)
+    void onWindowMove(ImGuiIO&, ImGui_ImplGlfw_Data*, const exage::System::Event& event)
     {
         if (ImGuiViewport* viewport = ImGui::FindViewportByPlatformHandle(
-                exage::GLFWindow::getWindowByID(event.pertainingID)))
+                exage::System::GLFWindow::getWindowByID(event.pertainingID)))
         {
             if (ImGui_ImplGlfw_ViewportData* vd =
                     (ImGui_ImplGlfw_ViewportData*)viewport->PlatformUserData)
@@ -505,11 +505,11 @@ namespace
         }
     }
 
-    void onWindowResize(ImGuiIO&, ImGui_ImplGlfw_Data*, const exage::Event& event)
+    void onWindowResize(ImGuiIO&, ImGui_ImplGlfw_Data*, const exage::System::Event& event)
     {
-        auto* window = exage::GLFWindow::getWindowByID(event.pertainingID);
+        auto* window = exage::System::GLFWindow::getWindowByID(event.pertainingID);
         if (ImGuiViewport* viewport = ImGui::FindViewportByPlatformHandle(
-                exage::GLFWindow::getWindowByID(event.pertainingID)))
+                exage::System::GLFWindow::getWindowByID(event.pertainingID)))
         {
             if (ImGui_ImplGlfw_ViewportData* vd =
                     (ImGui_ImplGlfw_ViewportData*)viewport->PlatformUserData)
@@ -526,29 +526,29 @@ namespace
         }
     }
 
-    void onWindowClose(ImGuiIO&, ImGui_ImplGlfw_Data*, const exage::Event& event)
+    void onWindowClose(ImGuiIO&, ImGui_ImplGlfw_Data*, const exage::System::Event& event)
     {
         if (ImGuiViewport* viewport = ImGui::FindViewportByPlatformHandle(
-                exage::GLFWindow::getWindowByID(event.pertainingID)))
+                exage::System::GLFWindow::getWindowByID(event.pertainingID)))
         {
             viewport->PlatformRequestClose = true;
         }
     }
 
-    void onWindowFocus(ImGuiIO& io, ImGui_ImplGlfw_Data*, const exage::Event&)
+    void onWindowFocus(ImGuiIO& io, ImGui_ImplGlfw_Data*, const exage::System::Event&)
     {
         io.AddFocusEvent(true);
     }
 
-    void onWindowLostFocus(ImGuiIO& io, ImGui_ImplGlfw_Data*, const exage::Event&)
+    void onWindowLostFocus(ImGuiIO& io, ImGui_ImplGlfw_Data*, const exage::System::Event&)
     {
         io.AddFocusEvent(false);
     }
 
     void onMouseButtonPressed(ImGuiIO& io,
                               ImGui_ImplGlfw_Data*,
-                              const exage::Event&,
-                              const exage::Events::MouseButtonPressed& data)
+                              const exage::System::Event&,
+                              const exage::System::Events::MouseButtonPressed& data)
     {
         if (data.button.code < ImGuiMouseButton_COUNT)
         {
@@ -559,8 +559,8 @@ namespace
 
     void onMouseButtonReleased(ImGuiIO& io,
                                ImGui_ImplGlfw_Data*,
-                               const exage::Event&,
-                               const exage::Events::MouseButtonReleased& data)
+                               const exage::System::Event&,
+                               const exage::System::Events::MouseButtonReleased& data)
     {
         if (data.button.code < ImGuiMouseButton_COUNT)
         {
@@ -571,13 +571,13 @@ namespace
 
     void onMouseMoved(ImGuiIO& io,
                       ImGui_ImplGlfw_Data* bd,
-                      const exage::Event& event,
-                      const exage::Events::MouseMoved& data)
+                      const exage::System::Event& event,
+                      const exage::System::Events::MouseMoved& data)
     {
         auto x = static_cast<float>(data.position.x);
         auto y = static_cast<float>(data.position.y);
 
-        if (auto* window = exage::GLFWindow::getWindowByID(event.pertainingID))
+        if (auto* window = exage::System::GLFWindow::getWindowByID(event.pertainingID))
         {
             auto position = window->getPosition();
             x += static_cast<float>(position.x);
@@ -589,16 +589,16 @@ namespace
 
     void onMouseScrolled(ImGuiIO& io,
                          ImGui_ImplGlfw_Data*,
-                         const exage::Event&,
-                         const exage::Events::MouseScrolled& data)
+                         const exage::System::Event&,
+                         const exage::System::Events::MouseScrolled& data)
     {
         io.AddMouseWheelEvent(static_cast<float>(data.offset.x), static_cast<float>(data.offset.y));
     }
 
     void onKeyPressed(ImGuiIO& io,
                       ImGui_ImplGlfw_Data*,
-                      const exage::Event&,
-                      const exage::Events::KeyPressed& data)
+                      const exage::System::Event&,
+                      const exage::System::Events::KeyPressed& data)
     {
         ImGui_ImplGlfw_UpdateKeyModifiers();
         io.AddKeyEvent(ImGui_ImplGlfw_KeyToImGuiKey(data.key.code), true);
@@ -606,8 +606,8 @@ namespace
 
     void onKeyReleased(ImGuiIO& io,
                        ImGui_ImplGlfw_Data*,
-                       const exage::Event&,
-                       const exage::Events::KeyReleased& data)
+                       const exage::System::Event&,
+                       const exage::System::Events::KeyReleased& data)
     {
         ImGui_ImplGlfw_UpdateKeyModifiers();
         io.AddKeyEvent(ImGui_ImplGlfw_KeyToImGuiKey(data.key.code), false);
@@ -615,8 +615,8 @@ namespace
 
     void onCodepointInput(ImGuiIO& io,
                           ImGui_ImplGlfw_Data*,
-                          const exage::Event&,
-                          const exage::Events::CodepointInput& data)
+                          const exage::System::Event&,
+                          const exage::System::Events::CodepointInput& data)
     {
         if (data.codepoint > 0 && data.codepoint < 0x10000)
         {
@@ -624,15 +624,15 @@ namespace
         }
     }
 
-    void onMouseEntered(ImGuiIO& io, ImGui_ImplGlfw_Data* bd, const exage::Event& event)
+    void onMouseEntered(ImGuiIO& io, ImGui_ImplGlfw_Data* bd, const exage::System::Event& event)
     {
-        bd->MouseWindow = exage::GLFWindow::getWindowByID(event.pertainingID);
+        bd->MouseWindow = exage::System::GLFWindow::getWindowByID(event.pertainingID);
         io.AddMousePosEvent(bd->LastValidMousePos.x, bd->LastValidMousePos.y);
     }
 
-    void onMouseLeft(ImGuiIO& io, ImGui_ImplGlfw_Data* bd, const exage::Event& event)
+    void onMouseLeft(ImGuiIO& io, ImGui_ImplGlfw_Data* bd, const exage::System::Event& event)
     {
-        if (bd->MouseWindow == exage::GLFWindow::getWindowByID(event.pertainingID))
+        if (bd->MouseWindow == exage::System::GLFWindow::getWindowByID(event.pertainingID))
         {
             bd->LastValidMousePos = io.MousePos;
             bd->MouseWindow = nullptr;
@@ -641,24 +641,24 @@ namespace
         }
     }
 
-    void onMonitorConnected(ImGuiIO&, ImGui_ImplGlfw_Data* bd, const exage::Event&)
+    void onMonitorConnected(ImGuiIO&, ImGui_ImplGlfw_Data* bd, const exage::System::Event&)
     {
         bd->WantUpdateMonitors = true;
     }
 
-    void onMonitorDisconnected(ImGuiIO&, ImGui_ImplGlfw_Data* bd, const exage::Event&)
+    void onMonitorDisconnected(ImGuiIO&, ImGui_ImplGlfw_Data* bd, const exage::System::Event&)
     {
         bd->WantUpdateMonitors = true;
     }
 
 }  // namespace
 
-IMGUI_IMPL_API void ImGui_ImplGlfw_ProcessEvent(const exage::Event& event)
+IMGUI_IMPL_API void ImGui_ImplGlfw_ProcessEvent(const exage::System::Event& event)
 {
     ImGuiIO& io = ImGui::GetIO();
     ImGui_ImplGlfw_Data* bd = ImGui_ImplGlfw_GetBackendData();
 
-    using namespace exage::Events;
+    using namespace exage::System::Events;
 
     std::visit(
         exage::Overload {
@@ -781,7 +781,7 @@ static EM_BOOL ImGui_ImplEmscripten_WheelCallback(int, const EmscriptenWheelEven
 }
 #endif
 
-static bool ImGui_ImplGlfw_Init(exage::GLFWindow* window, GlfwClientApi client_api)
+static bool ImGui_ImplGlfw_Init(exage::System::GLFWindow* window, GlfwClientApi client_api)
 {
     ImGuiIO& io = ImGui::GetIO();
     IM_ASSERT(io.BackendPlatformUserData == nullptr && "Already initialized a platform backend!");
@@ -854,17 +854,17 @@ static bool ImGui_ImplGlfw_Init(exage::GLFWindow* window, GlfwClientApi client_a
     return true;
 }
 
-bool ImGui_ImplGlfw_InitForOpenGL(exage::GLFWindow* window)
+bool ImGui_ImplGlfw_InitForOpenGL(exage::System::GLFWindow* window)
 {
     return ImGui_ImplGlfw_Init(window, GlfwClientApi_OpenGL);
 }
 
-bool ImGui_ImplGlfw_InitForVulkan(exage::GLFWindow* window)
+bool ImGui_ImplGlfw_InitForVulkan(exage::System::GLFWindow* window)
 {
     return ImGui_ImplGlfw_Init(window, GlfwClientApi_Vulkan);
 }
 
-bool ImGui_ImplGlfw_InitForOther(exage::GLFWindow* window)
+bool ImGui_ImplGlfw_InitForOther(exage::System::GLFWindow* window)
 {
     return ImGui_ImplGlfw_Init(window, GlfwClientApi_Unknown);
 }
@@ -902,7 +902,7 @@ static void ImGui_ImplGlfw_UpdateMouseData()
     for (int n = 0; n < platform_io.Viewports.Size; n++)
     {
         ImGuiViewport* viewport = platform_io.Viewports[n];
-        exage::GLFWindow* exageWindow = (exage::GLFWindow*)viewport->PlatformHandle;
+        exage::System::GLFWindow* exageWindow = (exage::System::GLFWindow*)viewport->PlatformHandle;
         auto* window = exageWindow->getGLFWWindow();
 
 #ifdef __EMSCRIPTEN__
@@ -991,7 +991,8 @@ static void ImGui_ImplGlfw_UpdateMouseCursor()
     ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
     for (int n = 0; n < platform_io.Viewports.Size; n++)
     {
-        exage::GLFWindow* exageWindow = (exage::GLFWindow*)platform_io.Viewports[n]->PlatformHandle;
+        exage::System::GLFWindow* exageWindow =
+            (exage::System::GLFWindow*)platform_io.Viewports[n]->PlatformHandle;
         GLFWwindow* window = exageWindow->getGLFWWindow();
         if (imgui_cursor == ImGuiMouseCursor_None || io.MouseDrawCursor)
         {
@@ -1177,14 +1178,14 @@ static void ImGui_ImplGlfw_CreateWindow(ImGuiViewport* viewport)
     ImGui_ImplGlfw_ViewportData* vd = IM_NEW(ImGui_ImplGlfw_ViewportData)();
     viewport->PlatformUserData = vd;
 
-    exage::WindowInfo windowInfo;
+    exage::System::WindowInfo windowInfo;
     windowInfo.name = "No Title Yet";
     windowInfo.extent = {viewport->Size.x, viewport->Size.y};
     windowInfo.windowBordered = !(viewport->Flags & ImGuiViewportFlags_NoDecoration);
     windowInfo.hidden = true;
     windowInfo.focused = false;
     windowInfo.focusOnShow = false;
-    auto windowResult = exage::Window::create(windowInfo, exage::WindowAPI::eGLFW);
+    auto windowResult = exage::System::Window::create(windowInfo, exage::System::WindowAPI::eGLFW);
     if (!windowResult.has_value())
     {
         IM_ASSERT(false && "Failed to create window!");
@@ -1194,7 +1195,7 @@ static void ImGui_ImplGlfw_CreateWindow(ImGuiViewport* viewport)
     auto window = std::move(windowResult.value());
     auto* windowPtr = window.release();
 
-    vd->Window = windowPtr->as<exage::GLFWindow>();
+    vd->Window = windowPtr->as<exage::System::GLFWindow>();
     vd->WindowOwned = true;
 
     viewport->PlatformHandle = (void*)vd->Window;

@@ -7,21 +7,13 @@
 #include <variant>
 
 #include "exage/Core/Core.h"
-#include "exage/Core/Event.h"
 #include "exage/Input/KeyCode.h"
+#include "exage/System/Event.h"
 #include "glm/glm.hpp"
 #include "tl/expected.hpp"
 
-namespace exage
+namespace exage::System
 {
-    enum class WindowAPI
-    {
-        eGLFW,
-        eSDL  // TODO: Implement SDL
-    };
-
-    enum class WindowError;
-
     struct Monitor
     {
         std::string_view name;
@@ -105,17 +97,6 @@ namespace exage
         return getMonitor(0, api);
     }
 
-    enum class WindowError
-    {
-        eInvalidAPI,
-        eUnsupportedAPI,
-    };
-
-    void pollEvents(WindowAPI api) noexcept;
-    void waitEvent(WindowAPI api) noexcept;
-
-    [[nodiscard]] auto nextEvent(WindowAPI api) noexcept -> std::optional<Event>;
-
     //// revamp of event system
     // struct CloseEvent
     //{
@@ -144,4 +125,4 @@ namespace exage
     //[[nodiscard]] auto waitEvent(WindowAPI api) noexcept ->
     // std::optional<WindowEvent>;
     //
-}  // namespace exage
+}  // namespace exage::System

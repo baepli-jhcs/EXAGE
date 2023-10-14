@@ -1,8 +1,8 @@
-﻿#include "exage/Core/Window.h"
+﻿#include "exage/System/Window.h"
 
 #include "exage/platform/GLFW/GLFWindow.h"
 
-namespace exage
+namespace exage::System
 {
     auto Window::create(const WindowInfo& info, WindowAPI api) noexcept
         -> tl::expected<std::unique_ptr<Window>, WindowError>
@@ -90,4 +90,4 @@ namespace exage
                 return {};
         }
     }
-}  // namespace exage
+}  // namespace exage::System

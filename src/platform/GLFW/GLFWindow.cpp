@@ -6,9 +6,9 @@
 
 #    include <stdint.h>
 
-#    include "exage/Core/Event.h"
-#    include "exage/Core/Window.h"
 #    include "exage/Input/KeyCode.h"
+#    include "exage/System/Event.h"
+#    include "exage/System/Window.h"
 #endif
 
 #ifdef EXAGE_WINDOWS
@@ -26,7 +26,7 @@
 
 #include "exage/platform/GLFW/GLFWindow.h"
 
-namespace exage
+namespace exage::System
 {
     namespace
     {
@@ -704,6 +704,11 @@ namespace exage
         return getWindow(id);
     }
 
+    auto GLFWindow::getWindowMap() noexcept -> std::unordered_map<GLFWwindow*, GLFWindow*>
+    {
+        return glfwWindows;
+    }
+
     auto GLFWindow::nextEvent() noexcept -> std::optional<Event>
     {
         if (events.empty())
@@ -717,4 +722,4 @@ namespace exage
         return event;
     }
 
-}  // namespace exage
+}  // namespace exage::System

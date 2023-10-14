@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <optional>
 #include <variant>
 
 #include <glm/glm.hpp>
@@ -8,8 +9,20 @@
 #include "exage/Core/Core.h"
 #include "exage/Input/KeyCode.h"
 
-namespace exage
+namespace exage::System
 {
+    enum class WindowAPI
+    {
+        eGLFW,
+        eSDL  // TODO: Implement SDL
+    };
+
+    enum class WindowError
+    {
+        eInvalidAPI,
+        eUnsupportedAPI,
+    };
+
     namespace Events
     {
         struct WindowMoved
@@ -150,4 +163,9 @@ namespace exage
         uint32_t pertainingID = std::numeric_limits<uint32_t>::max();
         EventData data;
     };
-}  // namespace exage
+
+    void pollEvents(WindowAPI api) noexcept;
+    void waitEvent(WindowAPI api) noexcept;
+
+    [[nodiscard]] auto nextEvent(WindowAPI api) noexcept -> std::optional<Event>;
+}  // namespace exage::System

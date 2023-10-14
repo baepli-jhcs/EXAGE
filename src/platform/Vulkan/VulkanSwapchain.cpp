@@ -20,7 +20,7 @@ namespace exage::Graphics
     constexpr auto DESIRED_FORMAT = toVulkanFormat(Format::eRGBA8);
     constexpr auto FALLBACK_FORMAT = toVulkanFormat(Format::eBGRA8);
 
-    void VulkanSwapchain::createSurface(Window& window) noexcept
+    void VulkanSwapchain::createSurface(System::Window& window) noexcept
     {
         _surface = _context.get().createSurface(window);
     }
@@ -88,14 +88,14 @@ namespace exage::Graphics
 
     VulkanSwapchain::VulkanSwapchain(VulkanSwapchain&& old) noexcept
         : _context(old._context)
-        , _swapchain(old._swapchain)
         , _surface(old._surface)
-        , _oldSwapchain(old._oldSwapchain)
-        , _swapchainImages(old._swapchainImages)
-        , _swapchainTransitioned(std::move(old._swapchainTransitioned))
-        , _extent(old._extent)
         , _format(old._format)
         , _presentMode(old._presentMode)
+        , _swapchain(old._swapchain)
+        , _oldSwapchain(old._oldSwapchain)
+        , _extent(old._extent)
+        , _swapchainImages(old._swapchainImages)
+        , _swapchainTransitioned(std::move(old._swapchainTransitioned))
     {
         old._surface = nullptr;
         old._swapchain = {};
