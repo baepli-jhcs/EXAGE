@@ -7,9 +7,11 @@
 #include "exage/Graphics/Context.h"
 #include "exage/Graphics/Sampler.h"
 #include "exage/Graphics/Shader.h"
+#include "exage/Renderer/RenderSettings.h"
 #include "exage/Renderer/Scene/AssetCache.h"
 #include "exage/Renderer/Scene/SceneBuffer.h"
 #include "exage/Scene/Scene.h"
+#include "exage/utils/classes.h"
 
 namespace exage::Renderer
 {
@@ -17,9 +19,8 @@ namespace exage::Renderer
     struct MeshSystemCreateInfo
     {
         Graphics::Context& context;
-        SceneBuffer& sceneBuffer;
         AssetCache& assetCache;
-        Graphics::Sampler::Anisotropy anisotropy = Graphics::Sampler::Anisotropy::e1;
+        RenderQualitySettings renderQualitySettings;
     };
 
     class MeshSystem
@@ -28,15 +29,15 @@ namespace exage::Renderer
         explicit MeshSystem(const MeshSystemCreateInfo& createInfo) noexcept;
         ~MeshSystem() = default;
 
-        EXAGE_DELETE_COPY(MeshSystem);
-        EXAGE_DEFAULT_MOVE(MeshSystem);
+        EXAGE_DELETE_COPY_CONSTRUCT(MeshSystem);
+        EXAGE_DEFAULT_MOVE_CONSTRUCT(MeshSystem);
+        EXAGE_DELETE_ASSIGN(MeshSystem);
 
         void render(Graphics::CommandBuffer& commandBuffer, Scene& scene, glm::uvec2 extent);
 
       private:
-        std::reference_wrapper<Graphics::Context> _context;
-        std::reference_wrapper<SceneBuffer> _sceneBuffer;
-        std::reference_wrapper<AssetCache> _assetCache;
+        Graphics::Context& _context;
+        AssetCache& _assetCache;
 
         std::shared_ptr<Graphics::Pipeline> _pipeline;
         std::shared_ptr<Graphics::Sampler> _sampler;

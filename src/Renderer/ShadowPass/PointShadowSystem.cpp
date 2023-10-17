@@ -1,7 +1,7 @@
 #include <execution>
 #include <vector>
 
-#include "exage/Renderer/ShadowPass/PointShadowSystem.h"
+#include "exage/Renderer/SceneRenderer/ShadowPass/PointShadowSystem.h"
 
 #include <fmt/format.h>
 
@@ -126,8 +126,29 @@ namespace exage::Renderer
         _pipeline = _context.get().createPipeline(pipelineCreateInfo);
     }
 
-    void PointShadowSystem::render(Graphics::CommandBuffer& commandBuffer, Scene& scene)
+    void PointShadowSystem::render(Graphics::CommandBuffer& commandBuffer,
+                                   SceneData& sceneData) noexcept
     {
+        auto view = entt::basic_view {sceneData.currentTransforms}
+            | entt::basic_view {sceneData.currentPointLights};
+
+        size_t pointLightCount = 0;
+        for (auto entity : view)
+        {
+            auto& light = view.get<PointLight>(entity);
+            auto& transform = view.get<Transform3D>(entity);
+
+            bool shouldRender = false;
+            if (!sceneData.pointLightRenderInfo.contains(entity))
+            {
+                sceneData.pointLightRenderInfo.emplace(entity);
+                shouldRender = true;
+            }
+            else
+            {
+            }
+        }
+
         auto& reg = scene.registry();
 
         auto view =

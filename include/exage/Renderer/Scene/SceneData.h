@@ -22,22 +22,28 @@ namespace exage::Renderer
         entt::storage<PointLight> currentPointLights;
         entt::storage<PointLight> previousPointLights;
 
-        entt::storage<DirectionalLight> currentDirectionalLights;
-        entt::storage<DirectionalLight> previousDirectionalLights;
-
         entt::storage<SpotLight> currentSpotLights;
         entt::storage<SpotLight> previousSpotLights;
 
+        entt::storage<DirectionalLight> currentDirectionalLights;
+        entt::storage<DirectionalLight> previousDirectionalLights;
+
         entt::storage<TransformRenderInfo> transformRenderInfo;
+
         entt::storage<PointLightRenderInfo> pointLightRenderInfo;
         entt::storage<SpotLightRenderInfo> spotLightRenderInfo;
+        PointLightRenderArray pointLightRenderArray;
+        SpotLightRenderArray spotLightRenderArray;
     };
 
     struct CameraData
     {
+        Entity cameraEntity;
+        CameraRenderInfo cameraRenderInfo;
         /* Directional lights are rendered using cascaded shadow maps and depend on the camera.
          * Therefore, they are stored in the camera data. */
         entt::storage<DirectionalLightRenderInfo> directionalLightRenderInfo;
+        DirectionalLightRenderArray directionalLightRenderArray;
     };
 
     /* Process: at start of frame, current scene data is swapped to become previous.

@@ -28,22 +28,21 @@ namespace exage::Projects
     {
       public:
         explicit Script(ScriptActions& actions) noexcept
-            : _actions(actions)
+            : _actions(&actions)
         {
         }
         virtual ~Script() = default;
 
-        EXAGE_DEFAULT_MOVE_COPY_CONSTRUCT(Script);
-        EXAGE_DELETE_ASSIGN(Script);
+        EXAGE_DEFAULT_COPY(Script);
+        EXAGE_DEFAULT_MOVE(Script);
 
-        void loadLevel(std::string_view levelPath) noexcept { _actions.loadLevel(levelPath); }
-        void unloadLevel() noexcept { _actions.unloadLevel(); }
+        void loadLevel(std::string_view levelPath) noexcept { _actions->loadLevel(levelPath); }
+        void unloadLevel() noexcept { _actions->unloadLevel(); }
 
         virtual void init() noexcept = 0;
         virtual void tick(float deltaTime) noexcept = 0;
 
-        /* UI is rendered on a separate thread, so be careful with shared resources.
-            Debug UI is editor-only and within an ImGui window. */
+        /* Debug UI is editor-only and within an ImGui window. */
         virtual void drawUI() noexcept = 0;
         virtual void drawDebugUI() noexcept = 0;
 
@@ -51,6 +50,6 @@ namespace exage::Projects
         virtual void onLevelUnloaded() noexcept = 0;
 
       private:
-        ScriptActions& _actions;
+        ScriptActions* _actions;
     };
 };  // namespace exage::Projects

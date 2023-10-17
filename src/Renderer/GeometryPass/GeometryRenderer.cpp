@@ -1,4 +1,4 @@
-﻿#include "exage/Renderer/GeometryPass/GeometryRenderer.h"
+﻿#include "exage/Renderer/CameraRenderer/GeometryPass/GeometryRenderer.h"
 
 #include "exage/Graphics/CommandBuffer.h"
 #include "exage/Graphics/FrameBuffer.h"
@@ -8,16 +8,11 @@ namespace exage::Renderer
 {
     GeometryRenderer::GeometryRenderer(const GeometryRendererCreateInfo& createInfo) noexcept
         : _context(createInfo.context)
-        , _sceneBuffer(createInfo.sceneBuffer)
         , _assetCache(createInfo.assetCache)
         , _extent(createInfo.extent)
-        , _meshSystem({createInfo.context,
-                       createInfo.sceneBuffer,
-                       createInfo.assetCache,
-                       createInfo.anisotropy})
+        , _renderQualitySettings(createInfo.renderQualitySettings)
+        , _meshSystem({_context, createInfo.assetCache, createInfo.renderQualitySettings})
     {
-        auto& context = _context.get();
-
         Graphics::FrameBufferCreateInfo frameBufferCreateInfo {};
         frameBufferCreateInfo.extent = _extent;
         frameBufferCreateInfo.colorAttachments.resize(7);
@@ -57,16 +52,14 @@ namespace exage::Renderer
                 | Graphics::Texture::UsageFlags::eSampled};  // Emissive
 
         frameBufferCreateInfo.depthAttachment = {
-            _context.get().getHardwareSupport().depthFormat,
+            _context.getHardwareSupport().depthFormat,
             Graphics::Texture::UsageFlags::eDepthStencilAttachment};
 
-        _frameBuffer = context.createFrameBuffer(frameBufferCreateInfo);
+        _frameBuffer = _context.createFrameBuffer(frameBufferCreateInfo);
     }
 
     void GeometryRenderer::render(Graphics::CommandBuffer& commandBuffer, Scene& scene) noexcept
     {
-        auto& context = _context.get();
-
         for (const auto& texture : _frameBuffer->getTextures())
         {
             commandBuffer.textureBarrier(texture,

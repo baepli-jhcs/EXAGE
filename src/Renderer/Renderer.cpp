@@ -241,8 +241,6 @@ namespace exage::Renderer
 
             transformRenderInfo.data.model = transform.globalMatrix;
             transformRenderInfo.data.normal = glm::transpose(glm::inverse(transform.globalMatrix));
-            transformRenderInfo.data.modelViewProjection =
-                cameraRenderInfo.data.viewProjection * transform.globalMatrix;
 
             if (!transformRenderInfo.buffer)
             {

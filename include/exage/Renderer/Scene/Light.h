@@ -6,7 +6,6 @@
 
 #include "exage/Graphics/Texture.h"
 #include "exage/Graphics/Utils/BufferTypes.h"
-#include "exage/Renderer/Locations.h"
 #include "exage/Scene/Scene.h"
 
 namespace exage::Renderer
@@ -26,20 +25,6 @@ namespace exage::Renderer
         void serialize(Archive& archive)
         {
             archive(color, intensity, physicalRadius, attenuationRadius, castShadow, shadowBias);
-        }
-    };
-
-    struct DirectionalLight
-    {
-        glm::vec3 color;
-        float intensity;
-        bool castShadow;
-        float shadowBias = DEFAULT_SHADOW_BIAS;
-
-        template<class Archive>
-        void serialize(Archive& archive)
-        {
-            archive(color, intensity, castShadow, shadowBias);
         }
     };
 
@@ -68,6 +53,20 @@ namespace exage::Renderer
         }
     };
 
+    struct DirectionalLight
+    {
+        glm::vec3 color;
+        float intensity;
+        bool castShadow;
+        float shadowBias = DEFAULT_SHADOW_BIAS;
+
+        template<class Archive>
+        void serialize(Archive& archive)
+        {
+            archive(color, intensity, castShadow, shadowBias);
+        }
+    };
+
     struct PointLightRenderInfo
     {
         uint32_t arrayIndex;
@@ -79,6 +78,7 @@ namespace exage::Renderer
         std::shared_ptr<Graphics::FrameBuffer> shadowMap;
         int32_t shadowMapIndex = -1;
         float shadowBias = DEFAULT_SHADOW_BIAS;
+        std::vector<Entity> visibleEntities;
     };
 
     struct PointLightRenderArray
@@ -97,7 +97,38 @@ namespace exage::Renderer
                 // Padding to 64 bytes
             };
 
-            constexpr static auto POINT_LIGHT_ARRAY_ITEM_SIZE = sizeof(ArrayItem);
+            uint32_t count;
+        };
+
+        std::optional<Graphics::ResizableDynamicBuffer> buffer;
+    };
+
+    struct SpotLightRenderInfo
+    {
+        uint32_t arrayIndex;
+        std::shared_ptr<Graphics::FrameBuffer> shadowMap;
+        int32_t shadowMapIndex = -1;
+    };
+
+    struct SpotLightRenderArray
+    {
+        struct Data
+        {
+            struct ArrayItem
+            {
+                glm::vec3 position;
+                glm::vec3 direction;
+                glm::vec3 color;
+                float intensity;
+                float innerCutoff;
+                float outerCutoff;
+                float physicalRadius;
+                float attenuationRadius;
+                int32_t shadowMapIndex = -1;
+                float shadowBias = DEFAULT_SHADOW_BIAS;
+                // Padding to 72 bytes
+                float padding[2];
+            };
 
             uint32_t count;
         };
@@ -138,43 +169,6 @@ namespace exage::Renderer
                 // Padding to 400 bytes
                 float padding;
             };
-
-            constexpr static auto DIRECTIONAL_LIGHT_ARRAY_ITEM_SIZE = sizeof(ArrayItem);
-
-            uint32_t count;
-        };
-
-        std::optional<Graphics::ResizableDynamicBuffer> buffer;
-    };
-
-    struct SpotLightRenderInfo
-    {
-        uint32_t arrayIndex;
-        std::shared_ptr<Graphics::FrameBuffer> shadowMap;
-        int32_t shadowMapIndex = -1;
-    };
-
-    struct SpotLightRenderArray
-    {
-        struct Data
-        {
-            struct ArrayItem
-            {
-                glm::vec3 position;
-                glm::vec3 direction;
-                glm::vec3 color;
-                float intensity;
-                float innerCutoff;
-                float outerCutoff;
-                float physicalRadius;
-                float attenuationRadius;
-                int32_t shadowMapIndex = -1;
-                float shadowBias = DEFAULT_SHADOW_BIAS;
-                // Padding to 72 bytes
-                float padding[2];
-            };
-
-            constexpr static auto SPOT_LIGHT_ARRAY_ITEM_SIZE = sizeof(ArrayItem);
 
             uint32_t count;
         };

@@ -24,10 +24,10 @@
     auto operator=(const Class&) noexcept -> Class& = default; \
     auto operator=(Class&&) noexcept -> Class& = default
 
-#define EXAGE_DELETE_MOVE_COPY_CONSTRUCT(Class) \
-    Class(const Class&) noexcept = delete; \
-    Class(Class&&) noexcept = delete;
+#define EXAGE_DELETE_MOVE_CONSTRUCT(Class) Class(Class&&) noexcept = delete;
 
-#define EXAGE_DEFAULT_MOVE_COPY_CONSTRUCT(Class) \
-    Class(const Class&) noexcept = default; \
-    Class(Class&&) noexcept = default;\
+#define EXAGE_DELETE_COPY_CONSTRUCT(Class) Class(const Class&) noexcept = delete;
+
+#define EXAGE_DEFAULT_MOVE_CONSTRUCT(Class) Class(Class&&) noexcept = default;
+
+#define EXAGE_DEFAULT_COPY_CONSTRUCT(Class) Class(const Class&) noexcept = default;\
