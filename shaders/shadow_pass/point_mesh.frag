@@ -2,10 +2,8 @@
 
 layout(push_constant) uniform PushConstant
 {
-    mat4 modelViewProjection;
+    mat4 model;
     vec3 lightPos;
-    float lightRadius;
-    uint layer;
 } pc;
 
 layout(location = 0) in vec3 fragPos;

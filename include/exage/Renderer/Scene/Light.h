@@ -76,9 +76,12 @@ namespace exage::Renderer
         float physicalRadius;
         float attenuationRadius;
         std::shared_ptr<Graphics::FrameBuffer> shadowMap;
-        int32_t shadowMapIndex = -1;
+        uint32_t shadowMapIndex = std::numeric_limits<uint32_t>::max();
         float shadowBias = DEFAULT_SHADOW_BIAS;
         std::vector<Entity> visibleEntities;
+        std::array<glm::mat4, 6> viewProjections;
+        std::optional<Graphics::DynamicFixedBuffer> transformBuffer;
+        uint32_t transformBufferIndex = std::numeric_limits<uint32_t>::max();
     };
 
     struct PointLightRenderArray
@@ -93,7 +96,7 @@ namespace exage::Renderer
                 float physicalRadius;
                 float attenuationRadius;
                 float shadowBias = DEFAULT_SHADOW_BIAS;
-                int32_t shadowMapIndex = -1;
+                uint32_t shadowMapIndex = std::numeric_limits<uint32_t>::max();
                 // Padding to 64 bytes
             };
 
@@ -107,7 +110,7 @@ namespace exage::Renderer
     {
         uint32_t arrayIndex;
         std::shared_ptr<Graphics::FrameBuffer> shadowMap;
-        int32_t shadowMapIndex = -1;
+        uint32_t shadowMapIndex = std::numeric_limits<uint32_t>::max();
     };
 
     struct SpotLightRenderArray
@@ -124,7 +127,7 @@ namespace exage::Renderer
                 float outerCutoff;
                 float physicalRadius;
                 float attenuationRadius;
-                int32_t shadowMapIndex = -1;
+                uint32_t shadowMapIndex = std::numeric_limits<uint32_t>::max();
                 float shadowBias = DEFAULT_SHADOW_BIAS;
                 // Padding to 72 bytes
                 float padding[2];
@@ -145,7 +148,7 @@ namespace exage::Renderer
         glm::vec3 color;
         float intensity;
         std::shared_ptr<Graphics::FrameBuffer> shadowMap;
-        int32_t shadowMapIndex = -1;
+        uint32_t shadowMapIndex = std::numeric_limits<uint32_t>::max();
         float shadowBias = DEFAULT_SHADOW_BIAS;
         uint8_t cascadeLevels;
         glm::mat4 cascadeViewProjections[MAX_CASCADE_LEVELS];
@@ -162,7 +165,7 @@ namespace exage::Renderer
                 alignas(16) glm::vec3 direction;
                 float intensity;
                 alignas(16) glm::vec3 color;
-                int32_t shadowMapIndex = -1;
+                uint32_t shadowMapIndex = std::numeric_limits<uint32_t>::max();
                 float shadowBias = DEFAULT_SHADOW_BIAS;
                 uint32_t cascadeLevels;
                 float cascadeSplits[MAX_CASCADE_LEVELS];

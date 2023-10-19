@@ -5,6 +5,7 @@
 #include "exage/Core/Core.h"
 #include "exage/Graphics/Context.h"
 #include "exage/Graphics/Shader.h"
+#include "exage/Renderer/RenderSettings.h"
 #include "exage/Renderer/Scene/AssetCache.h"
 #include "exage/Renderer/Scene/Light.h"
 #include "exage/Renderer/Scene/SceneBuffer.h"
@@ -16,6 +17,7 @@ namespace exage::Renderer
     {
         Graphics::Context& context;
         AssetCache& assetCache;
+        RenderQualitySettings renderQualitySettings;
     };
 
     class PointShadowSystem
@@ -24,8 +26,9 @@ namespace exage::Renderer
         explicit PointShadowSystem(const PointShadowSystemCreateInfo& createInfo) noexcept;
         ~PointShadowSystem() = default;
 
-        EXAGE_DELETE_COPY(PointShadowSystem);
-        EXAGE_DEFAULT_MOVE(PointShadowSystem);
+        EXAGE_DELETE_COPY_CONSTRUCT(PointShadowSystem);
+        EXAGE_DEFAULT_MOVE_CONSTRUCT(PointShadowSystem);
+        EXAGE_DELETE_ASSIGN(PointShadowSystem);
 
         void render(Graphics::CommandBuffer& commandBuffer, SceneData& sceneData) noexcept;
 
@@ -33,11 +36,18 @@ namespace exage::Renderer
         void renderShadow(Graphics::CommandBuffer& commandBuffer,
                           SceneData& sceneData,
                           Transform3D& transform,
-                          PointLight& light) noexcept;
+                          PointLight& light,
+                          PointLightRenderInfo& info) noexcept;
 
-        std::reference_wrapper<Graphics::Context> _context;
-        std::reference_wrapper<SceneBuffer> _sceneBuffer;
-        std::reference_wrapper<AssetCache> _assetCache;
+        [[nodiscard]] auto shouldLightRenderShadow(const Transform3D& transform,
+                                                   const PointLight& light,
+                                                   PointLightRenderInfo& info) noexcept -> bool;
+
+        Graphics::Context& _context;
+        AssetCache& _assetCache;
+        RenderQualitySettings _renderQualitySettings;
+
+        std::vector<PointLightRenderArray::Data::ArrayItem> _pointLightRenderArrayData;
 
         std::shared_ptr<Graphics::Pipeline> _pipeline;
 

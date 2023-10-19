@@ -46,6 +46,16 @@ namespace exage::Graphics
             shaderStages.push_back(shaderStageCreateInfo);
         }
 
+        if (createInfo.shaderInfo.geometryShader)
+        {
+            auto* geometryShader = createInfo.shaderInfo.geometryShader->as<VulkanShader>();
+            vk::PipelineShaderStageCreateInfo shaderStageCreateInfo;
+            shaderStageCreateInfo.module = geometryShader->getShaderModule();
+            shaderStageCreateInfo.stage = vk::ShaderStageFlagBits::eGeometry;
+            shaderStageCreateInfo.pName = "main";
+            shaderStages.push_back(shaderStageCreateInfo);
+        }
+
         if (createInfo.shaderInfo.fragmentShader)
         {
             auto* fragmentShader = createInfo.shaderInfo.fragmentShader->as<VulkanShader>();

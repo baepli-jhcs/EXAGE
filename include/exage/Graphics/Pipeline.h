@@ -189,6 +189,7 @@ namespace exage::Graphics
             std::shared_ptr<Shader> vertexShader;
             std::shared_ptr<Shader> tessellationControlShader;
             std::shared_ptr<Shader> tessellationEvaluationShader;
+            std::shared_ptr<Shader> geometryShader;
             std::shared_ptr<Shader> fragmentShader;
         };
 

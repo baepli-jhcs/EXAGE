@@ -1,4 +1,5 @@
 #include <execution>
+#include <limits>
 #include <vector>
 
 #include "exage/Renderer/SceneRenderer/ShadowPass/PointShadowSystem.h"
@@ -7,7 +8,6 @@
 
 #include "exage/Graphics/Commands.h"
 #include "exage/Graphics/Pipeline.h"
-#include "exage/Renderer/Locations.h"
 #include "exage/Renderer/Scene/Light.h"
 #include "exage/Renderer/Scene/Mesh.h"
 #include "exage/Renderer/Utils/Frustum.h"
@@ -16,21 +16,18 @@
 namespace exage::Renderer
 {
     constexpr std::string_view VERTEX_SHADER_PATH = "shadow_pass/point_mesh.vert";
+    constexpr std::string_view GEOMETRY_SHADER_PATH = "shadow_pass/point_mesh.geom";
     constexpr std::string_view FRAGMENT_SHADER_PATH = "shadow_pass/point_mesh.frag";
 
     struct PushConstant
     {
-        alignas(16) glm::mat4 modelViewProjection;
+        alignas(16) glm::mat4 model;
         alignas(16) glm::vec3 lightPosition;
-        alignas(4) float lightRadius;
-        alignas(4) int layer;
+        alignas(4) uint32_t transformIndex;
     };
-
-    constexpr auto pushConstantSize = sizeof(PushConstant);
 
     PointShadowSystem::PointShadowSystem(const PointShadowSystemCreateInfo& createInfo) noexcept
         : _context(createInfo.context)
-        , _sceneBuffer(createInfo.sceneBuffer)
         , _assetCache(createInfo.assetCache)
     {
         std::filesystem::path vertexShaderPath =
@@ -39,6 +36,14 @@ namespace exage::Renderer
             Graphics::compileShaderToIR(vertexShaderPath, Graphics::Shader::Stage::eVertex);
 
         debugAssume(vertexShaderCode.has_value(), fmt::format("Failed to compile vertex shader"));
+
+        std::filesystem::path geometryShaderPath =
+            Filesystem::getEngineShaderDirectory() / GEOMETRY_SHADER_PATH;
+        auto geometryShaderCode =
+            Graphics::compileShaderToIR(geometryShaderPath, Graphics::Shader::Stage::eGeometry);
+
+        debugAssume(geometryShaderCode.has_value(),
+                    fmt::format("Failed to compile geometry shader"));
 
         std::filesystem::path fragmentShaderPath =
             Filesystem::getEngineShaderDirectory() / FRAGMENT_SHADER_PATH;
@@ -53,15 +58,20 @@ namespace exage::Renderer
 
         shaderCreateInfo.stage = Graphics::Shader::Stage::eVertex;
         shaderCreateInfo.irCode = *vertexShaderCode;
-        auto vertexShader = _context.get().createShader(shaderCreateInfo);
+        auto vertexShader = _context.createShader(shaderCreateInfo);
+
+        shaderCreateInfo.stage = Graphics::Shader::Stage::eGeometry;
+        shaderCreateInfo.irCode = *geometryShaderCode;
+        auto geometryShader = _context.createShader(shaderCreateInfo);
 
         shaderCreateInfo.stage = Graphics::Shader::Stage::eFragment;
         shaderCreateInfo.irCode = *fragmentShaderCode;
-        auto fragmentShader = _context.get().createShader(shaderCreateInfo);
+        auto fragmentShader = _context.createShader(shaderCreateInfo);
 
         using Graphics::Pipeline;
         Pipeline::ShaderInfo shaderInfo {};
         shaderInfo.vertexShader = vertexShader;
+        shaderInfo.geometryShader = geometryShader;
         shaderInfo.fragmentShader = fragmentShader;
 
         Graphics::VertexDescription vertexDescription {};
@@ -100,7 +110,7 @@ namespace exage::Renderer
                                         bitangentVertexDescription};
 
         Pipeline::RenderInfo renderInfo {};
-        renderInfo.depthStencilFormat = _context.get().getHardwareSupport().depthFormat;
+        renderInfo.depthStencilFormat = _context.getHardwareSupport().depthFormat;
 
         Pipeline::RasterState rasterState {};
         rasterState.cullMode = Pipeline::CullMode::eNone;  // TODO: Culling
@@ -123,7 +133,7 @@ namespace exage::Renderer
         pipelineCreateInfo.pushConstantSize = sizeof(PushConstant);
         pipelineCreateInfo.bindless = true;
 
-        _pipeline = _context.get().createPipeline(pipelineCreateInfo);
+        _pipeline = _context.createPipeline(pipelineCreateInfo);
     }
 
     void PointShadowSystem::render(Graphics::CommandBuffer& commandBuffer,
@@ -132,87 +142,91 @@ namespace exage::Renderer
         auto view = entt::basic_view {sceneData.currentTransforms}
             | entt::basic_view {sceneData.currentPointLights};
 
-        size_t pointLightCount = 0;
+        _pointLightRenderArrayData.clear();
+        _pointLightRenderArrayData.reserve(view.size_hint());
+
         for (auto entity : view)
         {
             auto& light = view.get<PointLight>(entity);
             auto& transform = view.get<Transform3D>(entity);
 
             bool shouldRender = false;
+            PointLightRenderInfo* lightRenderInfo = nullptr;
             if (!sceneData.pointLightRenderInfo.contains(entity))
             {
-                sceneData.pointLightRenderInfo.emplace(entity);
-                shouldRender = true;
+                lightRenderInfo = &sceneData.pointLightRenderInfo.emplace(entity);
+                shouldRender = light.castShadow;
             }
             else
             {
+                lightRenderInfo = &sceneData.pointLightRenderInfo.get(entity);
+                shouldRender = shouldLightRenderShadow(transform, light, *lightRenderInfo);
             }
-        }
 
-        auto& reg = scene.registry();
+            lightRenderInfo->arrayIndex = _pointLightRenderArrayData.size();
+            lightRenderInfo->position = transform.globalPosition;
+            lightRenderInfo->color = light.color;
+            lightRenderInfo->intensity = light.intensity;
+            lightRenderInfo->physicalRadius = light.physicalRadius;
+            lightRenderInfo->attenuationRadius = light.attenuationRadius;
+            lightRenderInfo->shadowBias = light.shadowBias;
 
-        auto view =
-            entt::basic_view {reg.storage<PointLightRenderInfo>(CURRENT_POINT_LIGHT_RENDER_INFO)}
-            | entt::basic_view {reg.storage<Transform3D>(CURRENT_TRANSFORM_3D)}
-            | entt::basic_view {reg.storage<PointLight>(CURRENT_POINT_LIGHT)};
+            PointLightRenderArray::Data::ArrayItem item {};
+            item.position = transform.globalPosition;
+            item.color = light.color;
+            item.intensity = light.intensity;
+            item.physicalRadius = light.physicalRadius;
+            item.attenuationRadius = light.attenuationRadius;
+            item.shadowBias = light.shadowBias;
+            item.shadowMapIndex = lightRenderInfo->shadowMapIndex;
 
-        for (auto entity : view)
-        {
-            auto& lightRenderInfo = view.get<PointLightRenderInfo>(entity);
-            auto& transform = view.get<Transform3D>(entity);
-            auto& light = view.get<PointLight>(entity);
-            auto texture = lightRenderInfo.shadowMap->getDepthStencilTexture();
+            _pointLightRenderArrayData.push_back(item);
 
-            commandBuffer.textureBarrier(texture,
-                                         Graphics::Texture::Layout::eUndefined,
-                                         Graphics::Texture::Layout::eDepthStencilAttachment,
-                                         Graphics::PipelineStageFlags::eTopOfPipe,
-                                         Graphics::PipelineStageFlags::eEarlyFragmentTests,
-                                         Graphics::Access {},
-                                         Graphics::AccessFlags::eDepthStencilAttachmentWrite,
-                                         Graphics::QueueOwnership::eUndefined,
-                                         Graphics::QueueOwnership::eUndefined);
+            if (!shouldRender)
+            {
+                if (lightRenderInfo->shadowMap)
+                {
+                    lightRenderInfo->shadowMap.reset();
+                    lightRenderInfo->shadowMapIndex = std::numeric_limits<uint32_t>::max();
+                }
 
-            Graphics::ClearDepthStencil clearDepthStencil {};
-            clearDepthStencil.depth = 1.0F;
-            clearDepthStencil.clear = true;
-            clearDepthStencil.stencil = 0;
-            commandBuffer.beginRendering(lightRenderInfo.shadowMap, {}, clearDepthStencil);
+                continue;
+            }
 
-            glm::uvec3 extent = texture->getExtent();
-            commandBuffer.setViewport({0, 0}, {extent.x, extent.y});
-            commandBuffer.setScissor({0, 0}, {extent.x, extent.y});
+            if (!lightRenderInfo->shadowMap
+                || lightRenderInfo->shadowMap->getExtent().x
+                    != static_cast<uint32_t>(_renderQualitySettings.shadowResolution))
+            {
+                Graphics::FrameBufferCreateInfo frameBufferCreateInfo {};
+                frameBufferCreateInfo.extent = {_renderQualitySettings.shadowResolution,
+                                                _renderQualitySettings.shadowResolution};
+                frameBufferCreateInfo.colorAttachments = {};
+                frameBufferCreateInfo.depthAttachment = {
+                    _context.getHardwareSupport().depthFormat,
+                    Graphics::Texture::UsageFlags::eDepthStencilAttachment
+                        | Graphics::Texture::UsageFlags::eSampled};
 
-            renderShadow(commandBuffer, scene, lightRenderInfo, transform, light);
+                lightRenderInfo->shadowMap = _context.createFrameBuffer(frameBufferCreateInfo);
+                lightRenderInfo->shadowMapIndex =
+                    lightRenderInfo->shadowMap->getDepthStencilTexture()
+                        ->getBindlessID(Graphics::Texture::Aspect::eDepth)
+                        .id;
+            }
 
-            commandBuffer.endRendering();
-
-            commandBuffer.textureBarrier(texture,
-                                         Graphics::Texture::Layout::eDepthStencilAttachment,
-                                         Graphics::Texture::Layout::eShaderReadOnly,
-                                         Graphics::PipelineStageFlags::eLateFragmentTests,
-                                         Graphics::PipelineStageFlags::eFragmentShader,
-                                         Graphics::AccessFlags::eDepthStencilAttachmentWrite,
-                                         Graphics::AccessFlags::eShaderRead,
-                                         Graphics::QueueOwnership::eUndefined,
-                                         Graphics::QueueOwnership::eUndefined);
+            renderShadow(commandBuffer, sceneData, transform, light, *lightRenderInfo);
         }
     }
 
     void PointShadowSystem::renderShadow(Graphics::CommandBuffer& commandBuffer,
-                                         Scene& scene,
-                                         PointLightRenderInfo& pointLightRenderInfo,
+                                         SceneData& sceneData,
                                          Transform3D& transform,
-                                         PointLight& light)
+                                         PointLight& light,
+                                         PointLightRenderInfo& info) noexcept
     {
         commandBuffer.bindPipeline(_pipeline);
 
-        auto& reg = scene.registry();
-
-        auto view = entt::basic_view {reg.storage<StaticMeshComponent>(CURRENT_MESH_COMPONENT)}
-            | entt::basic_view {reg.storage<Transform3D>(CURRENT_TRANSFORM_3D)};
-
-        std::array<glm::mat4, 6> viewProjections {};
+        auto view = entt::basic_view {sceneData.currentTransforms}
+            | entt::basic_view {sceneData.currentStaticMeshes};
 
         {
             std::array<glm::mat4, 6> views {};
@@ -238,19 +252,17 @@ namespace exage::Renderer
             views[5] = glm::lookAt(transform.globalPosition,
                                    transform.globalPosition + glm::vec3 {0.0F, 0.0F, -1.0F},
                                    glm::vec3 {0.0F, -1.0F, 0.0F});
+            constexpr float NEAR_PLANE = 0.05F;
+
+            glm::mat4 projection = perspectiveProject(glm::radians(90.0F),
+                                                      1.0F,
+                                                      NEAR_PLANE,
+                                                      light.attenuationRadius,
+                                                      _context.getAPIProperties().depthZeroToOne);
 
             for (uint32_t i = 0; i < 6; i++)
             {
-                constexpr float NEAR_PLANE = 0.1F;
-                constexpr float FAR_PLANE = 1000.0F;  // TODO: Create shadow quality setting
-
-                viewProjections[i] =
-                    perspectiveProject(glm::radians(90.0F),
-                                       1.0F,
-                                       NEAR_PLANE,
-                                       FAR_PLANE,
-                                       _context.get().getAPIProperties().depthZeroToOne)
-                    * views[i];
+                info.viewProjections[i] = projection * views[i];
             }
         }
 
@@ -259,7 +271,7 @@ namespace exage::Renderer
             auto& meshComponent = view.get<StaticMeshComponent>(entity);
             auto& transform = view.get<Transform3D>(entity);
 
-            auto* meshPtr = _assetCache.get().getMeshIfExists(meshComponent.pathHash);
+            auto* meshPtr = _assetCache.getMeshIfExists(meshComponent.pathHash);
             if (meshPtr == nullptr)
             {
                 fmt::print("Mesh {} not found\n", meshComponent.path);
@@ -268,30 +280,42 @@ namespace exage::Renderer
 
             const auto& mesh = *meshPtr;
 
+            glm::mat4 modelViewProjections[6];
+
+            bool intersects = false;
+
             for (uint8_t i = 0; i < 6; i++)
             {
-                glm::mat4 modelViewProjection = viewProjections[i] * transform.globalMatrix;
-                Frustum frustum {modelViewProjection};
+                modelViewProjections[i] = info.viewProjections[i] * transform.globalMatrix;
+                Frustum frustum {modelViewProjections[i]};
                 if (!frustum.intersects(mesh.aabb))
                 {
                     continue;
                 }
 
+                intersects = true;
+            }
+
+            if (!intersects)
+            {
+                return;
+            }
+
+            std::scoped_lock lock {*_mutex};
+            commandBuffer.bindVertexBuffer(mesh.vertexBuffer, 0);
+            commandBuffer.bindIndexBuffer(mesh.indexBuffer, 0);
+
+            for (uint8_t i = 0; i < 6; i++)
+            {
                 PushConstant pushConstant {};
-                pushConstant.modelViewProjection = modelViewProjection;
+                pushConstant.model = transform.globalMatrix;
                 pushConstant.lightPosition = transform.globalPosition;
-                pushConstant.lightRadius = light.physicalRadius;
-                pushConstant.layer = i;
 
                 uint32_t lodLevel = 0;  // TODO: LOD
 
                 std::span<const std::byte> pushConstantSpan =
                     std::as_bytes(std::span {&pushConstant, 1});
 
-                std::scoped_lock lock {*_mutex};
-
-                commandBuffer.bindVertexBuffer(mesh.vertexBuffer, 0);
-                commandBuffer.bindIndexBuffer(mesh.indexBuffer, 0);
                 commandBuffer.setPushConstant(pushConstantSpan);
                 commandBuffer.drawIndexed(mesh.lods[lodLevel].indexCount,
                                           mesh.lods[lodLevel].indexOffset,
@@ -302,6 +326,14 @@ namespace exage::Renderer
         };
 
         std::for_each(std::execution::par, view.begin(), view.end(), func);
+    }
+
+    auto PointShadowSystem::shouldLightRenderShadow(const Transform3D& transform,
+                                                    const PointLight& light,
+                                                    PointLightRenderInfo& info) noexcept -> bool
+    {
+        // TODO: check if objects in the light's radius have moved
+        return true;
     }
 
 }  // namespace exage::Renderer

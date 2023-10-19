@@ -27,6 +27,7 @@ namespace exage::Graphics
             eVertex,
             eTessellationControl,
             eTessellationEvaluation,
+            eGeometry,
             eFragment,
             eCompute,
         };

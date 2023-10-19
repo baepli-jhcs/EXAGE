@@ -62,17 +62,16 @@ add_library(
     src/Projects/Project.cpp
     src/Projects/Serialization.cpp
     src/Renderer/Renderer.cpp
-    src/Renderer/GeometryPass/GeometryRenderer.cpp
-    src/Renderer/GeometryPass/MeshSystem.cpp
+    src/Renderer/CameraRenderer/GeometryPass/GeometryRenderer.cpp
+    src/Renderer/CameraRenderer/GeometryPass/MeshSystem.cpp
     src/Renderer/LightingPass/DirectLightingSystem.cpp
     src/Renderer/LightingPass/LightingRenderer.cpp
     src/Renderer/Scene/Camera.cpp
     src/Renderer/Scene/SceneBuffer.cpp
     src/Renderer/Scene/Loader/Converter.cpp
     src/Renderer/Scene/Loader/Loader.cpp
-    src/Renderer/ShadowPass/DirectionalShadowSystem.cpp
-    src/Renderer/ShadowPass/ShadowRenderer.cpp
-    src/Renderer/ShadowPass/PointShadowSystem.cpp
+    src/Renderer/SceneRenderer/ShadowPass/ShadowRenderer.cpp
+    src/Renderer/SceneRenderer/ShadowPass/PointShadowSystem.cpp
     src/Renderer/Utils/Fonts.cpp
     src/Scene/Entity.cpp
     src/Scene/Hierarchy.cpp
