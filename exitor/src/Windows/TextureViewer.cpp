@@ -2,7 +2,8 @@
 
 #include <stdint.h>
 
-#include "exage/Graphics/HLPD/ImGuiTools.h"
+#include "ImGui.h"
+#include "exage/GUI/ImGui.h"
 #include "exage/Graphics/Sampler.h"
 #include "exage/Graphics/Texture.h"
 #include "exage/Renderer/Scene/Loader/Loader.h"
@@ -134,7 +135,7 @@ namespace exitor
         // get remaining space
         ImVec2 size = ImGui::GetContentRegionAvail();
 
-        exage::Graphics::ImGuiTexture* imguiTexture = nullptr;
+        exage::GUI::ImGui::Texture* imguiTexture = nullptr;
         ensureTextureLoaded(commandBuffer, basePath);
         if (!_selectedTexture.empty())
         {

@@ -1,12 +1,14 @@
 #include <fstream>
 
-#include "exage/Renderer/Utils/Fonts.h"
+#include "exage/GUI/Fonts.h"
 
-namespace exage::Renderer
+#include "imgui.h"
+
+namespace exage::GUI
 {
 
-    auto FontManager::addFont(const std::filesystem::path& path, const std::string& name) noexcept
-        -> bool
+    auto ImGui::FontManager::addFont(const std::filesystem::path& path,
+                                     const std::string& name) noexcept -> bool
     {
         if (_fonts.contains(name))
         {
@@ -31,7 +33,7 @@ namespace exage::Renderer
 
         auto& fontMap = _fonts[name];
 
-        ImGuiIO& io = ImGui::GetIO();
+        ImGuiIO& io = ::ImGui::GetIO();
         ImFont* font =
             io.Fonts->AddFontFromMemoryTTF(_fontData[name].data(), _fontData[name].size(), 12.0f);
         fontMap[12.0f] = font;
@@ -44,7 +46,7 @@ namespace exage::Renderer
         return true;
     }
 
-    auto FontManager::getFont(const std::string& name, float size) noexcept -> ImFont*
+    auto ImGui::FontManager::getFont(const std::string& name, float size) noexcept -> ImFont*
     {
         if (!_fonts.contains(name))
         {
@@ -55,7 +57,7 @@ namespace exage::Renderer
 
         if (!fontMap.contains(size))
         {
-            ImGuiIO& io = ImGui::GetIO();
+            ImGuiIO& io = ::ImGui::GetIO();
             ImFont* font = io.Fonts->AddFontFromMemoryTTF(
                 _fontData[name].data(), static_cast<int>(_fontData[name].size()), size);
             fontMap[size] = font;
@@ -69,4 +71,4 @@ namespace exage::Renderer
         return fontMap[size];
     }
 
-}  // namespace exage::Renderer
+}  // namespace exage::GUI

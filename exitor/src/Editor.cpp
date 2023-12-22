@@ -8,6 +8,7 @@
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/trigonometric.hpp>
 
+#include "ImGui.h"
 #include "MousePicking/MousePicking.h"
 #include "Stages/AssetImport.h"
 #include "exage/Core/Debug.h"
@@ -85,11 +86,11 @@ namespace exitor
         Graphics::QueueCommandRepoCreateInfo queueCommandRepoInfo {.context = *_context};
         _queueCommandRepo = exage::Graphics::QueueCommandRepo {queueCommandRepoInfo};
 
-        Graphics::ImGuiInitInfo imGuiInfo {
+        GUI::ImGui::InitInfo imGuiInfo {
             .context = *_context,
             .window = *_window,
         };
-        _imGui = Graphics::ImGuiInstance {imGuiInfo};
+        _imGui = GUI::ImGui::Instance {imGuiInfo};
 
         _fontManager = Renderer::FontManager {*_imGui};
 

@@ -1,16 +1,17 @@
 #pragma once
 
 #include "exage/Core/Core.h"
-#include "exage/Graphics/HLPD/ImGuiTools.h"
-#include "imgui.h"
+#include "exage/GUI/ImGui.h"
 
-namespace exage::Renderer
+class ImFont;
+
+namespace exage::GUI::ImGui
 {
     class FontManager
     {
       public:
         FontManager() noexcept = default;
-        explicit FontManager(Graphics::ImGuiInstance& imGuiInstance) noexcept
+        explicit FontManager(Instance& imGuiInstance) noexcept
             : _imGuiInstance(&imGuiInstance)
         {
         }
@@ -23,9 +24,9 @@ namespace exage::Renderer
         [[nodiscard]] auto getFont(const std::string& name, float size) noexcept -> ImFont*;
 
       private:
-        Graphics::ImGuiInstance* _imGuiInstance = nullptr;
+        Instance* _imGuiInstance = nullptr;
 
         std::unordered_map<std::string, std::unordered_map<float, ImFont*>> _fonts;
         std::unordered_map<std::string, std::vector<std::byte>> _fontData;
     };
-}  // namespace exage::Renderer
+}  // namespace exage::GUI::ImGui

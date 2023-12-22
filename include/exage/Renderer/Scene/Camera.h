@@ -25,18 +25,4 @@ namespace exage::Renderer
             archive(fov, near, far, exposure, gamma);
         }
     };
-
-    struct CameraRenderInfo
-    {
-        struct Data
-        {
-            alignas(16) glm::mat4 view;
-            alignas(16) glm::mat4 projection;
-            alignas(16) glm::mat4 viewProjection;
-            alignas(16) glm::vec3 position;
-        };
-
-        Data data;
-        std::optional<Graphics::DynamicFixedBuffer> buffer;
-    };
 }  // namespace exage::Renderer

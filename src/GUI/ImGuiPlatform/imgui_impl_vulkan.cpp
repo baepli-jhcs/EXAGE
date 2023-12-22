@@ -97,12 +97,13 @@
 
 #include <stdio.h>
 
-#include "exage/Graphics/HLPD/ImGuiTools.h"
+#include "exage/GUI/ImGui.h"
 
 // Visual Studio warnings
 #ifdef _MSC_VER
 #    pragma warning(disable : 4127)  // condition expression is constant
 #endif
+#include "ImGui.h"
 #include "exage/Graphics/Texture.h"
 #include "exage/platform/Vulkan/VulkanSampler.h"
 #include "exage/platform/Vulkan/VulkanTexture.h"
@@ -686,8 +687,7 @@ void ImGui_ImplVulkan_RenderDrawData(ImDrawData* draw_data,
                 }
                 else
                 {
-                    auto* imguiTexture =
-                        static_cast<exage::Graphics::ImGuiTexture*>(pcmd->TextureId);
+                    auto* imguiTexture = static_cast<exage::GUI::ImGui::Texture*>(pcmd->TextureId);
                     auto* texture = imguiTexture->texture->as<exage::Graphics::VulkanTexture>();
                     auto* sampler = imguiTexture->sampler->as<exage::Graphics::VulkanSampler>();
 

@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include "ImGui.h"
 #include "Panels/ComponentEditor.h"
 #include "Panels/ComponentList.h"
 #include "Panels/ContentBrowser.h"
@@ -9,9 +10,10 @@
 #include "Windows/TextureViewer.h"
 #include "exage/Core/Core.h"
 #include "exage/Core/Timer.h"
+#include "exage/GUI/Fonts.h"
+#include "exage/GUI/ImGui.h"
 #include "exage/Graphics/Context.h"
 #include "exage/Graphics/FrameBuffer.h"
-#include "exage/Graphics/HLPD/ImGuiTools.h"
 #include "exage/Graphics/Queue.h"
 #include "exage/Graphics/Utils/BufferTypes.h"
 #include "exage/Graphics/Utils/QueueCommand.h"
@@ -22,7 +24,6 @@
 #include "exage/Renderer/Scene/Loader/Converter.h"
 #include "exage/Renderer/Scene/Material.h"
 #include "exage/Renderer/Scene/SceneBuffer.h"
-#include "exage/Renderer/Utils/Fonts.h"
 #include "exage/utils/classes.h"
 
 namespace exitor
@@ -51,7 +52,7 @@ namespace exitor
         std::shared_ptr<Graphics::FrameBuffer> _frameBuffer;
 
         std::optional<exage::Graphics::QueueCommandRepo> _queueCommandRepo;
-        std::optional<Graphics::ImGuiInstance> _imGui;
+        std::optional<GUI::ImGui::Instance> _imGui;
         std::optional<Renderer::FontManager> _fontManager;
         ImFont* _defaultFont = nullptr;
 

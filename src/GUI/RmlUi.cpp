@@ -1,18 +1,17 @@
 #include <cstddef>
 
-#include "exage/Graphics/HLPD/RmlUi.h"
+#include "exage/GUI/RmlUi.h"
 
-#include <RmlUi/Core/Context.h>
-#include <RmlUi/Core/Input.h>
-#include <RmlUi/Core/StringUtilities.h>
-#include <glm/gtc/type_ptr.hpp>
-
+#include "RmlUi/Core/Context.h"
+#include "RmlUi/Core/Input.h"
+#include "RmlUi/Core/StringUtilities.h"
 #include "exage/Core/Timer.h"
 #include "exage/System/Clipboard.h"
 #include "exage/System/Cursor.h"
 #include "exage/utils/variant.h"
+#include "glm/gtc/type_ptr.hpp"
 
-namespace exage::Graphics::RmlUi
+namespace exage::GUI::RmlUi
 {
 
     void RenderInterface::RenderGeometry(Rml::Vertex* vertices,
@@ -607,4 +606,4 @@ namespace exage::Graphics::RmlUi
 
         return 3;
     }
-}  // namespace exage::Graphics::RmlUi
+}  // namespace exage::GUI::RmlUi

@@ -68,9 +68,6 @@ namespace exage::Graphics
 
     void VulkanCommandBuffer::begin() noexcept
     {
-        std::lock_guard<std::mutex> lock(_context.get().getCommandPoolMutex());
-
-        _commandBuffer.reset();
         _commands.clear();
         _dataDependencies.clear();
     }
@@ -78,6 +75,8 @@ namespace exage::Graphics
     void VulkanCommandBuffer::end() noexcept
     {
         std::lock_guard<std::mutex> lock(_context.get().getCommandPoolMutex());
+
+        _commandBuffer.reset();
 
         vk::CommandBufferBeginInfo beginInfo;
         beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;

@@ -1,8 +1,9 @@
 #pragma once
 
+#include "ImGui.h"
+#include "exage/GUI/ImGui.h"
 #include "exage/Graphics/CommandBuffer.h"
 #include "exage/Graphics/Context.h"
-#include "exage/Graphics/HLPD/ImGuiTools.h"
 #include "exage/Graphics/Sampler.h"
 #include "exage/Projects/Project.h"
 #include "exage/Renderer/Scene/AssetCache.h"
@@ -36,13 +37,13 @@ namespace exitor
         std::reference_wrapper<exage::Renderer::AssetCache> _assetCache;
         std::shared_ptr<exage::Graphics::Sampler> _sampler;
         std::shared_ptr<exage::Graphics::Texture> _defaultTexture;
-        exage::Graphics::ImGuiTexture _defaultImGuiTexture;
+        exage::GUI::ImGui::Texture _defaultImGuiTexture;
         bool _defaultTextureLoaded = false;
 
         bool _showTextureViewer = false;
         std::string _selectedTexture;
 
         std::unordered_map<std::string, exage::Renderer::GPUTexture> _textures;
-        std::unordered_map<std::string, exage::Graphics::ImGuiTexture> _imguiTextures;
+        std::unordered_map<std::string, exage::GUI::ImGui::Texture> _imguiTextures;
     };
 }  // namespace exitor

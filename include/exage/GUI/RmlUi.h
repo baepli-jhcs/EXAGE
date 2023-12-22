@@ -3,20 +3,19 @@
 #include <memory_resource>
 #include <variant>
 
-#include <RmlUi/Core/Input.h>
-#include <RmlUi/Core/RenderInterface.h>
-#include <RmlUi/Core/SystemInterface.h>
-#include <RmlUi/Core/Types.h>
-#include <RmlUi/Core/Vertex.h>
-#include <glm/glm.hpp>
-#include <robin_hood.h>
-
+#include "RmlUi/Core/Input.h"
+#include "RmlUi/Core/RenderInterface.h"
+#include "RmlUi/Core/SystemInterface.h"
+#include "RmlUi/Core/Types.h"
+#include "RmlUi/Core/Vertex.h"
 #include "exage/Input/KeyCode.h"
 #include "exage/System/Cursor.h"
 #include "exage/System/Window.h"
 #include "exage/utils/classes.h"
+#include "glm/glm.hpp"
+#include "robin_hood.h"
 
-namespace exage::Graphics::RmlUi
+namespace exage::GUI::RmlUi
 {
     struct RenderInstruction
     {
@@ -191,4 +190,4 @@ namespace exage::Graphics::RmlUi
     [[nodiscard]] auto toRmlUiKey(KeyCode key) noexcept -> Rml::Input::KeyIdentifier;
     [[nodiscard]] auto toRmlUiModifiers(Modifiers modifiers) -> int;
     [[nodiscard]] auto toRmlUiMouseButton(MouseButton button) noexcept -> int;
-}  // namespace exage::Graphics::RmlUi
+}  // namespace exage::GUI::RmlUi

@@ -5,9 +5,10 @@
 #include "ImGuiFileDialog.h"
 #include "exage/Core/Core.h"
 #include "exage/Core/Timer.h"
+#include "exage/GUI/Fonts.h"
+#include "exage/GUI/ImGui.h"
 #include "exage/Graphics/Context.h"
 #include "exage/Graphics/FrameBuffer.h"
-#include "exage/Graphics/HLPD/ImGuiTools.h"
 #include "exage/Graphics/Queue.h"
 #include "exage/Graphics/Utils/BufferTypes.h"
 #include "exage/Graphics/Utils/QueueCommand.h"
@@ -16,7 +17,6 @@
 #include "exage/Renderer/Renderer.h"
 #include "exage/Renderer/Scene/AssetCache.h"
 #include "exage/Renderer/Scene/SceneBuffer.h"
-#include "exage/Renderer/Utils/Fonts.h"
 
 namespace exitor
 {

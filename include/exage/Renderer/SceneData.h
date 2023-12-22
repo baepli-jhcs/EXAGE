@@ -39,6 +39,7 @@ namespace exage::Renderer
     struct CameraData
     {
         Entity cameraEntity;
+        Camera camera;
         CameraRenderInfo cameraRenderInfo;
         /* Directional lights are rendered using cascaded shadow maps and depend on the camera.
          * Therefore, they are stored in the camera data. */
