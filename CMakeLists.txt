@@ -70,6 +70,8 @@ add_library(
         src/Scene/Scene.cpp
         src/System/Clipboard.cpp
         src/System/Window.cpp
+        src/Graphics/Utils/SlotBuffer.cpp
+        src/Graphics/Utils/VirtualAllocator.cpp
 )
 add_library(EXAGE::EXAGE ALIAS EXAGE_EXAGE)
 

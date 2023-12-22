@@ -68,6 +68,7 @@ namespace exage::Graphics
                     Access access,
                     PipelineStage pipelineStage) noexcept;
 
+        // This resize does not perform any copy. All data is lost.
         void resize(size_t newSize) noexcept;
 
         [[nodiscard]] auto get() const noexcept -> std::shared_ptr<Buffer> { return _buffer; }
@@ -88,12 +89,11 @@ namespace exage::Graphics
         EXAGE_DELETE_COPY(ResizableDynamicBuffer);
         EXAGE_DEFAULT_MOVE(ResizableDynamicBuffer);
 
-        void write(std::span<const std::byte> data, size_t offset) noexcept;
-        void read(std::span<std::byte> data, size_t offset) const noexcept;
-
-        void update(CommandBuffer& commandBuffer,
-                    PipelineStage pipelineStage,
-                    Access access) noexcept;
+        void write(CommandBuffer& commandBuffer,
+                   std::span<const std::byte> data,
+                   size_t offset,
+                   PipelineStage pipelineStage,
+                   Access access) noexcept;
 
         void resize(size_t newSize) noexcept;
 
@@ -112,9 +112,6 @@ namespace exage::Graphics
         std::reference_wrapper<Context> _context;
         std::vector<ResizableBuffer> _hostBuffers;
         std::optional<ResizableBuffer> _deviceBuffer;
-
-        std::vector<std::byte> _data;
-        std::vector<bool> _dirty;
     };
 
 }  // namespace exage::Graphics
