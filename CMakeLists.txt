@@ -105,11 +105,11 @@ target_include_directories(
         "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"
 )
 
-target_include_directories(
-        EXAGE_EXAGE SYSTEM
-        PUBLIC
-        "$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/export>"
-)
+#target_include_directories(
+#        EXAGE_EXAGE SYSTEM
+#        PUBLIC
+#        "$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/export>"
+#)
 
 target_compile_features(EXAGE_EXAGE PUBLIC cxx_std_20)
 
@@ -133,13 +133,15 @@ find_package(unofficial-shaderc REQUIRED)
 find_package(tinyfiledialogs REQUIRED)
 find_package(tl-expected REQUIRED)
 find_package(VulkanHeaders REQUIRED)
-find_package(unofficial-vulkan-memory-allocator REQUIRED)
+find_package(unofficial-vulkan-memory-allocator-hpp REQUIRED)
 find_package(zstd REQUIRED)
 
 target_link_libraries(EXAGE_EXAGE PRIVATE
         assimp::assimp
         bc7enc_rdo
+        fmt::fmt
         freeimage::FreeImage
+        unofficial::shaderc::shaderc
 )
 
 
@@ -147,7 +149,6 @@ target_link_libraries(EXAGE_EXAGE PUBLIC
         alpaca::alpaca
         cereal::cereal
         EnTT::EnTT
-        fmt::fmt
         glfw
         glm::glm
         ImGui
@@ -155,12 +156,12 @@ target_link_libraries(EXAGE_EXAGE PUBLIC
         nlohmann_json::nlohmann_json
         RmlCore
         RTTR::Core_Lib
-        unofficial::shaderc::shaderc
         tl::expected
         tinyfiledialogs::tinyfiledialogs
         Vulkan::Headers
-        unofficial::vulkan-memory-allocator::vulkan-memory-allocator
-        VulkanMemoryAllocator-Hpp
+        #        unofficial::vulkan-memory-allocator::vulkan-memory-allocator
+        #        VulkanMemoryAllocator-Hpp
+        unofficial::VulkanMemoryAllocator-Hpp::VulkanMemoryAllocator-Hpp
         $<IF:$<TARGET_EXISTS:zstd::libzstd_shared>,zstd::libzstd_shared,zstd::libzstd_static>
 )
 

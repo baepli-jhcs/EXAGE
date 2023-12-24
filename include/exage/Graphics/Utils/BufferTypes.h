@@ -24,7 +24,6 @@ namespace exage::Graphics
 
         void write(std::span<const std::byte> data, size_t offset) noexcept;
 
-        void readBack(CommandBuffer& commandBuffer) noexcept;
         void update(CommandBuffer& commandBuffer,
                     PipelineStage pipelineStage,
                     Access access) noexcept;
@@ -110,6 +109,7 @@ namespace exage::Graphics
 
       private:
         std::reference_wrapper<Context> _context;
+        size_t _size;
         std::vector<ResizableBuffer> _hostBuffers;
         std::optional<ResizableBuffer> _deviceBuffer;
     };

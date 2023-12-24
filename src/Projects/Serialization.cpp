@@ -18,7 +18,6 @@
 #include "exage/Renderer/Scene/Camera.h"
 #include "exage/Renderer/Scene/Light.h"
 #include "exage/Renderer/Scene/Mesh.h"
-#include "exage/Renderer/Scene/Transform.h"
 #include "exage/Scene/Hierarchy.h"
 
 namespace exage::Projects
@@ -176,20 +175,6 @@ namespace exage::Projects
             SERIALIZE_STORAGE(exage::Renderer::SpotLight);
 
 #undef SERIALIZE_STORAGE
-
-#define DO_NOT_SERIALIZE_STORAGE(T) \
-    if (id == entt::type_hash<T, void>::value()) \
-    { \
-        return std::nullopt; \
-    }
-
-            DO_NOT_SERIALIZE_STORAGE(exage::Renderer::DirectionalLightRenderInfo);
-            DO_NOT_SERIALIZE_STORAGE(exage::Renderer::PointLightRenderInfo);
-            DO_NOT_SERIALIZE_STORAGE(exage::Renderer::SpotLightRenderInfo);
-            DO_NOT_SERIALIZE_STORAGE(exage::Renderer::CameraRenderInfo);
-            DO_NOT_SERIALIZE_STORAGE(exage::Renderer::TransformRenderInfo);
-
-#undef DO_NOT_SERIALIZE_STORAGE
 
             // Use reflection to get the name of the component for plugins, and if it inherits
             // Serializable then serialize it

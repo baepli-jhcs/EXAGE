@@ -485,29 +485,31 @@ namespace exage::Graphics
         return vk::VertexInputRate::eVertex;
     }
 
-    [[nodiscard]] constexpr auto toVulkanPolygonMode(Pipeline::PolygonMode mode) -> vk::PolygonMode
+    [[nodiscard]] constexpr auto toVulkanPolygonMode(GraphicsPipeline::PolygonMode mode)
+        -> vk::PolygonMode
     {
         switch (mode)
         {
-            case Pipeline::PolygonMode::eFill:
+            case GraphicsPipeline::PolygonMode::eFill:
                 return vk::PolygonMode::eFill;
-            case Pipeline::PolygonMode::eLine:
+            case GraphicsPipeline::PolygonMode::eLine:
                 return vk::PolygonMode::eLine;
-            case Pipeline::PolygonMode::ePoint:
+            case GraphicsPipeline::PolygonMode::ePoint:
                 return vk::PolygonMode::ePoint;
         }
         return vk::PolygonMode::eFill;
     }
 
-    [[nodiscard]] constexpr auto toVulkanCullModeFlags(Pipeline::CullMode mode) -> vk::CullModeFlags
+    [[nodiscard]] constexpr auto toVulkanCullModeFlags(GraphicsPipeline::CullMode mode)
+        -> vk::CullModeFlags
     {
         switch (mode)
         {
-            case Pipeline::CullMode::eNone:
+            case GraphicsPipeline::CullMode::eNone:
                 return vk::CullModeFlagBits::eNone;
-            case Pipeline::CullMode::eFront:
+            case GraphicsPipeline::CullMode::eFront:
                 return vk::CullModeFlagBits::eFront;
-            case Pipeline::CullMode::eBack:
+            case GraphicsPipeline::CullMode::eBack:
                 return vk::CullModeFlagBits::eBack;
         }
         return vk::CullModeFlagBits::eNone;
@@ -577,65 +579,67 @@ namespace exage::Graphics
         return vk::Format::eUndefined;
     }
 
-    [[nodiscard]] constexpr auto toVulkanFrontFace(Pipeline::FrontFace face) -> vk::FrontFace
+    [[nodiscard]] constexpr auto toVulkanFrontFace(GraphicsPipeline::FrontFace face)
+        -> vk::FrontFace
     {
         switch (face)
         {
-            case Pipeline::FrontFace::eClockwise:
+            case GraphicsPipeline::FrontFace::eClockwise:
                 return vk::FrontFace::eClockwise;
-            case Pipeline::FrontFace::eCounterClockwise:
+            case GraphicsPipeline::FrontFace::eCounterClockwise:
                 return vk::FrontFace::eCounterClockwise;
         }
         return vk::FrontFace::eClockwise;
     }
 
-    [[nodiscard]] constexpr auto toVulkanCompareOp(Pipeline::CompareOperation op) -> vk::CompareOp
+    [[nodiscard]] constexpr auto toVulkanCompareOp(GraphicsPipeline::CompareOperation op)
+        -> vk::CompareOp
     {
         switch (op)
         {
-            case Pipeline::CompareOperation::eLess:
+            case GraphicsPipeline::CompareOperation::eLess:
                 return vk::CompareOp::eLess;
-            case Pipeline::CompareOperation::eEqual:
+            case GraphicsPipeline::CompareOperation::eEqual:
                 return vk::CompareOp::eEqual;
-            case Pipeline::CompareOperation::eLessOrEqual:
+            case GraphicsPipeline::CompareOperation::eLessOrEqual:
                 return vk::CompareOp::eLessOrEqual;
-            case Pipeline::CompareOperation::eGreater:
+            case GraphicsPipeline::CompareOperation::eGreater:
                 return vk::CompareOp::eGreater;
-            case Pipeline::CompareOperation::eNotEqual:
+            case GraphicsPipeline::CompareOperation::eNotEqual:
                 return vk::CompareOp::eNotEqual;
-            case Pipeline::CompareOperation::eGreaterOrEqual:
+            case GraphicsPipeline::CompareOperation::eGreaterOrEqual:
                 return vk::CompareOp::eGreaterOrEqual;
         }
         return vk::CompareOp::eAlways;
     }
 
-    [[nodiscard]] constexpr auto toVulkanStencilOp(Pipeline::DepthStencilState::StencilOperation op)
-        -> vk::StencilOp
+    [[nodiscard]] constexpr auto toVulkanStencilOp(
+        GraphicsPipeline::DepthStencilState::StencilOperation op) -> vk::StencilOp
     {
         switch (op)
         {
-            case Pipeline::DepthStencilState::StencilOperation::eKeep:
+            case GraphicsPipeline::DepthStencilState::StencilOperation::eKeep:
                 return vk::StencilOp::eKeep;
-            case Pipeline::DepthStencilState::StencilOperation::eZero:
+            case GraphicsPipeline::DepthStencilState::StencilOperation::eZero:
                 return vk::StencilOp::eZero;
-            case Pipeline::DepthStencilState::StencilOperation::eReplace:
+            case GraphicsPipeline::DepthStencilState::StencilOperation::eReplace:
                 return vk::StencilOp::eReplace;
-            case Pipeline::DepthStencilState::StencilOperation::eIncrementClamp:
+            case GraphicsPipeline::DepthStencilState::StencilOperation::eIncrementClamp:
                 return vk::StencilOp::eIncrementAndClamp;
-            case Pipeline::DepthStencilState::StencilOperation::eDecrementClamp:
+            case GraphicsPipeline::DepthStencilState::StencilOperation::eDecrementClamp:
                 return vk::StencilOp::eDecrementAndClamp;
-            case Pipeline::DepthStencilState::StencilOperation::eInvert:
+            case GraphicsPipeline::DepthStencilState::StencilOperation::eInvert:
                 return vk::StencilOp::eInvert;
-            case Pipeline::DepthStencilState::StencilOperation::eIncrementWrap:
+            case GraphicsPipeline::DepthStencilState::StencilOperation::eIncrementWrap:
                 return vk::StencilOp::eIncrementAndWrap;
-            case Pipeline::DepthStencilState::StencilOperation::eDecrementWrap:
+            case GraphicsPipeline::DepthStencilState::StencilOperation::eDecrementWrap:
                 return vk::StencilOp::eDecrementAndWrap;
         }
         return vk::StencilOp::eKeep;
     }
 
     [[nodiscard]] constexpr auto toVulkanStencilOpState(
-        Pipeline::DepthStencilState::StencilOperationState opState) -> vk::StencilOpState
+        GraphicsPipeline::DepthStencilState::StencilOperationState opState) -> vk::StencilOpState
     {
         vk::StencilOpState state {};
         state.failOp = toVulkanStencilOp(opState.failOp);
@@ -649,66 +653,66 @@ namespace exage::Graphics
     }
 
     [[nodiscard]] constexpr auto toVulkanBlendFactor(
-        Pipeline::ColorBlendAttachment::BlendFactor factor) -> vk::BlendFactor
+        GraphicsPipeline::ColorBlendAttachment::BlendFactor factor) -> vk::BlendFactor
     {
         switch (factor)
         {
-            case Pipeline::ColorBlendAttachment::BlendFactor::eZero:
+            case GraphicsPipeline::ColorBlendAttachment::BlendFactor::eZero:
                 return vk::BlendFactor::eZero;
-            case Pipeline::ColorBlendAttachment::BlendFactor::eOne:
+            case GraphicsPipeline::ColorBlendAttachment::BlendFactor::eOne:
                 return vk::BlendFactor::eOne;
-            case Pipeline::ColorBlendAttachment::BlendFactor::eSrcColor:
+            case GraphicsPipeline::ColorBlendAttachment::BlendFactor::eSrcColor:
                 return vk::BlendFactor::eSrcColor;
-            case Pipeline::ColorBlendAttachment::BlendFactor::eOneMinusSrcColor:
+            case GraphicsPipeline::ColorBlendAttachment::BlendFactor::eOneMinusSrcColor:
                 return vk::BlendFactor::eOneMinusSrcColor;
-            case Pipeline::ColorBlendAttachment::BlendFactor::eDstColor:
+            case GraphicsPipeline::ColorBlendAttachment::BlendFactor::eDstColor:
                 return vk::BlendFactor::eDstColor;
-            case Pipeline::ColorBlendAttachment::BlendFactor::eOneMinusDstColor:
+            case GraphicsPipeline::ColorBlendAttachment::BlendFactor::eOneMinusDstColor:
                 return vk::BlendFactor::eOneMinusDstColor;
-            case Pipeline::ColorBlendAttachment::BlendFactor::eSrcAlpha:
+            case GraphicsPipeline::ColorBlendAttachment::BlendFactor::eSrcAlpha:
                 return vk::BlendFactor::eSrcAlpha;
-            case Pipeline::ColorBlendAttachment::BlendFactor::eOneMinusSrcAlpha:
+            case GraphicsPipeline::ColorBlendAttachment::BlendFactor::eOneMinusSrcAlpha:
                 return vk::BlendFactor::eOneMinusSrcAlpha;
-            case Pipeline::ColorBlendAttachment::BlendFactor::eDstAlpha:
+            case GraphicsPipeline::ColorBlendAttachment::BlendFactor::eDstAlpha:
                 return vk::BlendFactor::eDstAlpha;
-            case Pipeline::ColorBlendAttachment::BlendFactor::eOneMinusDstAlpha:
+            case GraphicsPipeline::ColorBlendAttachment::BlendFactor::eOneMinusDstAlpha:
                 return vk::BlendFactor::eOneMinusDstAlpha;
-            case Pipeline::ColorBlendAttachment::BlendFactor::eConstantColor:
+            case GraphicsPipeline::ColorBlendAttachment::BlendFactor::eConstantColor:
                 return vk::BlendFactor::eConstantColor;
-            case Pipeline::ColorBlendAttachment::BlendFactor::eOneMinusConstantColor:
+            case GraphicsPipeline::ColorBlendAttachment::BlendFactor::eOneMinusConstantColor:
                 return vk::BlendFactor::eOneMinusConstantColor;
-            case Pipeline::ColorBlendAttachment::BlendFactor::eConstantAlpha:
+            case GraphicsPipeline::ColorBlendAttachment::BlendFactor::eConstantAlpha:
                 return vk::BlendFactor::eConstantAlpha;
-            case Pipeline::ColorBlendAttachment::BlendFactor::eOneMinusConstantAlpha:
+            case GraphicsPipeline::ColorBlendAttachment::BlendFactor::eOneMinusConstantAlpha:
                 return vk::BlendFactor::eOneMinusConstantAlpha;
-            case Pipeline::ColorBlendAttachment::BlendFactor::eSrcAlphaSaturate:
+            case GraphicsPipeline::ColorBlendAttachment::BlendFactor::eSrcAlphaSaturate:
                 return vk::BlendFactor::eSrcAlphaSaturate;
-            case Pipeline::ColorBlendAttachment::BlendFactor::eSrc1Color:
+            case GraphicsPipeline::ColorBlendAttachment::BlendFactor::eSrc1Color:
                 return vk::BlendFactor::eSrc1Color;
-            case Pipeline::ColorBlendAttachment::BlendFactor::eOneMinusSrc1Color:
+            case GraphicsPipeline::ColorBlendAttachment::BlendFactor::eOneMinusSrc1Color:
                 return vk::BlendFactor::eOneMinusSrc1Color;
-            case Pipeline::ColorBlendAttachment::BlendFactor::eSrc1Alpha:
+            case GraphicsPipeline::ColorBlendAttachment::BlendFactor::eSrc1Alpha:
                 return vk::BlendFactor::eSrc1Alpha;
-            case Pipeline::ColorBlendAttachment::BlendFactor::eOneMinusSrc1Alpha:
+            case GraphicsPipeline::ColorBlendAttachment::BlendFactor::eOneMinusSrc1Alpha:
                 return vk::BlendFactor::eOneMinusSrc1Alpha;
         }
         return vk::BlendFactor::eZero;
     }
 
-    [[nodiscard]] constexpr auto toVulkanBlendOp(Pipeline::ColorBlendAttachment::BlendOperation op)
-        -> vk::BlendOp
+    [[nodiscard]] constexpr auto toVulkanBlendOp(
+        GraphicsPipeline::ColorBlendAttachment::BlendOperation op) -> vk::BlendOp
     {
         switch (op)
         {
-            case Pipeline::ColorBlendAttachment::BlendOperation::eAdd:
+            case GraphicsPipeline::ColorBlendAttachment::BlendOperation::eAdd:
                 return vk::BlendOp::eAdd;
-            case Pipeline::ColorBlendAttachment::BlendOperation::eSubtract:
+            case GraphicsPipeline::ColorBlendAttachment::BlendOperation::eSubtract:
                 return vk::BlendOp::eSubtract;
-            case Pipeline::ColorBlendAttachment::BlendOperation::eReverseSubtract:
+            case GraphicsPipeline::ColorBlendAttachment::BlendOperation::eReverseSubtract:
                 return vk::BlendOp::eReverseSubtract;
-            case Pipeline::ColorBlendAttachment::BlendOperation::eMin:
+            case GraphicsPipeline::ColorBlendAttachment::BlendOperation::eMin:
                 return vk::BlendOp::eMin;
-            case Pipeline::ColorBlendAttachment::BlendOperation::eMax:
+            case GraphicsPipeline::ColorBlendAttachment::BlendOperation::eMax:
                 return vk::BlendOp::eMax;
         }
         return vk::BlendOp::eAdd;

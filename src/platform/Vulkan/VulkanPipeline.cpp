@@ -4,9 +4,9 @@
 
 namespace exage::Graphics
 {
-    VulkanPipeline::VulkanPipeline(VulkanContext& context,
-                                   const PipelineCreateInfo& createInfo) noexcept
-        : Pipeline(createInfo.bindless)
+    VulkanGraphicsPipeline::VulkanGraphicsPipeline(
+        VulkanContext& context, const GraphicsPipelineCreateInfo& createInfo) noexcept
+        : GraphicsPipeline(createInfo.bindless)
         , _context(context)
     {
         auto device = _context.get().getDevice();
@@ -223,14 +223,14 @@ namespace exage::Graphics
         _pipeline = result.value;
     }
 
-    VulkanPipeline::~VulkanPipeline()
+    VulkanGraphicsPipeline::~VulkanGraphicsPipeline()
     {
         if (_pipeline)
         {
             _context.get().getDevice().destroyPipeline(_pipeline);
         }
     }
-    VulkanPipeline::VulkanPipeline(VulkanPipeline&& old) noexcept
+    VulkanGraphicsPipeline::VulkanGraphicsPipeline(VulkanGraphicsPipeline&& old) noexcept
         : _context(old._context)
         , _pipelineLayout(old._pipelineLayout)
         , _pipeline(old._pipeline)
@@ -238,7 +238,8 @@ namespace exage::Graphics
         old._pipeline = nullptr;
     }
 
-    auto VulkanPipeline::operator=(VulkanPipeline&& old) noexcept -> VulkanPipeline&
+    auto VulkanGraphicsPipeline::operator=(VulkanGraphicsPipeline&& old) noexcept
+        -> VulkanGraphicsPipeline&
     {
         if (this != &old)
         {
@@ -253,4 +254,5 @@ namespace exage::Graphics
         }
         return *this;
     }
+
 }  // namespace exage::Graphics

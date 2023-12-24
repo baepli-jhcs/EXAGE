@@ -147,6 +147,8 @@ namespace exage::Graphics
         vk::PhysicalDeviceFeatures requiredFeatures {};
         requiredFeatures.independentBlend = VK_TRUE;
         requiredFeatures.samplerAnisotropy = VK_TRUE;
+        requiredFeatures.multiDrawIndirect = VK_TRUE;
+        requiredFeatures.geometryShader = VK_TRUE;
 
         vk::PhysicalDeviceVulkan12Features requiredFeatures12 {};
         requiredFeatures12.drawIndirectCount = VK_TRUE;
@@ -421,10 +423,10 @@ namespace exage::Graphics
         return std::make_shared<VulkanShader>(*this, createInfo);
     }
 
-    auto VulkanContext::createPipeline(const PipelineCreateInfo& createInfo) noexcept
-        -> std::shared_ptr<Pipeline>
+    auto VulkanContext::createGraphicsPipeline(
+        const GraphicsPipelineCreateInfo& createInfo) noexcept -> std::shared_ptr<GraphicsPipeline>
     {
-        return std::make_shared<VulkanPipeline>(*this, createInfo);
+        return std::make_shared<VulkanGraphicsPipeline>(*this, createInfo);
     }
 
     auto VulkanContext::createFence() noexcept -> std::unique_ptr<Fence>

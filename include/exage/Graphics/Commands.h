@@ -209,9 +209,9 @@ namespace exage::Graphics
             uint64_t dstOffset;
         };
 
-        struct BindPipelineCommand
+        struct BindGraphicsPipelineCommand
         {
-            std::shared_ptr<Pipeline> pipeline;
+            std::shared_ptr<GraphicsPipeline> pipeline;
         };
 
         struct SetPushConstantCommand
@@ -272,7 +272,7 @@ namespace exage::Graphics
                                         CopyBufferCommand,
                                         CopyBufferToTextureCommand,
                                         CopyTextureToBufferCommand,
-                                        BindPipelineCommand,
+                                        BindGraphicsPipelineCommand,
                                         SetPushConstantCommand,
                                         BindVertexBufferCommand,
                                         BindIndexBufferCommand,

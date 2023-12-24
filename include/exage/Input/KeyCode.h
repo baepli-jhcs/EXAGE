@@ -180,4 +180,33 @@ namespace exage
 
     using Modifiers = Flags<ModifierFlags>;
     EXAGE_ENABLE_FLAGS(Modifiers);
+
+    enum class GamepadButton
+    {
+        eA,
+        eB,
+        eX,
+        eY,
+        eLeftBumper,
+        eRightBumper,
+        eBack,
+        eStart,
+        eGuide,
+        eLeftThumb,
+        eRightThumb,
+        eDPadUp,
+        eDPadRight,
+        eDPadDown,
+        eDPadLeft,
+    };
+
+    enum class GamepadAxis
+    {
+        eLeftX,
+        eLeftY,
+        eRightX,
+        eRightY,
+        eLeftTrigger,
+        eRightTrigger,
+    };
 }  // namespace exage

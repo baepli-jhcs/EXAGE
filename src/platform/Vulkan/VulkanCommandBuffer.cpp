@@ -323,9 +323,10 @@ namespace exage::Graphics
         _commands.emplace_back(copyTextureToBufferCommand);
     }
 
-    void VulkanCommandBuffer::bindPipeline(std::shared_ptr<Pipeline> pipeline) noexcept
+    void VulkanCommandBuffer::bindGraphicsPipeline(
+        std::shared_ptr<GraphicsPipeline> pipeline) noexcept
     {
-        BindPipelineCommand bindPipelineCommand;
+        BindGraphicsPipelineCommand bindPipelineCommand;
         bindPipelineCommand.pipeline = pipeline;
 
         _commands.emplace_back(bindPipelineCommand);
@@ -705,9 +706,9 @@ namespace exage::Graphics
                                                      dstBuffer.getBuffer(),
                                                      copy);
                 },
-                [this](const BindPipelineCommand& cmd)
+                [this](const BindGraphicsPipelineCommand& cmd)
                 {
-                    auto& pipeline = *cmd.pipeline->as<VulkanPipeline>();
+                    auto& pipeline = *cmd.pipeline->as<VulkanGraphicsPipeline>();
                     _commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics,
                                                 pipeline.getPipeline());
 

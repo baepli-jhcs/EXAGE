@@ -21,6 +21,8 @@
 #    define GLFW_EXPOSE_NATIVE_COCOA
 #endif
 
+#include <bitset>
+
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
 
@@ -381,18 +383,28 @@ namespace exage::System
             }
         }
 
+        std::bitset<GLFW_JOYSTICK_LAST + 1> connectedGamepads;  // NOLINT
+
         void joystickCallback(int jid, int connected) noexcept
         {
             if (connected == GLFW_TRUE)
             {
-                // Joystick connected
-                Events::JoystickConnected event {};
+                if (glfwJoystickIsGamepad(jid) == 0)
+                {
+                    return;
+                }
+                connectedGamepads.set(jid);
+                Events::GamepadConnected event {};
                 pushEvent({static_cast<uint32_t>(jid), event});
             }
             else
             {
-                // Joystick disconnected
-                Events::JoystickDisconnected event {};
+                if (!connectedGamepads.test(jid))
+                {
+                    return;
+                }
+                connectedGamepads.reset(jid);
+                Events::GamepadDisconnected event {};
                 pushEvent({static_cast<uint32_t>(jid), event});
             }
         }
@@ -429,6 +441,15 @@ namespace exage::System
         glfwInit();
         glfwSetMonitorCallback(monitorCallback);
         glfwSetJoystickCallback(joystickCallback);
+
+        // Check for connected gamepads
+        for (int i = GLFW_JOYSTICK_1; i <= GLFW_JOYSTICK_LAST; i++)
+        {
+            if (glfwJoystickIsGamepad(i) != 0)
+            {
+                connectedGamepads.set(i);
+            }
+        }
     }
 
     GLFWWindow::GLFWWindow(const WindowInfo& info) noexcept
@@ -712,9 +733,121 @@ namespace exage::System
         return glfwGetWindowAttrib(_window, GLFW_ICONIFIED) == GLFW_TRUE;
     }
 
+    namespace
+    {
+        // For each connected gamepad, store the state of each button
+        std::array<std::bitset<GLFW_GAMEPAD_BUTTON_LAST + 1>, GLFW_JOYSTICK_LAST + 1>
+            gamepadButtons;  // NOLINT
+
+        auto toGamepadButton(int button) -> GamepadButton
+        {
+            switch (button)
+            {
+                case GLFW_GAMEPAD_BUTTON_A:
+                    return GamepadButton::eA;
+                case GLFW_GAMEPAD_BUTTON_B:
+                    return GamepadButton::eB;
+                case GLFW_GAMEPAD_BUTTON_X:
+                    return GamepadButton::eX;
+                case GLFW_GAMEPAD_BUTTON_Y:
+                    return GamepadButton::eY;
+                case GLFW_GAMEPAD_BUTTON_LEFT_BUMPER:
+                    return GamepadButton::eLeftBumper;
+                case GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER:
+                    return GamepadButton::eRightBumper;
+                case GLFW_GAMEPAD_BUTTON_BACK:
+                    return GamepadButton::eBack;
+                case GLFW_GAMEPAD_BUTTON_START:
+                    return GamepadButton::eStart;
+                case GLFW_GAMEPAD_BUTTON_GUIDE:
+                    return GamepadButton::eGuide;
+                case GLFW_GAMEPAD_BUTTON_LEFT_THUMB:
+                    return GamepadButton::eLeftThumb;
+                case GLFW_GAMEPAD_BUTTON_RIGHT_THUMB:
+                    return GamepadButton::eRightThumb;
+                case GLFW_GAMEPAD_BUTTON_DPAD_UP:
+                    return GamepadButton::eDPadUp;
+                case GLFW_GAMEPAD_BUTTON_DPAD_RIGHT:
+                    return GamepadButton::eDPadRight;
+                case GLFW_GAMEPAD_BUTTON_DPAD_DOWN:
+                    return GamepadButton::eDPadDown;
+                case GLFW_GAMEPAD_BUTTON_DPAD_LEFT:
+                    return GamepadButton::eDPadLeft;
+                default:
+                    break;
+            }
+
+            return GamepadButton::eA;  // Should never happen
+        }
+
+        auto toGamepadAxis(int axis) -> GamepadAxis
+        {
+            switch (axis)
+            {
+                case GLFW_GAMEPAD_AXIS_LEFT_X:
+                    return GamepadAxis::eLeftX;
+                case GLFW_GAMEPAD_AXIS_LEFT_Y:
+                    return GamepadAxis::eLeftY;
+                case GLFW_GAMEPAD_AXIS_RIGHT_X:
+                    return GamepadAxis::eRightX;
+                case GLFW_GAMEPAD_AXIS_RIGHT_Y:
+                    return GamepadAxis::eRightY;
+                case GLFW_GAMEPAD_AXIS_LEFT_TRIGGER:
+                    return GamepadAxis::eLeftTrigger;
+                case GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER:
+                    return GamepadAxis::eRightTrigger;
+                default:
+                    break;
+            }
+
+            return GamepadAxis::eLeftX;  // Should never happen
+        }
+    }  // namespace
+
     void GLFWWindow::pollEvents() noexcept
     {
         glfwPollEvents();
+
+        // Check for gamepad button events
+        for (int i = GLFW_JOYSTICK_1; i <= GLFW_JOYSTICK_LAST; i++)
+        {
+            if (!connectedGamepads.test(i))
+            {
+                continue;
+            }
+
+            GLFWgamepadstate state;
+            if (glfwGetGamepadState(i, &state) == GLFW_FALSE)
+            {
+                continue;
+            }
+
+            for (int j = GLFW_GAMEPAD_BUTTON_A; j <= GLFW_GAMEPAD_BUTTON_LAST; j++)
+            {
+                if (state.buttons[j] == GLFW_PRESS)
+                {
+                    if (!gamepadButtons[i].test(j))
+                    {
+                        Events::GamepadButtonPressed event {};
+                        event.button = toGamepadButton(j);
+
+                        pushEvent({static_cast<uint32_t>(i), event});
+                    }
+                    gamepadButtons[i].set(j);
+                }
+                else
+                {
+                    if (gamepadButtons[i].test(j))
+                    {
+                        Events::GamepadButtonReleased event {};
+                        event.button = toGamepadButton(j);
+
+                        pushEvent({static_cast<uint32_t>(i), event});
+                    }
+                    gamepadButtons[i].reset(j);
+                }
+            }
+        }
     }
 
     void GLFWWindow::waitEvents() noexcept

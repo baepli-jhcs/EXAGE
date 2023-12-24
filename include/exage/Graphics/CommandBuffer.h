@@ -105,7 +105,7 @@ namespace exage::Graphics
                                          glm::uvec3 extent,
                                          uint64_t dstOffset) noexcept = 0;
 
-        virtual void bindPipeline(std::shared_ptr<Pipeline> pipeline) noexcept = 0;
+        virtual void bindGraphicsPipeline(std::shared_ptr<GraphicsPipeline> pipeline) noexcept = 0;
 
         virtual void setPushConstant(std::span<const std::byte> data) noexcept = 0;
 

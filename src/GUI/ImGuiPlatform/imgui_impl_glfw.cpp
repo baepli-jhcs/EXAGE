@@ -746,12 +746,6 @@ IMGUI_IMPL_API void ImGui_ImplGlfw_ProcessEvent(const exage::System::Event& even
 //     return key;
 // }
 
-void ImGui_ImplGlfw_MonitorCallback(GLFWmonitor*, int)
-{
-    ImGui_ImplGlfw_Data* bd = ImGui_ImplGlfw_GetBackendData();
-    bd->WantUpdateMonitors = true;
-}
-
 #ifdef __EMSCRIPTEN__
 static EM_BOOL ImGui_ImplEmscripten_WheelCallback(int, const EmscriptenWheelEvent* ev, void*)
 {

@@ -194,6 +194,7 @@ namespace exage::Graphics
 
     ResizableDynamicBuffer::ResizableDynamicBuffer(const DynamicBufferCreateInfo& createInfo)
         : _context(createInfo.context)
+        , _size(createInfo.size)
     {
         auto allocationFlags = Buffer::MapMode::eIfOptimal;
 
@@ -224,40 +225,17 @@ namespace exage::Graphics
                 _hostBuffers.emplace_back(testBufferCreateInfo);
             }
         }
-
-        _data = std::vector<std::byte>(createInfo.size);
-        _dirty = std::vector<bool>(framesInFlight, false);
     }
 
-    void ResizableDynamicBuffer::write(std::span<const std::byte> data, size_t offset) noexcept
+    void ResizableDynamicBuffer::write(CommandBuffer& commandBuffer,
+                                       std::span<const std::byte> data,
+                                       size_t offset,
+                                       PipelineStage pipelineStage,
+                                       Access access) noexcept
     {
-        debugAssume(offset + data.size() <= _data.size(), "Buffer overflow");
+        debugAssume(offset + data.size() <= _size, "Buffer overflow");
 
-        std::memcpy(_data.data() + offset, data.data(), data.size());
-        for (auto&& i : _dirty)
-        {
-            i = true;
-        }
-    }
-
-    void ResizableDynamicBuffer::read(std::span<std::byte> data, size_t offset) const noexcept
-    {
-        debugAssume(offset + data.size() <= _data.size(), "Buffer overflow");
-
-        std::memcpy(data.data(), _data.data() + offset, data.size());
-    }
-
-    void ResizableDynamicBuffer::update(CommandBuffer& commandBuffer,
-                                        PipelineStage pipelineStage,
-                                        Access access) noexcept
-    {
-        if (!_dirty[_context.get().getQueue().currentFrame()])
-        {
-            return;
-        }
-
-        _hostBuffers[_context.get().getQueue().currentFrame()].get()->write(_data, 0);
-        _dirty[_context.get().getQueue().currentFrame()] = false;
+        _hostBuffers[_context.get().getQueue().currentFrame()].get()->write(data, offset);
 
         if (_deviceBuffer)
         {
@@ -265,7 +243,7 @@ namespace exage::Graphics
                                      _deviceBuffer->get(),
                                      0,
                                      0,
-                                     _data.size());
+                                     _size);
 
             commandBuffer.bufferBarrier(_deviceBuffer->get(),
                                         PipelineStageFlags::eTransfer,
@@ -279,12 +257,10 @@ namespace exage::Graphics
 
     void ResizableDynamicBuffer::resize(size_t newSize) noexcept
     {
-        if (newSize == _data.size())
+        if (newSize == _size)
         {
             return;
         }
-
-        _data.resize(newSize);
 
         size_t const framesInFlight = _context.get().getQueue().getFramesInFlight();
         for (size_t i = 0; i < framesInFlight; i++)

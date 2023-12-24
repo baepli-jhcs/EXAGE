@@ -11,7 +11,6 @@
 #include "exage/Renderer/Scene/AssetCache.h"
 #include "exage/Renderer/Scene/Material.h"
 #include "exage/Renderer/Scene/Mesh.h"
-#include "exage/Renderer/Scene/SceneBuffer.h"
 #include "exage/Scene/Scene.h"
 
 namespace exage::Renderer
@@ -48,7 +47,6 @@ namespace exage::Renderer
     {
         Graphics::Context& context;
         Graphics::CommandBuffer& commandBuffer;
-        SceneBuffer& sceneBuffer;
 
         Graphics::Access access = Graphics::AccessFlags::eShaderRead;
         Graphics::PipelineStage pipelineStage = Graphics::PipelineStageFlags::eFragmentShader;

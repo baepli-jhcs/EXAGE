@@ -5,31 +5,14 @@
 #include "Editor.h"
 
 #include <fmt/format.h>
-#include <glm/ext/matrix_clip_space.hpp>
 #include <glm/trigonometric.hpp>
 
-#include "ImGui.h"
-#include "MousePicking/MousePicking.h"
-#include "Stages/AssetImport.h"
-#include "exage/Core/Debug.h"
 #include "exage/Graphics/Buffer.h"
 #include "exage/Graphics/CommandBuffer.h"
-#include "exage/Projects/Level.h"
-#include "exage/Renderer/Renderer.h"
-#include "exage/Renderer/Scene/AssetCache.h"
-#include "exage/Renderer/Scene/Camera.h"
 #include "exage/Renderer/Scene/Loader/AssetFile.h"
-#include "exage/Renderer/Scene/Loader/Converter.h"
-#include "exage/Renderer/Scene/Loader/Loader.h"
 #include "exage/Renderer/Scene/Material.h"
-#include "exage/Renderer/Scene/Mesh.h"
-#include "exage/Renderer/Scene/SceneBuffer.h"
-#include "exage/Renderer/Utils/Perspective.h"
-#include "exage/Scene/Hierarchy.h"
 #include "exage/System/Event.h"
 #include "exage/System/Window.h"
-#include "exage/utils/math.h"
-#include "exage/utils/string.h"
 #include "imgui.h"
 #include "utils/files.h"
 
@@ -92,7 +75,7 @@ namespace exitor
         };
         _imGui = GUI::ImGui::Instance {imGuiInfo};
 
-        _fontManager = Renderer::FontManager {*_imGui};
+        _fontManager = GUI::ImGui::FontManager {*_imGui};
 
         _fontManager->addFont("assets/fonts/SourceSansPro/Regular.ttf", "Source Sans Pro Regular");
         _fontManager->addFont("assets/fonts/SourceSansPro/Bold.ttf", "Source Sans Pro Bold");
@@ -137,6 +120,7 @@ namespace exitor
             }
 
             float deltaTime = _timer.nextFrame();
+
             tick(deltaTime);
         }
     }

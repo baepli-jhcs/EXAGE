@@ -51,18 +51,18 @@ namespace exage::Graphics
         Type type;
     };
 
-    class Pipeline
+    class GraphicsPipeline
     {
       public:
-        Pipeline() noexcept = default;
-        virtual ~Pipeline() = default;
+        GraphicsPipeline() noexcept = default;
+        virtual ~GraphicsPipeline() = default;
 
-        EXAGE_DEFAULT_COPY(Pipeline);
-        EXAGE_DEFAULT_MOVE(Pipeline);
+        EXAGE_DEFAULT_COPY(GraphicsPipeline);
+        EXAGE_DEFAULT_MOVE(GraphicsPipeline);
 
         [[nodiscard]] auto isBindless() const noexcept -> bool { return _bindless; }
 
-        EXAGE_BASE_API(API, Pipeline);
+        EXAGE_BASE_API(API, GraphicsPipeline);
 
         enum class CompareOperation
         {
@@ -200,7 +200,7 @@ namespace exage::Graphics
         };
 
       protected:
-        explicit Pipeline(bool bindless) noexcept
+        explicit GraphicsPipeline(bool bindless) noexcept
             : _bindless(bindless)
         {
         }
@@ -208,15 +208,46 @@ namespace exage::Graphics
         bool _bindless = false;
     };
 
-    struct PipelineCreateInfo
+    struct GraphicsPipelineCreateInfo
     {
         VertexDescription vertexDescription;
         std::vector<ResourceDescription> resourceDescriptions;
-        Pipeline::ShaderInfo shaderInfo;
-        Pipeline::ColorBlendState colorBlendState;
-        Pipeline::RenderInfo renderInfo;
-        Pipeline::RasterState rasterState;
-        Pipeline::DepthStencilState depthStencilState;
+        GraphicsPipeline::ShaderInfo shaderInfo;
+        GraphicsPipeline::ColorBlendState colorBlendState;
+        GraphicsPipeline::RenderInfo renderInfo;
+        GraphicsPipeline::RasterState rasterState;
+        GraphicsPipeline::DepthStencilState depthStencilState;
+        uint32_t pushConstantSize;
+
+        bool bindless = false;  // If set, resourceDescriptions are ignored
+    };
+
+    class ComputePipeline
+    {
+      public:
+        ComputePipeline() noexcept = default;
+        virtual ~ComputePipeline() = default;
+
+        EXAGE_DEFAULT_COPY(ComputePipeline);
+        EXAGE_DEFAULT_MOVE(ComputePipeline);
+
+        [[nodiscard]] auto isBindless() const noexcept -> bool { return _bindless; }
+
+        EXAGE_BASE_API(API, ComputePipeline);
+
+      protected:
+        explicit ComputePipeline(bool bindless) noexcept
+            : _bindless(bindless)
+        {
+        }
+
+        bool _bindless = false;
+    };
+
+    struct ComputePipelineCreateInfo
+    {
+        std::vector<ResourceDescription> resourceDescriptions;
+        std::shared_ptr<Shader> shader;
         uint32_t pushConstantSize;
 
         bool bindless = false;  // If set, resourceDescriptions are ignored

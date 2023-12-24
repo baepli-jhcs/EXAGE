@@ -14,7 +14,7 @@ namespace exage::Graphics
     struct FrameBufferCreateInfo;
     struct BufferCreateInfo;
     struct ShaderCreateInfo;
-    struct PipelineCreateInfo;
+    struct GraphicsPipelineCreateInfo;
 
     enum class API
     {
@@ -40,7 +40,7 @@ namespace exage::Graphics
     class Texture;
     class Buffer;
     class Shader;
-    class Pipeline;
+    class GraphicsPipeline;
     class ResourceManager;
 
     enum class Format : uint32_t;
@@ -104,8 +104,9 @@ namespace exage::Graphics
             -> std::shared_ptr<Buffer> = 0;
         [[nodiscard]] virtual auto createShader(const ShaderCreateInfo& createInfo) noexcept
             -> std::shared_ptr<Shader> = 0;
-        [[nodiscard]] virtual auto createPipeline(const PipelineCreateInfo& createInfo) noexcept
-            -> std::shared_ptr<Pipeline> = 0;
+        [[nodiscard]] virtual auto createGraphicsPipeline(
+            const GraphicsPipelineCreateInfo& createInfo) noexcept
+            -> std::shared_ptr<GraphicsPipeline> = 0;
         [[nodiscard]] virtual auto createFence() noexcept -> std::unique_ptr<Fence> = 0;
 
         [[nodiscard]] virtual auto getHardwareSupport() const noexcept -> HardwareSupport = 0;

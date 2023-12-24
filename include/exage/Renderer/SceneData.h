@@ -3,18 +3,43 @@
 #include "exage/Renderer/Scene/Camera.h"
 #include "exage/Renderer/Scene/Light.h"
 #include "exage/Renderer/Scene/Mesh.h"
-#include "exage/Renderer/Scene/Transform.h"
 #include "exage/Scene/Scene.h"
 
 namespace exage::Renderer
 {
+    struct TransformEntry
+    {
+        alignas(16) glm::mat4 model;
+        alignas(16) glm::mat4 prevModel;
+        alignas(16) glm::mat4 modelViewProjection;
+        alignas(16) glm::mat4 prevModelViewProjection;
+    };
+
+    struct CameraEntry
+    {
+        alignas(16) glm::mat4 view;
+        alignas(16) glm::mat4 projection;
+        alignas(16) glm::mat4 viewProjection;
+        alignas(16) glm::mat4 prevView;
+        alignas(16) glm::mat4 prevProj;
+        alignas(16) glm::mat4 prevViewProjection;
+    };
+
+    struct PointLightEntry
+    {
+        alignas(16) glm::vec4 position;
+        alignas(16) glm::vec4 color;
+        alignas(16) glm::vec4 physicalRadius;
+        alignas(16) glm::vec4 attenuationRadius;
+    };
+
     struct SceneData
     {
-        entt::storage<Camera> currentCameras;
-        entt::storage<Camera> previousCameras;
-
         entt::storage<Transform3D> currentTransforms;
         entt::storage<Transform3D> previousTransforms;
+
+        entt::storage<Camera> currentCameras;
+        entt::storage<Camera> previousCameras;
 
         entt::storage<StaticMeshComponent> currentStaticMeshes;
         entt::storage<StaticMeshComponent> previousStaticMeshes;
@@ -28,23 +53,15 @@ namespace exage::Renderer
         entt::storage<DirectionalLight> currentDirectionalLights;
         entt::storage<DirectionalLight> previousDirectionalLights;
 
-        entt::storage<TransformRenderInfo> transformRenderInfo;
-
-        entt::storage<PointLightRenderInfo> pointLightRenderInfo;
-        entt::storage<SpotLightRenderInfo> spotLightRenderInfo;
-        PointLightRenderArray pointLightRenderArray;
-        SpotLightRenderArray spotLightRenderArray;
+        std::optional<Graphics::ResizableDynamicBuffer> transformBuffer;
+        std::optional<Graphics::ResizableDynamicBuffer> cameraBuffer;
+        std::optional<Graphics::ResizableDynamicBuffer> pointLightBuffer;
     };
 
     struct CameraData
     {
         Entity cameraEntity;
         Camera camera;
-        CameraRenderInfo cameraRenderInfo;
-        /* Directional lights are rendered using cascaded shadow maps and depend on the camera.
-         * Therefore, they are stored in the camera data. */
-        entt::storage<DirectionalLightRenderInfo> directionalLightRenderInfo;
-        DirectionalLightRenderArray directionalLightRenderArray;
     };
 
     /* Process: at start of frame, current scene data is swapped to become previous.

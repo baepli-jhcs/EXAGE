@@ -2,20 +2,18 @@
 
 #include "ProjectSelector.h"
 
-#include <cereal/types/chrono.hpp>
-#include <cereal/types/unordered_set.hpp>
-#include <cereal/types/vector.hpp>
-#include <exage/utils/serialization.h>
-#include <misc/cpp/imgui_stdlib.h>
-
-#include "Stages/ProjectSelector.h"
 #include "cereal/archives/binary.hpp"
 #include "cereal/archives/json.hpp"
+#include "cereal/types/chrono.hpp"
+#include "cereal/types/unordered_set.hpp"
+#include "cereal/types/vector.hpp"
 #include "exage/Filesystem/Directories.h"
 #include "exage/Projects/Project.h"
 #include "exage/utils/imgui.h"
+#include "exage/utils/serialization.h"
 #include "exage/utils/string.h"
 #include "imgui.h"
+#include "misc/cpp/imgui_stdlib.h"
 #include "tinyfiledialogs.h"
 #include "utils/files.h"
 

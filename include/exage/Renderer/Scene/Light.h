@@ -17,12 +17,11 @@ namespace exage::Renderer
         float physicalRadius;
         float attenuationRadius;
         bool castShadow;
-        float shadowBias = DEFAULT_SHADOW_BIAS;
 
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(color, intensity, physicalRadius, attenuationRadius, castShadow, shadowBias);
+            archive(color, intensity, physicalRadius, attenuationRadius, castShadow);
         }
     };
 
@@ -35,7 +34,6 @@ namespace exage::Renderer
         float physicalRadius;
         float attenuationRadius;
         bool castShadow;
-        float shadowBias = DEFAULT_SHADOW_BIAS;
 
         template<class Archive>
         void serialize(Archive& archive)
@@ -46,8 +44,7 @@ namespace exage::Renderer
                     outerCutoff,
                     physicalRadius,
                     attenuationRadius,
-                    castShadow,
-                    shadowBias);
+                    castShadow);
         }
     };
 
@@ -56,12 +53,11 @@ namespace exage::Renderer
         glm::vec3 color;
         float intensity;
         bool castShadow;
-        float shadowBias = DEFAULT_SHADOW_BIAS;
 
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(color, intensity, castShadow, shadowBias);
+            archive(color, intensity, castShadow);
         }
     };
 }  // namespace exage::Renderer

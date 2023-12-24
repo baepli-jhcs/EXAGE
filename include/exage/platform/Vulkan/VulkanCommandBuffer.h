@@ -8,7 +8,7 @@
 
 namespace exage::Graphics
 {
-    class VulkanPipeline;
+    class VulkanGraphicsPipeline;
 
     class VulkanCommandBuffer final : public CommandBuffer
     {
@@ -105,7 +105,7 @@ namespace exage::Graphics
                                  glm::uvec3 extent,
                                  uint64_t dstOffset) noexcept override;
 
-        void bindPipeline(std::shared_ptr<Pipeline> pipeline) noexcept override;
+        void bindGraphicsPipeline(std::shared_ptr<GraphicsPipeline> pipeline) noexcept override;
 
         void setPushConstant(std::span<const std::byte> data) noexcept override;
 
@@ -144,6 +144,6 @@ namespace exage::Graphics
         std::vector<Commands::GPUCommand> _commands {};
         std::vector<DataDependency> _dataDependencies {};
 
-        VulkanPipeline* _currentPipeline = nullptr;
+        VulkanGraphicsPipeline* _currentPipeline = nullptr;
     };
 }  // namespace exage::Graphics

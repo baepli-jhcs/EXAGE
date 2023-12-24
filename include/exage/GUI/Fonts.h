@@ -3,7 +3,7 @@
 #include "exage/Core/Core.h"
 #include "exage/GUI/ImGui.h"
 
-class ImFont;
+struct ImFont;
 
 namespace exage::GUI::ImGui
 {

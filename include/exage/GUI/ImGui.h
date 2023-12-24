@@ -5,7 +5,7 @@
 #include "exage/Graphics/Texture.h"
 #include "exage/System/Window.h"
 
-class ImGuiContext;
+struct ImGuiContext;
 
 namespace exage::GUI::ImGui
 {

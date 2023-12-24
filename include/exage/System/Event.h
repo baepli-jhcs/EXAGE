@@ -131,12 +131,22 @@ namespace exage::System
         {
         };
 
-        struct JoystickConnected
+        struct GamepadConnected
         {
         };
 
-        struct JoystickDisconnected
+        struct GamepadDisconnected
         {
+        };
+
+        struct GamepadButtonPressed
+        {
+            GamepadButton button;
+        };
+
+        struct GamepadButtonReleased
+        {
+            GamepadButton button;
         };
     }  // namespace Events
 
@@ -162,8 +172,10 @@ namespace exage::System
                                    Events::FileDropped,
                                    Events::MonitorConnected,
                                    Events::MonitorDisconnected,
-                                   Events::JoystickConnected,
-                                   Events::JoystickDisconnected>;
+                                   Events::GamepadConnected,
+                                   Events::GamepadDisconnected,
+                                   Events::GamepadButtonPressed,
+                                   Events::GamepadButtonReleased>;
 
     struct Event
     {

@@ -2,7 +2,6 @@
 
 #include "Dialogs/FileDialog.h"
 #include "Dialogs/FolderDialog.h"
-#include "ImGuiFileDialog.h"
 #include "exage/Core/Core.h"
 #include "exage/Core/Timer.h"
 #include "exage/GUI/Fonts.h"
@@ -14,9 +13,7 @@
 #include "exage/Graphics/Utils/QueueCommand.h"
 #include "exage/Projects/Level.h"
 #include "exage/Projects/Project.h"
-#include "exage/Renderer/Renderer.h"
 #include "exage/Renderer/Scene/AssetCache.h"
-#include "exage/Renderer/Scene/SceneBuffer.h"
 
 namespace exitor
 {
