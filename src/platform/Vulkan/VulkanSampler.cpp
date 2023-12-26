@@ -68,43 +68,4 @@ namespace exage::Graphics
             _context.get().getDevice().destroySampler(_sampler);
         }
     }
-
-    VulkanSampler::VulkanSampler(VulkanSampler&& old) noexcept
-        : Sampler(std::move(old))
-        , _context(old._context)
-        , _sampler(old._sampler)
-    {
-        old._id = {};
-
-        old._sampler = nullptr;
-    }
-
-    auto VulkanSampler::operator=(VulkanSampler&& old) noexcept -> VulkanSampler&
-    {
-        if (this == &old)
-        {
-            return *this;
-        }
-
-        Sampler::operator=(std::move(old));
-
-        if (_id.valid())
-        {
-            _context.get().getResourceManager().unbindSampler(_id);
-        }
-
-        if (_sampler)
-        {
-            _context.get().getDevice().destroySampler(_sampler);
-        }
-
-        _context = old._context;
-        _sampler = old._sampler;
-
-        old._id = {};
-
-        old._sampler = nullptr;
-
-        return *this;
-    }
 }  // namespace exage::Graphics

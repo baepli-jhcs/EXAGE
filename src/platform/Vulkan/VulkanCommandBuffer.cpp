@@ -32,40 +32,6 @@ namespace exage::Graphics
         }
     }
 
-    VulkanCommandBuffer::VulkanCommandBuffer(VulkanCommandBuffer&& old) noexcept
-        : _context(old._context)
-        , _commandBuffer(old._commandBuffer)
-        , _commands(std::move(old._commands))
-        , _dataDependencies(std::move(old._dataDependencies))
-        , _currentPipeline(std::move(old._currentPipeline))
-    {
-        old._commandBuffer = nullptr;
-    }
-
-    auto VulkanCommandBuffer::operator=(VulkanCommandBuffer&& old) noexcept -> VulkanCommandBuffer&
-    {
-        if (this == &old)
-        {
-            return *this;
-        }
-
-        _context = old._context;
-
-        if (_commandBuffer)
-        {
-            _context.get().destroyCommandBuffer(_commandBuffer);
-        }
-
-        _commandBuffer = old._commandBuffer;
-        _commands = std::move(old._commands);
-        _dataDependencies = std::move(old._dataDependencies);
-        _currentPipeline = std::move(old._currentPipeline);
-
-        old._commandBuffer = nullptr;
-
-        return *this;
-    }
-
     void VulkanCommandBuffer::begin() noexcept
     {
         _commands.clear();

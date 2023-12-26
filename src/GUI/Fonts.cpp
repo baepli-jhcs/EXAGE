@@ -35,18 +35,15 @@ namespace exage::GUI
 
         ImGuiIO& io = ::ImGui::GetIO();
         ImFont* font =
-            io.Fonts->AddFontFromMemoryTTF(_fontData[name].data(), _fontData[name].size(), 12.0f);
-        fontMap[12.0f] = font;
+            io.Fonts->AddFontFromMemoryTTF(_fontData[name].data(), _fontData[name].size(), 12.0F);
+        fontMap[12] = font;
 
-        if (_imGuiInstance != nullptr)
-        {
-            _imGuiInstance->buildFonts();
-        }
+        _rebuildFonts = true;
 
         return true;
     }
 
-    auto ImGui::FontManager::getFont(const std::string& name, float size) noexcept -> ImFont*
+    auto ImGui::FontManager::getFont(const std::string& name, uint32_t size) noexcept -> ImFont*
     {
         if (!_fonts.contains(name))
         {
@@ -58,17 +55,24 @@ namespace exage::GUI
         if (!fontMap.contains(size))
         {
             ImGuiIO& io = ::ImGui::GetIO();
-            ImFont* font = io.Fonts->AddFontFromMemoryTTF(
-                _fontData[name].data(), static_cast<int>(_fontData[name].size()), size);
+            ImFont* font = io.Fonts->AddFontFromMemoryTTF(_fontData[name].data(),
+                                                          static_cast<int>(_fontData[name].size()),
+                                                          static_cast<float>(size));
             fontMap[size] = font;
 
-            if (_imGuiInstance != nullptr)
-            {
-                _imGuiInstance->buildFonts();
-            }
+            _rebuildFonts = true;
         }
 
         return fontMap[size];
+    }
+
+    void ImGui::FontManager::newFrame() noexcept
+    {
+        if (_rebuildFonts)
+        {
+            _imGuiInstance->buildFonts();
+            _rebuildFonts = false;
+        }
     }
 
 }  // namespace exage::GUI

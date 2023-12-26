@@ -14,9 +14,7 @@ namespace exage::Graphics
         virtual ~VulkanGraphicsPipeline();
 
         EXAGE_DELETE_COPY(VulkanGraphicsPipeline);
-
-        VulkanGraphicsPipeline(VulkanGraphicsPipeline&& old) noexcept;
-        auto operator=(VulkanGraphicsPipeline&& old) noexcept -> VulkanGraphicsPipeline&;
+        EXAGE_DELETE_MOVE(VulkanGraphicsPipeline);
 
         [[nodiscard]] auto getPipeline() const noexcept -> vk::Pipeline { return _pipeline; }
         [[nodiscard]] auto getPipelineLayout() const noexcept -> vk::PipelineLayout

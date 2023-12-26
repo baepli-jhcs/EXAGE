@@ -12,8 +12,7 @@ namespace exage::Graphics
         ~VulkanShader() override;
 
         EXAGE_DELETE_COPY(VulkanShader);
-        VulkanShader(VulkanShader&& old) noexcept;
-        auto operator=(VulkanShader&& old) noexcept -> VulkanShader&;
+        EXAGE_DELETE_MOVE(VulkanShader);
 
         [[nodiscard]] auto getShaderModule() const noexcept -> vk::ShaderModule
         {

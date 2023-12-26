@@ -20,13 +20,17 @@
 namespace exitor
 {
 
-    ProjectSelector::ProjectSelector(Renderer::FontManager& fontManager) noexcept
-        : _fontManager(fontManager)
+    ProjectSelector::ProjectSelector(GUI::ImGui::FontManager& fontManager) noexcept
+        : _fontManager(&fontManager)
     {
         getRecentProjects();
+    }
 
-        _headerFont = _fontManager.get().getFont("Source Sans Pro Bold", 30.0F);
-        _recentProjectsFont = _fontManager.get().getFont("Source Sans Pro Bold", 20.0F);
+    void ProjectSelector::handleFonts() noexcept
+    {
+        _headerFont = _fontManager->getFont("Source Sans Pro Bold", 40.0F * dpiScale);
+        _recentProjectsFont = _fontManager->getFont("Source Sans Pro Bold", 26.0F * dpiScale);
+        _generalFont = _fontManager->getFont("Source Sans Pro Regular", 16.0F * dpiScale);
     }
 
     auto ProjectSelector::run() noexcept -> std::optional<ProjectReturn>
@@ -38,6 +42,11 @@ namespace exitor
         ImGui::SetNextWindowPos(viewport->Pos);
         ImGui::SetNextWindowSize(viewport->Size);
         ImGui::SetNextWindowViewport(viewport->ID);
+
+        dpiScale = viewport->DpiScale;
+        ImGuiStyle& style = ImGui::GetStyle();
+        style = ImGuiStyle();
+        style.ScaleAllSizes(dpiScale);
 
         ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoTitleBar
             | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove
@@ -52,7 +61,12 @@ namespace exitor
         ImGui::PopStyleVar();
         ImGui::PopStyleVar();
 
+        ImGui::PushFont(_generalFont);
+
         ImGui::PushFont(_headerFont);
+
+        exage::ImGuiUtils::Spacing(3);
+
         ImGui::Text("Create or Select a Project");
         ImGui::PopFont();
         ImGui::Separator();
@@ -134,7 +148,7 @@ namespace exitor
 
             ImGui::Text("Recent Projects");
 
-            ImGui::Spacing();
+            exage::ImGuiUtils::Spacing(3);
             ImGui::Separator();
 
             ImGui::PopFont();
@@ -151,6 +165,17 @@ namespace exitor
 
                 ImGui::SameLine();
                 ImGui::Text("%s", recentProject.path.c_str());
+                ImGui::SameLine();
+                if (ImGui::Button("Remove"))
+                {
+                    _recentProjects.erase(std::remove_if(_recentProjects.begin(),
+                                                         _recentProjects.end(),
+                                                         [&recentProject](const auto& p)
+                                                         { return p.path == recentProject.path; }),
+                                          _recentProjects.end());
+
+                    saveRecentProjects();
+                }
 
                 exage::ImGuiUtils::Spacing(3);
             }
@@ -191,6 +216,8 @@ namespace exitor
 
         //     _fileDialog.Close();
         // }
+
+        ImGui::PopFont();
 
         ImGui::End();
 
@@ -318,10 +345,10 @@ namespace exitor
                                    std::string_view("EXAGE_PROJECT_NAME").length(),
                                    _projectName);
 
-        cmakeListsContents.replace(
-            cmakeListsContents.find("EXAGE_PATH"),
-            std::string_view("EXAGE_PATH").length(),
-            fromU8string(std::filesystem::absolute(std::filesystem::current_path()).u8string()));
+        //        cmakeListsContents.replace(
+        //            cmakeListsContents.find("EXAGE_PATH"),
+        //            std::string_view("EXAGE_PATH").length(),
+        //            fromU8string(std::filesystem::absolute(std::filesystem::current_path()).u8string()));
 
         std::ofstream saveFile(cmakeLists);
         if (saveFile.is_open())
@@ -377,7 +404,11 @@ namespace exitor
             _recentProjects.push_back(metadata);
         }
 
-        // Save recent projects
+        saveRecentProjects();
+    }
+
+    void ProjectSelector::saveRecentProjects() noexcept
+    {
         auto projectFile = getUserDataDirectory();
         std::filesystem::create_directories(projectFile);
         projectFile /= "projects.list";

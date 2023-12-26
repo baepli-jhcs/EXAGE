@@ -47,46 +47,6 @@ namespace exage::Graphics
         cleanup();
     }
 
-    VulkanBuffer::VulkanBuffer(VulkanBuffer&& old) noexcept
-        : Buffer(std::move(old))
-        , _context(old._context)
-        , _buffer(old._buffer)
-        , _allocation(old._allocation)
-        , _mappedData(old._mappedData)
-    {
-        old._id = {};
-
-        old._buffer = nullptr;
-        old._allocation = nullptr;
-        old._mappedData = nullptr;
-    }
-
-    auto VulkanBuffer::operator=(VulkanBuffer&& old) noexcept -> VulkanBuffer&
-    {
-        if (this == &old)
-        {
-            return *this;
-        }
-
-        Buffer::operator=(std::move(old));
-
-        cleanup();
-
-        _context = old._context;
-
-        _buffer = old._buffer;
-        _allocation = old._allocation;
-        _mappedData = old._mappedData;
-
-        old._id = {};
-
-        old._buffer = nullptr;
-        old._allocation = nullptr;
-        old._mappedData = nullptr;
-
-        return *this;
-    }
-
     void VulkanBuffer::write(std::span<const std::byte> data, size_t offset) noexcept
     {
         debugAssume(offset + data.size() <= _size, "Buffer overflow");

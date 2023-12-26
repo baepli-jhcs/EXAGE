@@ -20,13 +20,16 @@ namespace exage::GUI::ImGui
         EXAGE_DELETE_COPY(FontManager);
         EXAGE_DEFAULT_MOVE(FontManager);
 
+        void newFrame() noexcept;
+
         auto addFont(const std::filesystem::path& path, const std::string& name) noexcept -> bool;
-        [[nodiscard]] auto getFont(const std::string& name, float size) noexcept -> ImFont*;
+        [[nodiscard]] auto getFont(const std::string& name, uint32_t size) noexcept -> ImFont*;
 
       private:
         Instance* _imGuiInstance = nullptr;
+        bool _rebuildFonts = false;
 
-        std::unordered_map<std::string, std::unordered_map<float, ImFont*>> _fonts;
+        std::unordered_map<std::string, std::unordered_map<uint32_t, ImFont*>> _fonts;
         std::unordered_map<std::string, std::vector<std::byte>> _fontData;
     };
 }  // namespace exage::GUI::ImGui

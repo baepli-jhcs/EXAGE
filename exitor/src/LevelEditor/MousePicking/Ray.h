@@ -1,10 +1,9 @@
 #pragma once
 
-#include <glm/glm.hpp>
-
 #include "exage/Core/Core.h"
 #include "exage/Scene/Rotation3D.h"
 #include "exage/utils/math.h"
+#include "glm/glm.hpp"
 
 namespace exitor
 {

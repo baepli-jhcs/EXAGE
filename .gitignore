@@ -10,6 +10,6 @@ CMakeUserPresets.json
 .cache/
 conan/
 out/
-assets/models/exspon/
-assets/models/sponza/
+exitor/assets/models/exspon/
+exitor/assets/models/sponza/
 imgui.ini

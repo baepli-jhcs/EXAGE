@@ -14,8 +14,7 @@ namespace exage::Graphics
         ~VulkanFence() override;
 
         EXAGE_DELETE_COPY(VulkanFence);
-        VulkanFence(VulkanFence&& old) noexcept;
-        auto operator=(VulkanFence&& old) noexcept -> VulkanFence&;
+        EXAGE_DELETE_MOVE(VulkanFence);
 
         void wait() noexcept override;
         void reset() noexcept override;

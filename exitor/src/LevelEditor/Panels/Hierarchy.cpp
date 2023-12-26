@@ -1,9 +1,8 @@
 #include "Hierarchy.h"
 
-#include <fmt/format.h>
-
 #include "exage/Core/Core.h"
 #include "exage/Scene/Entity.h"
+#include "fmt/format.h"
 #include "imgui.h"
 #include "imgui_internal.h"
 

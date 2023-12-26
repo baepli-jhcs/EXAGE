@@ -86,57 +86,6 @@ namespace exage::Graphics
         }
     }
 
-    VulkanSwapchain::VulkanSwapchain(VulkanSwapchain&& old) noexcept
-        : _context(old._context)
-        , _surface(old._surface)
-        , _format(old._format)
-        , _presentMode(old._presentMode)
-        , _swapchain(old._swapchain)
-        , _oldSwapchain(old._oldSwapchain)
-        , _extent(old._extent)
-        , _swapchainImages(old._swapchainImages)
-        , _swapchainTransitioned(std::move(old._swapchainTransitioned))
-    {
-        old._surface = nullptr;
-        old._swapchain = {};
-        old._oldSwapchain = nullptr;
-    }
-
-    auto VulkanSwapchain::operator=(VulkanSwapchain&& old) noexcept -> VulkanSwapchain&
-    {
-        if (this == &old)
-        {
-            return *this;
-        }
-
-        if (_swapchain != nullptr)
-        {
-            _context.get().waitIdle();
-            vkb::destroy_swapchain(_swapchain);
-        }
-
-        if (_surface)
-        {
-            vkb::destroy_surface(_context.get().getInstance(), _surface);
-        }
-
-        _context = old._context;
-
-        _swapchain = old._swapchain;
-        _surface = old._surface;
-        _oldSwapchain = old._oldSwapchain;
-        _swapchainImages = old._swapchainImages;
-        _swapchainTransitioned = std::move(old._swapchainTransitioned);
-        _extent = old._extent;
-        _format = old._format;
-        _presentMode = old._presentMode;
-
-        old._surface = nullptr;
-        old._swapchain = {};
-        old._oldSwapchain = nullptr;
-        return *this;
-    }
-
     void VulkanSwapchain::resize(glm::uvec2 extent) noexcept
     {
         _extent = extent;

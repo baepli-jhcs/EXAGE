@@ -63,6 +63,11 @@ namespace exage::System
         {
         };
 
+        struct WindowScaleChanged
+        {
+            float scale;
+        };
+
         struct MouseButtonPressed
         {
             Modifiers modifiers;
@@ -159,6 +164,7 @@ namespace exage::System
                                    Events::WindowRestored,
                                    Events::WindowMaximized,
                                    Events::WindowUnmaximized,
+                                   Events::WindowScaleChanged,
                                    Events::MouseButtonPressed,
                                    Events::MouseButtonReleased,
                                    Events::MouseMoved,

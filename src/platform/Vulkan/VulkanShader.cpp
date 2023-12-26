@@ -22,22 +22,4 @@ namespace exage::Graphics
             _context.get().getDevice().destroyShaderModule(_shaderModule);
         }
     }
-
-    VulkanShader::VulkanShader(VulkanShader&& old) noexcept
-        : Shader(std::move(old))
-        , _context(old._context)
-        , _shaderModule(std::exchange(old._shaderModule, nullptr))
-    {
-    }
-
-    auto VulkanShader::operator=(VulkanShader&& old) noexcept -> VulkanShader&
-    {
-        if (this != &old)
-        {
-            Shader::operator=(std::move(old));
-            _context = old._context;
-            _shaderModule = std::exchange(old._shaderModule, nullptr);
-        }
-        return *this;
-    }
 }  // namespace exage::Graphics

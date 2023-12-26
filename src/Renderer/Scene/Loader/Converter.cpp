@@ -834,7 +834,7 @@ namespace exage::Renderer
         };
         json["lods"] = nlohmann::json::array();
 
-        for (size_t i = 0; i < mesh.lods.size(); i++)
+        for (size_t i = 0; i < mesh.lodCount; i++)
         {
             MeshDetails& lod = mesh.lods[i];
             json["lods"][i]["vertexCount"] = lod.vertexCount;

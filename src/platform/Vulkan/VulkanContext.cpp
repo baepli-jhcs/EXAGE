@@ -276,7 +276,7 @@ namespace exage::Graphics
             .familyIndex = graphicsQueueAndIndex.value().index,
         };
 
-        _queue = VulkanQueue {*this, queueCreateInfo};
+        _queue.emplace(*this, queueCreateInfo);
 
         vkb::Result<vkb::QueueAndIndex> transferQueueAndIndex =
             _device.get_preferred_queue_and_index(VK_QUEUE_TRANSFER_BIT);

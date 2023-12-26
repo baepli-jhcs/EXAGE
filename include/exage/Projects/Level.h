@@ -18,34 +18,27 @@ namespace exage::Projects
     {
         std::string path;
 
-        std::unordered_set<std::string> texturePaths;
-        std::unordered_set<std::string> materialPaths;
-        std::unordered_set<std::string> meshPaths;
-
         uint32_t entityCount;
         std::unordered_map<std::string, ComponentData> componentData;
 
         template<class Archive>
         void serialize(Archive& archive)
         {
-            archive(path, texturePaths, materialPaths, meshPaths, entityCount, componentData);
+            archive(path, entityCount, componentData);
         }
     };
 
     struct Level
     {
         std::string path;
-
-        std::unordered_set<std::string> texturePaths;
-        std::unordered_set<std::string> materialPaths;
-        std::unordered_set<std::string> meshPaths;
-
+        
         Scene scene;
     };
 
     [[nodiscard]] auto loadLevel(const std::filesystem::path& path) noexcept
         -> tl::expected<SerializedLevel, Error>;
-    [[nodiscard]] auto saveLevel(const std::filesystem::path& path, const SerializedLevel& level) noexcept
+    [[nodiscard]] auto saveLevel(const std::filesystem::path& path,
+                                 const SerializedLevel& level) noexcept
         -> tl::expected<void, Error>;
 
     [[nodiscard]] auto deserializeLevel(SerializedLevel& level) noexcept -> Level;

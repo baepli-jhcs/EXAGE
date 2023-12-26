@@ -17,9 +17,7 @@ namespace exage::Graphics
         ~VulkanCommandBuffer() override;
 
         EXAGE_DELETE_COPY(VulkanCommandBuffer);
-
-        VulkanCommandBuffer(VulkanCommandBuffer&& old) noexcept;
-        auto operator=(VulkanCommandBuffer&& old) noexcept -> VulkanCommandBuffer&;
+        EXAGE_DELETE_MOVE(VulkanCommandBuffer);
 
         void begin() noexcept override;
         void end() noexcept override;

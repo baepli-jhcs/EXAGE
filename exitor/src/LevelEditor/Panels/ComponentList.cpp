@@ -1,7 +1,6 @@
 #include "ComponentList.h"
 
-#include <entt/core/type_info.hpp>
-
+#include "entt/core/type_info.hpp"
 #include "exage/Renderer/Scene/Camera.h"
 #include "exage/Renderer/Scene/Light.h"
 #include "exage/Renderer/Scene/Mesh.h"

@@ -13,8 +13,7 @@ namespace exage::Graphics
         ~VulkanBuffer() override;
 
         EXAGE_DELETE_COPY(VulkanBuffer);
-        VulkanBuffer(VulkanBuffer&& old) noexcept;
-        auto operator=(VulkanBuffer&& old) noexcept -> VulkanBuffer&;
+        EXAGE_DELETE_MOVE(VulkanBuffer);
 
         void write(std::span<const std::byte> data, size_t offset) noexcept override;
         void read(std::span<std::byte> data, size_t offset) const noexcept override;

@@ -29,12 +29,13 @@ namespace exitor
     class ProjectSelector
     {
       public:
-        explicit ProjectSelector(Renderer::FontManager& fontManager) noexcept;
+        explicit ProjectSelector(GUI::ImGui::FontManager& fontManager) noexcept;
         ~ProjectSelector() = default;
 
-        EXAGE_DEFAULT_COPY(ProjectSelector);
+        EXAGE_DELETE_COPY(ProjectSelector);
         EXAGE_DEFAULT_MOVE(ProjectSelector);
 
+        void handleFonts() noexcept;
         auto run() noexcept -> std::optional<ProjectReturn>;
 
       private:
@@ -61,7 +62,9 @@ namespace exitor
         void addOrUpdateRecentProject(const std::filesystem::path& path,
                                       const std::string& name) noexcept;
 
-        std::reference_wrapper<Renderer::FontManager> _fontManager;
+        void saveRecentProjects() noexcept;
+
+        GUI::ImGui::FontManager* _fontManager;
         FolderDialogAsync _folderDialog;
         FileDialogAsync _fileDialog;
         // IGFD::FileDialog _fileDialog;
@@ -69,6 +72,9 @@ namespace exitor
 
         ImFont* _headerFont = nullptr;
         ImFont* _recentProjectsFont = nullptr;
+        ImFont* _generalFont = nullptr;
+
+        float dpiScale = 1.0f;
 
         std::string _projectName {};
         std::string _projectPath {};

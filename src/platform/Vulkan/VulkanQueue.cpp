@@ -51,17 +51,6 @@ namespace exage::Graphics
         cleanup();
     }
 
-    VulkanQueue::VulkanQueue(VulkanQueue&& old) noexcept
-        : _context(old._context)
-        , _framesInFlight(old._framesInFlight)
-        , _queue(old._queue)
-        , _familyIndex(old._familyIndex)
-        , _presentSemaphores(std::move(old._presentSemaphores))
-        , _renderSemaphores(std::move(old._renderSemaphores))
-        , _renderFences(std::move(old._renderFences))
-    {
-    }
-
     void VulkanQueue::cleanup() noexcept
     {
         if (!_presentSemaphores.empty())
@@ -83,27 +72,6 @@ namespace exage::Graphics
         {
             _context.get().getDevice().destroyFence(fence);
         }
-    }
-
-    auto VulkanQueue::operator=(VulkanQueue&& old) noexcept -> VulkanQueue&
-    {
-        if (this == &old)
-        {
-            return *this;
-        }
-
-        cleanup();
-
-        _context = old._context;
-
-        _framesInFlight = old._framesInFlight;
-        _queue = old._queue;
-        _familyIndex = old._familyIndex;
-        _renderFences = std::move(old._renderFences);
-        _presentSemaphores = std::move(old._presentSemaphores);
-        _renderSemaphores = std::move(old._renderSemaphores);
-
-        return *this;
     }
 
     void VulkanQueue::startNextFrame() noexcept

@@ -230,29 +230,5 @@ namespace exage::Graphics
             _context.get().getDevice().destroyPipeline(_pipeline);
         }
     }
-    VulkanGraphicsPipeline::VulkanGraphicsPipeline(VulkanGraphicsPipeline&& old) noexcept
-        : _context(old._context)
-        , _pipelineLayout(old._pipelineLayout)
-        , _pipeline(old._pipeline)
-    {
-        old._pipeline = nullptr;
-    }
-
-    auto VulkanGraphicsPipeline::operator=(VulkanGraphicsPipeline&& old) noexcept
-        -> VulkanGraphicsPipeline&
-    {
-        if (this != &old)
-        {
-            if (_pipeline)
-            {
-                _context.get().getDevice().destroyPipeline(_pipeline);
-            }
-            _context = old._context;
-            _pipelineLayout = old._pipelineLayout;
-            _pipeline = old._pipeline;
-            old._pipeline = nullptr;
-        }
-        return *this;
-    }
 
 }  // namespace exage::Graphics

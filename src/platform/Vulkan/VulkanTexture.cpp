@@ -50,58 +50,6 @@ namespace exage::Graphics
         }
     }
 
-    VulkanTexture::VulkanTexture(VulkanTexture&& old) noexcept
-        : Texture(std::move(old))
-        , _context(old._context)
-        , _allocation(old._allocation)
-        , _image(old._image)
-        , _firstImageView(old._firstImageView)
-        , _secondImageView(old._secondImageView)
-        , _depthStencilImageView(old._depthStencilImageView)
-    {
-        old._colorBindlessID = {};
-        old._depthBindlessID = {};
-        old._stencilBindlessID = {};
-
-        old._allocation = nullptr;
-        old._image = nullptr;
-        old._firstImageView = nullptr;
-        old._secondImageView = nullptr;
-        old._depthStencilImageView = nullptr;
-    }
-
-    auto VulkanTexture::operator=(VulkanTexture&& old) noexcept -> VulkanTexture&
-    {
-        if (this == &old)
-        {
-            return *this;
-        }
-
-        Texture::operator=(std::move(old));
-
-        cleanup();
-
-        _context = old._context;
-
-        _allocation = old._allocation;
-        _image = old._image;
-        _firstImageView = old._firstImageView;
-        _secondImageView = old._secondImageView;
-        _depthStencilImageView = old._depthStencilImageView;
-
-        old._colorBindlessID = {};
-        old._depthBindlessID = {};
-        old._stencilBindlessID = {};
-
-        old._allocation = nullptr;
-        old._image = nullptr;
-        old._firstImageView = nullptr;
-        old._secondImageView = nullptr;
-        old._depthStencilImageView = nullptr;
-
-        return *this;
-    }
-
     VulkanTexture::VulkanTexture(VulkanContext& context,
                                  const TextureCreateInfo& createInfo) noexcept
         : Texture(createInfo.extent,

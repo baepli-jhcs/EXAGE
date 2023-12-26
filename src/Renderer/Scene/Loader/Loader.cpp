@@ -300,9 +300,9 @@ namespace exage::Renderer
         mesh.materialPath = json["materialPath"].get<std::string>();
         mesh.aabb.max = json["aabb"]["max"];
         mesh.aabb.min = json["aabb"]["min"];
-        mesh.lods.resize(json["lods"].size());
+        mesh.lodCount = json["lods"].size();
 
-        for (size_t i = 0; i < mesh.lods.size(); i++)
+        for (size_t i = 0; i < mesh.lodCount; i++)
         {
             const auto& lod = json["lods"][i];
             auto& meshLod = mesh.lods[i];

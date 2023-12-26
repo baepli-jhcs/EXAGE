@@ -10,6 +10,8 @@
 
 namespace exage::Renderer
 {
+    constexpr uint32_t MAX_LOD_COUNT = 8;
+
     struct StaticMeshVertex
     {
         glm::vec3 position {};
@@ -38,7 +40,8 @@ namespace exage::Renderer
     {
         std::string path;
 
-        std::vector<MeshDetails> lods;
+        uint32_t lodCount;
+        std::array<MeshDetails, MAX_LOD_COUNT> lods;
 
         std::string materialPath;
 
@@ -53,7 +56,8 @@ namespace exage::Renderer
         std::string path;
         size_t pathHash;
 
-        std::vector<MeshDetails> lods;
+        uint32_t lodCount;
+        std::array<MeshDetails, MAX_LOD_COUNT> lods;
 
         std::string materialPath;
         GPUMaterial material;

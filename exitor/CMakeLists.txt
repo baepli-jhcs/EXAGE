@@ -13,18 +13,18 @@ endif ()
 add_subdirectory(external)
 
 add_executable(EXitor
+        src/Editor.cpp
         src/main.cpp
         src/Dialogs/FileDialog.cpp
         src/Dialogs/FolderDialog.cpp
-        src/Editor.cpp
         src/Filesystem/VFS.cpp
-        src/Panels/Hierarchy.cpp
-        src/Panels/ComponentList.cpp
-        src/Panels/ComponentEditor.cpp
-        src/Panels/ContentBrowser.cpp
-        src/Stages/AssetImport.cpp
+        src/LevelEditor/LevelEditor.cpp
+        src/LevelEditor/Panels/ComponentEditor.cpp
+        src/LevelEditor/Panels/ComponentList.cpp
+        src/LevelEditor/Panels/ContentBrowser.cpp
+        src/LevelEditor/Panels/Hierarchy.cpp
+        src/LevelEditor/Panels/LevelPanel.cpp
         src/ProjectSelector/ProjectSelector.cpp
-        src/Windows/TextureViewer.cpp
 )
 
 target_include_directories(EXitor PRIVATE src)
@@ -33,7 +33,6 @@ target_link_libraries(
         EXitor PRIVATE
         EXAGE::EXAGE
         ImGui
-        ImGuiFileDialog
 )
 target_compile_features(EXitor PRIVATE cxx_std_20)
 

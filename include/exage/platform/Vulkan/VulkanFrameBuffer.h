@@ -13,7 +13,7 @@ namespace exage::Graphics
         ~VulkanFrameBuffer() override = default;
 
         EXAGE_DELETE_COPY(VulkanFrameBuffer);
-        EXAGE_DEFAULT_MOVE(VulkanFrameBuffer);
+        EXAGE_DELETE_MOVE(VulkanFrameBuffer);
 
         [[nodiscard]] auto getTexture(size_t index) const noexcept
             -> std::shared_ptr<Texture> override;

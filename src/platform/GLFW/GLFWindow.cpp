@@ -196,6 +196,21 @@ namespace exage::System
             }
         }
 
+        void windowContentScaleCallback(GLFWwindow* window, float xscale, float yscale) noexcept
+        {
+            auto* win = getWindow(window);
+
+            if (win == nullptr)
+            {
+                return;
+            }
+
+            Events::WindowScaleChanged event {};
+            event.scale = xscale;
+
+            pushEvent({win->getID(), event});
+        }
+
         void mouseButtonCallback(GLFWwindow* window, int button, int action, int /*mods*/) noexcept
         {
             auto* win = getWindow(window);
@@ -420,6 +435,7 @@ namespace exage::System
             glfwSetWindowFocusCallback(glfwWindow, windowFocusCallback);
             glfwSetWindowIconifyCallback(glfwWindow, windowIconifyCallback);
             glfwSetWindowMaximizeCallback(glfwWindow, windowMaximizeCallback);
+            glfwSetWindowContentScaleCallback(glfwWindow, windowContentScaleCallback);
             glfwSetMouseButtonCallback(glfwWindow, mouseButtonCallback);
             glfwSetCursorPosCallback(glfwWindow, cursorPosCallback);
             glfwSetScrollCallback(glfwWindow, scrollCallback);

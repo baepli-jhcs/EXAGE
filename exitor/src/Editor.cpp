@@ -7,13 +7,11 @@
 #include <fmt/format.h>
 #include <glm/trigonometric.hpp>
 
-#include "exage/Graphics/Buffer.h"
+#include "LevelEditor/LevelEditor.h"
 #include "exage/Graphics/CommandBuffer.h"
-#include "exage/Renderer/Scene/Loader/AssetFile.h"
 #include "exage/Renderer/Scene/Material.h"
 #include "exage/System/Event.h"
 #include "exage/System/Window.h"
-#include "imgui.h"
 #include "utils/files.h"
 
 constexpr static auto WINDOW_API = exage::System::API::eGLFW;
@@ -27,7 +25,7 @@ namespace exitor
         System::Monitor monitor = getDefaultMonitor(WINDOW_API);
         System::WindowInfo windowInfo {
             .name = "EXitor",
-            .extent = {monitor.extent.x / 2, monitor.extent.y / 2},
+            .extent = {1280, 720},
             .fullScreen = false,
             .windowBordered = true,
             .exclusiveRefreshRate = monitor.refreshRate,
@@ -81,6 +79,8 @@ namespace exitor
         _fontManager->addFont("assets/fonts/SourceSansPro/Bold.ttf", "Source Sans Pro Bold");
 
         _defaultFont = _fontManager->getFont("Source Sans Pro Regular", 16.F);
+
+        _projectSelector.emplace(*_fontManager);
     }
 
     Editor::~Editor()
@@ -100,16 +100,6 @@ namespace exitor
                 while (event.has_value())
                 {
                     _imGui->processEvent(*event);
-
-                    if (_window->getID() == event->pertainingID)
-                    {
-                        if (auto* windowResized =
-                                std::get_if<System::Events::WindowResized>(&event->data))
-                        {
-                            resizeCallback(windowResized->extent);
-                        }
-                    }
-
                     event = nextEvent(_window->getAPI());
                 }
             }
@@ -132,12 +122,24 @@ namespace exitor
         tl::expected swapError = _swapchain->acquireNextImage();
         if (!swapError.has_value())
         {
-            return;
+            glm::uvec2 extent = _window->getExtent();
+            _frameBuffer->resize(extent);
+            _swapchain->resize(extent);
+
+            swapError = _swapchain->acquireNextImage();
         }
 
         cmd.begin();
 
+        handleFonts();
+
+        _fontManager->newFrame();
         _imGui->begin();
+
+        ImGui::PushFont(_defaultFont);
+        tickGUI(deltaTime);
+        ImGui::PopFont();
+
         _imGui->end();
 
         std::shared_ptr<Graphics::Texture> const texture = _frameBuffer->getTexture(0);
@@ -181,10 +183,37 @@ namespace exitor
         swapError = _context->getQueue().present(*_swapchain);
     }
 
-    void Editor::resizeCallback(glm::uvec2 extent) noexcept
+    void Editor::handleFonts() noexcept
     {
-        _frameBuffer->resize(extent);
-        _swapchain->resize(extent);
+        if (_projectSelector.has_value())
+        {
+            _projectSelector->handleFonts();
+        }
     }
 
+    void Editor::tickGUI(float deltaTime) noexcept
+    {
+        if (_projectSelector.has_value())
+        {
+            std::optional<ProjectReturn> selectedProject = _projectSelector->run();
+            if (!selectedProject.has_value())
+            {
+                return;
+            }
+
+            LevelEditorCreateInfo levelEditorCreateInfo {
+                .context = _context.get(),
+                .project = std::move(selectedProject->project),
+                .projectPath = std::move(selectedProject->path),
+                .projectDirectory = std::move(selectedProject->directory)};
+
+            _levelEditor.emplace(levelEditorCreateInfo);
+            _projectSelector.reset();
+        }
+
+        else if (_levelEditor.has_value())
+        {
+            _levelEditor->run(_queueCommandRepo->current(), deltaTime);
+        }
+    }
 }  // namespace exitor

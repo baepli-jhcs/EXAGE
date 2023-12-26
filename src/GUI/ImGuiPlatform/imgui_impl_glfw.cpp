@@ -545,6 +545,11 @@ namespace
         io.AddFocusEvent(false);
     }
 
+    void onWindowScaleChanged(ImGuiIO& io, ImGui_ImplGlfw_Data* bd, const exage::System::Event&)
+    {
+        bd->WantUpdateMonitors = true;
+    }
+
     void onMouseButtonPressed(ImGuiIO& io,
                               ImGui_ImplGlfw_Data*,
                               const exage::System::Event&,
@@ -667,6 +672,7 @@ IMGUI_IMPL_API void ImGui_ImplGlfw_ProcessEvent(const exage::System::Event& even
             [&](const WindowClosed&) { onWindowClose(io, bd, event); },
             [&](const WindowFocused&) { onWindowFocus(io, bd, event); },
             [&](const WindowLostFocus&) { onWindowLostFocus(io, bd, event); },
+            [&](const WindowScaleChanged&) { onWindowScaleChanged(io, bd, event); },
             [&](const MouseButtonPressed& data) { onMouseButtonPressed(io, bd, event, data); },
             [&](const MouseButtonReleased& data) { onMouseButtonReleased(io, bd, event, data); },
             [&](const MouseMoved& data) { onMouseMoved(io, bd, event, data); },

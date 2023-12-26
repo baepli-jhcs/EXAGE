@@ -1,12 +1,11 @@
 #include "ComponentEditor.h"
 
-#include <glm/gtc/type_ptr.hpp>
-
 #include "exage/Core/Debug.h"
 #include "exage/Renderer/Scene/Camera.h"
 #include "exage/Renderer/Scene/Light.h"
 #include "exage/Renderer/Scene/Mesh.h"
 #include "exage/Scene/Rotation3D.h"
+#include "glm/gtc/type_ptr.hpp"
 #include "imgui.h"
 
 namespace exitor
@@ -221,7 +220,6 @@ namespace exitor
         ImGui::ColorEdit3("Color", glm::value_ptr(light.color));
         ImGui::DragFloat("Intensity", &light.intensity, 0.1f);
         ImGui::Checkbox("Cast Shadow", &light.castShadow);
-        ImGui::DragFloat("Shadow Bias", &light.shadowBias, 0.1f);
     }
 
     void ComponentEditor::drawPointLight(exage::Scene& scene, exage::Entity selectedEntity) noexcept
@@ -238,7 +236,6 @@ namespace exitor
         ImGui::DragFloat("Physical Radius", &light.physicalRadius, 0.1f);
         ImGui::DragFloat("Attenuation Radius", &light.attenuationRadius, 0.1f);
         ImGui::Checkbox("Cast Shadow", &light.castShadow);
-        ImGui::DragFloat("Shadow Bias", &light.shadowBias, 0.1f);
     }
 
 }  // namespace exitor

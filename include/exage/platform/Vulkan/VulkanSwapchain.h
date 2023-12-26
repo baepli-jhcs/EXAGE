@@ -15,9 +15,7 @@ namespace exage::Graphics
         ~VulkanSwapchain() override;
 
         EXAGE_DELETE_COPY(VulkanSwapchain);
-
-        VulkanSwapchain(VulkanSwapchain&& old) noexcept;
-        auto operator=(VulkanSwapchain&& old) noexcept -> VulkanSwapchain&;
+        EXAGE_DELETE_MOVE(VulkanSwapchain);
 
         [[nodiscard]] auto getPresentMode() const noexcept -> PresentMode override
         {

@@ -18,27 +18,6 @@ namespace exage::Graphics
         _context.get().getDevice().destroyFence(_fence);
     }
 
-    VulkanFence::VulkanFence(VulkanFence&& old) noexcept
-        : _context(old._context)
-        , _fence(old._fence)
-    {
-        old._fence = nullptr;
-    }
-
-    auto VulkanFence::operator=(VulkanFence&& old) noexcept -> VulkanFence&
-    {
-        if (this != &old)
-        {
-            _context.get().getDevice().destroyFence(_fence);
-
-            _context = old._context;
-            _fence = old._fence;
-            old._fence = nullptr;
-        }
-
-        return *this;
-    }
-
     void VulkanFence::wait() noexcept
     {
         checkVulkan(_context.get().getDevice().waitForFences(1, &_fence, VK_TRUE, UINT64_MAX));

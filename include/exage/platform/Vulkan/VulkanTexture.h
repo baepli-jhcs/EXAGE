@@ -16,9 +16,7 @@ namespace exage::Graphics
         ~VulkanTexture() override;
 
         EXAGE_DELETE_COPY(VulkanTexture);
-
-        VulkanTexture(VulkanTexture&& old) noexcept;
-        auto operator=(VulkanTexture&& old) noexcept -> VulkanTexture&;
+        EXAGE_DELETE_MOVE(VulkanTexture);
 
         [[nodiscard]] auto getImage() const noexcept -> vk::Image { return _image; }
         [[nodiscard]] auto getImageView(Aspect aspect) const noexcept -> vk::ImageView;

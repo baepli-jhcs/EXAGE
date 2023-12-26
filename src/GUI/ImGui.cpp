@@ -169,45 +169,11 @@ namespace exage::GUI
     }
     void ImGui::Instance::buildFonts() noexcept
     {
-        _context.get().waitIdle();
+        ::ImGui::SetCurrentContext(_imCtx);
 
-        std::unique_ptr<exage::Graphics::CommandBuffer> commandBuffer =
-            _context.get().createCommandBuffer();
-        commandBuffer->begin();
-
-        switch (_api)
-        {
-            case exage::Graphics::API::eVulkan:
-            {
-                std::function const commandFunction = [this](exage::Graphics::CommandBuffer& cmd)
-                {
-                    vk::CommandBuffer const vkCommand =
-                        cmd.as<exage::Graphics::VulkanCommandBuffer>()->getCommandBuffer();
-                    ImGui_ImplVulkan_CreateFontsTexture(vkCommand);
-                };
-                commandBuffer->userDefined(commandFunction);
-            }
-            break;
-            default:
-                break;
-        }
-
-        commandBuffer->end();
-        _context.get().getQueue().submitTemporary(std::move(commandBuffer));
-
-        switch (_api)
-        {
-            case exage::Graphics::API::eVulkan:
-            {
-                ImGui_ImplVulkan_DestroyFontUploadObjects();
-                break;
-            }
-            default:
-                break;
-        }
-
-        _context.get().waitIdle();
+        ImGui_ImplVulkan_CreateFontsTexture();
     }
+
     void ImGui::Instance::renderMainWindow(exage::Graphics::CommandBuffer& commandBuffer) noexcept
     {
         ::ImGui::SetCurrentContext(_imCtx);

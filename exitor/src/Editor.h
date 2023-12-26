@@ -1,13 +1,8 @@
 ﻿#pragma once
 
 #include "ImGui.h"
-#include "Panels/ComponentEditor.h"
-#include "Panels/ComponentList.h"
-#include "Panels/ContentBrowser.h"
-#include "Panels/Hierarchy.h"
+#include "LevelEditor/LevelEditor.h"
 #include "ProjectSelector/ProjectSelector.h"
-#include "Stages/AssetImport.h"
-#include "Windows/TextureViewer.h"
 #include "exage/Core/Core.h"
 #include "exage/Core/Timer.h"
 #include "exage/GUI/Fonts.h"
@@ -41,8 +36,8 @@ namespace exitor
 
       private:
         void tick(float deltaTime) noexcept;
-
-        void resizeCallback(glm::uvec2 extent) noexcept;
+        void handleFonts() noexcept;
+        void tickGUI(float deltaTime) noexcept;
 
         std::unique_ptr<System::Window> _window;
         std::unique_ptr<Graphics::Context> _context;
@@ -53,6 +48,9 @@ namespace exitor
         std::optional<GUI::ImGui::Instance> _imGui;
         std::optional<GUI::ImGui::FontManager> _fontManager;
         ImFont* _defaultFont = nullptr;
+
+        std::optional<ProjectSelector> _projectSelector;
+        std::optional<LevelEditor> _levelEditor;
 
         Timer _timer;
     };

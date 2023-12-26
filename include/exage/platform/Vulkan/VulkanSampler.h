@@ -15,12 +15,10 @@ namespace exage::Graphics
         VulkanSampler(VulkanContext& context, const SamplerCreateInfo& createInfo) noexcept;
         ~VulkanSampler() override;
 
-        VulkanSampler(VulkanSampler&&) noexcept;
-        auto operator=(VulkanSampler&&) noexcept -> VulkanSampler&;
+        EXAGE_DELETE_COPY(VulkanSampler);
+        EXAGE_DELETE_MOVE(VulkanSampler);
 
         [[nodiscard]] auto getSampler() const noexcept -> vk::Sampler { return _sampler; }
-
-        EXAGE_DELETE_COPY(VulkanSampler);
 
         EXAGE_VULKAN_DERIVED
 

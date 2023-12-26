@@ -17,7 +17,8 @@
 
 namespace exage::Projects
 {
-    auto loadLevel(const std::filesystem::path& path) noexcept -> tl::expected<SerializedLevel, Error>
+    auto loadLevel(const std::filesystem::path& path) noexcept
+        -> tl::expected<SerializedLevel, Error>
     {
         std::ifstream file(path, std::ios::in | std::ios::binary);
 
@@ -116,9 +117,6 @@ namespace exage::Projects
     {
         Level deserializedLevel;
         deserializedLevel.path = level.path;
-        deserializedLevel.texturePaths = level.texturePaths;
-        deserializedLevel.materialPaths = level.materialPaths;
-        deserializedLevel.meshPaths = level.meshPaths;
         deserializedLevel.scene = loadScene(level.entityCount, level.componentData);
 
         return deserializedLevel;
@@ -128,9 +126,6 @@ namespace exage::Projects
     {
         SerializedLevel serializedLevel;
         serializedLevel.path = level.path;
-        serializedLevel.texturePaths = level.texturePaths;
-        serializedLevel.materialPaths = level.materialPaths;
-        serializedLevel.meshPaths = level.meshPaths;
 
         auto [entityCount, data] = serializeScene(level.scene);
 

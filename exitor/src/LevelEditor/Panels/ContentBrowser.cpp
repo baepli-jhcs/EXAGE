@@ -3,12 +3,10 @@
 
 #include "ContentBrowser.h"
 
-#include <imgui.h>
-
-#include "Panels/ContentBrowser.h"
 #include "exage/Projects/Level.h"
 #include "exage/Renderer/Scene/Mesh.h"
 #include "exage/utils/string.h"
+#include "imgui.h"
 #include "utils/files.h"
 
 namespace exitor

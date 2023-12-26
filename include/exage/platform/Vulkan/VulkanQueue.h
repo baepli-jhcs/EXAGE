@@ -22,8 +22,7 @@ namespace exage::Graphics
         ~VulkanQueue() override;
 
         EXAGE_DELETE_COPY(VulkanQueue);
-        VulkanQueue(VulkanQueue&& old) noexcept;
-        auto operator=(VulkanQueue&& old) noexcept -> VulkanQueue&;
+        EXAGE_DELETE_MOVE(VulkanQueue);
 
         void startNextFrame() noexcept override;
         void submit(CommandBuffer& commandBuffer) noexcept override;
