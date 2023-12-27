@@ -25,7 +25,12 @@ add_executable(EXitor
         src/LevelEditor/Panels/Hierarchy.cpp
         src/LevelEditor/Panels/LevelPanel.cpp
         src/ProjectSelector/ProjectSelector.cpp
+        src/utils/gui.cpp
 )
+
+if (WIN32)
+    set_target_properties(EXitor PROPERTIES WIN32_EXECUTABLE TRUE)
+endif ()
 
 target_include_directories(EXitor PRIVATE src)
 
@@ -37,3 +42,7 @@ target_link_libraries(
 target_compile_features(EXitor PRIVATE cxx_std_20)
 
 set_property(TARGET EXitor PROPERTY WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../)
+
+if (NOT CMAKE_SKIP_INSTALL_RULES)
+    include(cmake/install-rules.cmake)
+endif ()

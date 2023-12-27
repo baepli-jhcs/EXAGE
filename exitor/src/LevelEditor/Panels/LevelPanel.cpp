@@ -4,17 +4,25 @@
 
 #include "exage/Graphics/Sampler.h"
 #include "imgui.h"
+#include "imgui_internal.h"
+#include "utils/gui.h"
 
 namespace exitor
 {
     constexpr static auto DEFAULT_LEVEL_PANEL_SIZE = glm::uvec2(800, 800);
 
-    LevelPanel::LevelPanel(Graphics::Context& context, Projects::Level& level) noexcept
+    LevelPanel::LevelPanel(Graphics::Context& context,
+                           GUI::ImGui::FontManager& fontManager,
+                           Projects::Level& level) noexcept
         : _context(&context)
+        , _fontManager(&fontManager)
         , _level(&level)
         , _viewportExtent(DEFAULT_LEVEL_PANEL_SIZE)
     {
-        Graphics::TextureCreateInfo textureCreateInfo {.extent = {_viewportExtent, 1}};
+        Graphics::TextureCreateInfo textureCreateInfo {
+            .extent = {_viewportExtent, 1},
+            .usage = Graphics::Texture::UsageFlags::eTransferDst
+                | Graphics::Texture::UsageFlags::eSampled};
         _testTexture = _context->createTexture(textureCreateInfo);
 
         Graphics::BufferCreateInfo bufferCreateInfo {};
@@ -39,7 +47,7 @@ namespace exitor
         commandBuffer->textureBarrier(_testTexture,
                                       Graphics::Texture::Layout::eUndefined,
                                       Graphics::Texture::Layout::eTransferDst,
-                                      Graphics::PipelineStage {},
+                                      Graphics::PipelineStageFlags::eTopOfPipe,
                                       Graphics::PipelineStageFlags::eTransfer,
                                       Graphics::AccessFlags {},
                                       Graphics::AccessFlags::eTransferWrite,
@@ -80,13 +88,26 @@ namespace exitor
         _level = &level;
     }
 
+    void LevelPanel::handleFonts() noexcept
+    {
+        _font = _fontManager->getFont("Source Sans Pro Regular",
+                                      static_cast<uint32_t>(16.0F * _dpiScale));
+    }
+
     void LevelPanel::run(Graphics::CommandBuffer& commandBuffer, float deltaTime) noexcept
     {
         std::string levelName = _level->path.empty() ? "*Untitled*" : _level->path;
 
+        ImGuiStyle& style = ImGui::GetStyle();
+        style = ImGuiStyle();
+        style.ScaleAllSizes(_dpiScale);
+
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
         ImGui::SetNextWindowSizeConstraints(ImVec2(200, 200), ImVec2(FLT_MAX, FLT_MAX));
+        ImGui::PushFont(_font);
         ImGui::Begin(levelName.c_str(), nullptr, ImGuiWindowFlags_NoCollapse);
+
+        _dpiScale = getCurrentImGuiDPI();
 
         ImVec2 viewportWindowSize = ImGui::GetContentRegionAvail();
         if (viewportWindowSize.x < 0.0F)
@@ -102,6 +123,7 @@ namespace exitor
 
         ImGui::Image(&_imTexture, viewportWindowSize);
         ImGui::End();
+        ImGui::PopFont();
         ImGui::PopStyleVar();
     }
 }  // namespace exitor

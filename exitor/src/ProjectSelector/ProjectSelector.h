@@ -74,7 +74,7 @@ namespace exitor
         ImFont* _recentProjectsFont = nullptr;
         ImFont* _generalFont = nullptr;
 
-        float dpiScale = 1.0f;
+        float _dpiScale = 1.0f;
 
         std::string _projectName {};
         std::string _projectPath {};

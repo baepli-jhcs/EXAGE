@@ -5,12 +5,23 @@
 namespace exitor
 {
     LevelEditor::LevelEditor(const LevelEditorCreateInfo& createInfo) noexcept
-        : _project(createInfo.project)
+        : _fontManager(createInfo.fontManager)
+        , _project(createInfo.project)
         , _projectPath(createInfo.projectPath)
         , _projectDirectory(createInfo.projectDirectory)
         , _level()
-        , _levelPanel(*createInfo.context, _level)
+        , _levelPanel(*createInfo.context, *_fontManager, _level)
+        , _hierarchyPanel()
+        , _componentList()
+        , _componentEditor()
     {
+    }
+
+    void LevelEditor::handleFonts() noexcept
+    {
+        _menuBarFont = _fontManager->getFont("Source Sans Pro Regular",
+                                             static_cast<uint32_t>(16.0F * _dpiScale));
+        _levelPanel.handleFonts();
     }
 
     void LevelEditor::run(Graphics::CommandBuffer& commandBuffer, float deltaTime) noexcept
@@ -29,10 +40,16 @@ namespace exitor
         ImGui::SetNextWindowSize(viewport->Size);
         ImGui::SetNextWindowViewport(viewport->ID);
 
-        ImGuiIO const& io = ImGui::GetIO();
-        ImGuiStyle const& style = ImGui::GetStyle();
+        _dpiScale = viewport->DpiScale;
+        ImGuiStyle& style = ImGui::GetStyle();
+        style = ImGuiStyle();
+        style.ScaleAllSizes(_dpiScale);
 
+        ImGuiIO const& io = ImGui::GetIO();
+
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0F, 0.0F));
         ImGui::Begin("DockSpace", &open, windowFlags);
+        ImGui::PopStyleVar();
 
         if ((io.ConfigFlags & ImGuiConfigFlags_DockingEnable) != 0)
         {
@@ -42,14 +59,19 @@ namespace exitor
 
         menuBar();
         _levelPanel.run(commandBuffer, deltaTime);
+        Entity selectedEntity = _hierarchyPanel.draw(_level.scene, entt::null);
+        entt::id_type componentID = _componentList.draw(_level.scene, selectedEntity);
+        _componentEditor.draw(_level.scene, selectedEntity, componentID, _project);
 
         ImGui::End();
     }
 
     void LevelEditor::menuBar() noexcept
     {
-        if (!ImGui::BeginMenuBar())
+        ImGui::PushFont(_menuBarFont);
+        if (!ImGui::BeginMainMenuBar())
         {
+            ImGui::PopFont();
             return;
         }
 
@@ -74,6 +96,7 @@ namespace exitor
             ImGui::EndMenu();
         }
 
-        ImGui::EndMenuBar();
+        ImGui::EndMainMenuBar();
+        ImGui::PopFont();
     }
 }  // namespace exitor

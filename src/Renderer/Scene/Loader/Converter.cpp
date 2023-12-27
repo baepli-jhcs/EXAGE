@@ -118,9 +118,9 @@ namespace exage::Renderer
             meshResult.materialIndex = mesh.mMaterialIndex;
 
             meshResult.aabb.min =
-                glm::vec3(mesh.mAABB.mMin.x, mesh.mAABB.mMin.y, mesh.mAABB.mMin.z);
+                glm::vec4(mesh.mAABB.mMin.x, mesh.mAABB.mMin.y, mesh.mAABB.mMin.z, 1.0F);
             meshResult.aabb.max =
-                glm::vec3(mesh.mAABB.mMax.x, mesh.mAABB.mMax.y, mesh.mAABB.mMax.z);
+                glm::vec4(mesh.mAABB.mMax.x, mesh.mAABB.mMax.y, mesh.mAABB.mMax.z, 1.0F);
 
             std::vector<StaticMeshVertex> vertices;
             vertices.resize(mesh.mNumVertices);
@@ -130,25 +130,26 @@ namespace exage::Renderer
                 StaticMeshVertex& vertex = vertices[i];
 
                 vertex.position =
-                    glm::vec3(mesh.mVertices[i].x, mesh.mVertices[i].y, mesh.mVertices[i].z);
+                    glm::vec4(mesh.mVertices[i].x, mesh.mVertices[i].y, mesh.mVertices[i].z, 1.0F);
 
                 if (mesh.HasNormals())
                 {
                     vertex.normal =
-                        glm::vec3(mesh.mNormals[i].x, mesh.mNormals[i].y, mesh.mNormals[i].z);
+                        glm::vec4(mesh.mNormals[i].x, mesh.mNormals[i].y, mesh.mNormals[i].z, 0.0F);
                 }
 
                 if (mesh.HasTangentsAndBitangents())
                 {
-                    vertex.tangent =
-                        glm::vec3(mesh.mTangents[i].x, mesh.mTangents[i].y, mesh.mTangents[i].z);
-                    vertex.bitangent = glm::vec3(
-                        mesh.mBitangents[i].x, mesh.mBitangents[i].y, mesh.mBitangents[i].z);
+                    vertex.tangent = glm::vec4(
+                        mesh.mTangents[i].x, mesh.mTangents[i].y, mesh.mTangents[i].z, 0.0F);
+                    vertex.bitangent = glm::vec4(
+                        mesh.mBitangents[i].x, mesh.mBitangents[i].y, mesh.mBitangents[i].z, 0.0F);
                 }
 
                 if (mesh.HasTextureCoords(0))
                 {
-                    vertex.uv = glm::vec2(mesh.mTextureCoords[0][i].x, mesh.mTextureCoords[0][i].y);
+                    vertex.uv = glm::vec4(
+                        mesh.mTextureCoords[0][i].x, mesh.mTextureCoords[0][i].y, 0.0F, 0.0F);
                 }
             }
 

@@ -178,16 +178,16 @@ if (CMAKE_BUILD_TYPE STREQUAL "Release")
     target_compile_definitions(EXAGE_EXAGE PUBLIC EXAGE_RELEASE)
 endif ()
 
-# ---- Install rules ----
-
-if (NOT CMAKE_SKIP_INSTALL_RULES)
-    include(cmake/install-rules.cmake)
-endif ()
-
 # ---- Editor ----
 option(EXAGE_BUILD_EDITOR "Build EXitor" ON)
 if (EXAGE_BUILD_EDITOR)
     add_subdirectory(exitor)
+endif ()
+
+# ---- Install rules ----
+
+if (NOT CMAKE_SKIP_INSTALL_RULES)
+    include(cmake/install-rules.cmake)
 endif ()
 
 # ---- Developer mode ----

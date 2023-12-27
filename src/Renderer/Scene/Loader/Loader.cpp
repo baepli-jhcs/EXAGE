@@ -430,155 +430,89 @@ namespace exage::Renderer
         return gpuTexture;
     }
 
-    auto uploadMesh(const StaticMesh& mesh, const MeshUploadOptions& options) noexcept
-        -> GPUStaticMesh
-    {
-        GPUStaticMesh gpuMesh;
-        gpuMesh.path = mesh.path;
-
-        std::hash<std::string> hasher;
-        gpuMesh.pathHash = hasher(mesh.path);
-        gpuMesh.materialPath = mesh.materialPath;
-        gpuMesh.aabb = mesh.aabb;
-
-        gpuMesh.lods = mesh.lods;
-
-        size_t vertexBufferSize = mesh.vertices.size() * sizeof(StaticMeshVertex);
-        size_t indexBufferSize = mesh.indices.size() * sizeof(uint32_t);
-
-        Graphics::BufferCreateInfo vertexBufferCreateInfo;
-        vertexBufferCreateInfo.size = vertexBufferSize;
-        vertexBufferCreateInfo.cached = false;
-        vertexBufferCreateInfo.mapMode = Graphics::Buffer::MapMode::eIfOptimal;
-
-        Graphics::BufferCreateInfo indexBufferCreateInfo;
-        indexBufferCreateInfo.size = indexBufferSize;
-        indexBufferCreateInfo.cached = false;
-        indexBufferCreateInfo.mapMode = Graphics::Buffer::MapMode::eIfOptimal;
-
-        gpuMesh.vertexBuffer = options.context.createBuffer(vertexBufferCreateInfo);
-        gpuMesh.indexBuffer = options.context.createBuffer(indexBufferCreateInfo);
-
-        std::span<const std::byte> vertexData = std::as_bytes(std::span(mesh.vertices));
-        std::span<const std::byte> indexData = std::as_bytes(std::span(mesh.indices));
-
-        if (gpuMesh.vertexBuffer->isMapped())
-        {
-            gpuMesh.vertexBuffer->write(vertexData, 0);
-        }
-        else
-        {
-            Graphics::BufferCreateInfo stagingBufferCreateInfo;
-            stagingBufferCreateInfo.size = vertexData.size();
-            stagingBufferCreateInfo.cached = false;
-            stagingBufferCreateInfo.mapMode = Graphics::Buffer::MapMode::eMapped;
-
-            auto stagingBuffer = options.context.createBuffer(stagingBufferCreateInfo);
-            stagingBuffer->write(vertexData, 0);
-
-            options.commandBuffer.copyBuffer(
-                stagingBuffer, gpuMesh.vertexBuffer, 0, 0, vertexData.size());
-            options.commandBuffer.bufferBarrier(gpuMesh.vertexBuffer,
-                                                Graphics::PipelineStageFlags::eTransfer,
-                                                options.pipelineStage,
-                                                Graphics::AccessFlags::eTransferWrite,
-                                                options.access,
-                                                Graphics::QueueOwnership::eUndefined,
-                                                Graphics::QueueOwnership::eUndefined);
-        }
-
-        if (gpuMesh.indexBuffer->isMapped())
-        {
-            gpuMesh.indexBuffer->write(indexData, 0);
-        }
-        else
-        {
-            Graphics::BufferCreateInfo stagingBufferCreateInfo;
-            stagingBufferCreateInfo.size = indexData.size();
-            stagingBufferCreateInfo.cached = false;
-            stagingBufferCreateInfo.mapMode = Graphics::Buffer::MapMode::eMapped;
-
-            auto stagingBuffer = options.context.createBuffer(stagingBufferCreateInfo);
-            stagingBuffer->write(indexData, 0);
-
-            options.commandBuffer.copyBuffer(
-                stagingBuffer, gpuMesh.indexBuffer, 0, 0, indexData.size());
-            options.commandBuffer.bufferBarrier(gpuMesh.indexBuffer,
-                                                Graphics::PipelineStageFlags::eTransfer,
-                                                options.pipelineStage,
-                                                Graphics::AccessFlags::eTransferWrite,
-                                                options.access,
-                                                Graphics::QueueOwnership::eUndefined,
-                                                Graphics::QueueOwnership::eUndefined);
-        }
-
-        // for (size_t i = 0; i < mesh.lods.size(); i++)
-        // {
-        //     const auto& lod = mesh.lods[i];
-        //     auto& gpuLod = gpuMesh.lods[i];
-
-        //     std::span<const std::byte> vertexData =
-        //         std::as_bytes(std::span(mesh.vertices))
-        //             .subspan(lod.vertexOffset, lod.vertexCount * sizeof(StaticMeshVertex));
-
-        //     std::span<const std::byte> indexData =
-        //         std::as_bytes(std::span(mesh.indices))
-        //             .subspan(lod.indexOffset, lod.indexCount * sizeof(uint32_t));
-
-        //     {
-        //         Graphics::BufferCreateInfo stagingBufferCreateInfo;
-        //         stagingBufferCreateInfo.size = vertexData.size();
-        //         stagingBufferCreateInfo.cached = false;
-        //         stagingBufferCreateInfo.mapMode = Graphics::Buffer::MapMode::eMapped;
-
-        //         auto stagingBuffer = options.context.createBuffer(stagingBufferCreateInfo);
-        //         stagingBuffer->write(vertexData, 0);
-
-        //         options.commandBuffer.copyBuffer(
-        //             stagingBuffer, gpuMesh.vertexBuffer, 0, 0, vertexData.size());
-        //         options.commandBuffer.bufferBarrier(gpuMesh.vertexBuffer,
-        //                                             Graphics::PipelineStageFlags::eTransfer,
-        //                                             options.pipelineStage,
-        //                                             Graphics::AccessFlags::eTransferWrite,
-        //                                             options.access);
-        //     }
-
-        //     {
-        //         Graphics::BufferCreateInfo stagingBufferCreateInfo;
-        //         stagingBufferCreateInfo.size = indexData.size();
-        //         stagingBufferCreateInfo.cached = false;
-        //         stagingBufferCreateInfo.mapMode = Graphics::Buffer::MapMode::eMapped;
-
-        //         auto stagingBuffer = options.context.createBuffer(stagingBufferCreateInfo);
-        //         stagingBuffer->write(indexData, 0);
-
-        //         options.commandBuffer.copyBuffer(
-        //             stagingBuffer, gpuMesh.indexBuffer, 0, 0, indexData.size());
-        //         options.commandBuffer.bufferBarrier(gpuMesh.indexBuffer,
-        //                                             Graphics::PipelineStageFlags::eTransfer,
-        //                                             options.pipelineStage,
-        //                                             Graphics::AccessFlags::eTransferWrite,
-        //                                             options.access);
-        //     }
-
-        //     gpuLod.vertexCount = lod.vertexCount;
-        //     gpuLod.indexCount = lod.indexCount;
-
-        //     gpuLod.vertexOffset = lod.vertexOffset;
-        //     gpuLod.indexOffset = lod.indexOffset;
-
-        //     // gpuLod.vertexOffset = options.sceneBuffer.uploadData(
-        //     //     vertices, options.commandBuffer, options.access, options.pipelineStage);
-        //     // gpuLod.vertexCount = static_cast<uint32_t>(lod.vertices.size());
-
-        //     // std::span<const uint32_t> indexData = lod.indices;
-
-        //     // gpuLod.indexOffset = options.sceneBuffer.uploadData(
-        //     //     indexData, options.commandBuffer, options.access, options.pipelineStage);
-        //     // gpuLod.indexCount = static_cast<uint32_t>(lod.indices.size());
-        // }
-
-        return gpuMesh;
-    }
+    //    auto uploadMesh(const StaticMesh& mesh, const MeshUploadOptions& options) noexcept
+    //        -> GPUStaticMesh
+    //    {
+    //        GPUStaticMesh gpuMesh;
+    //        gpuMesh.path = mesh.path;
+    //
+    //        std::hash<std::string> hasher;
+    //        gpuMesh.pathHash = hasher(mesh.path);
+    //        gpuMesh.materialPath = mesh.materialPath;
+    //        gpuMesh.aabb = mesh.aabb;
+    //
+    //        gpuMesh.lods = mesh.lods;
+    //
+    //        size_t vertexBufferSize = mesh.vertices.size() * sizeof(StaticMeshVertex);
+    //        size_t indexBufferSize = mesh.indices.size() * sizeof(uint32_t);
+    //
+    //        Graphics::BufferCreateInfo vertexBufferCreateInfo;
+    //        vertexBufferCreateInfo.size = vertexBufferSize;
+    //        vertexBufferCreateInfo.cached = false;
+    //        vertexBufferCreateInfo.mapMode = Graphics::Buffer::MapMode::eIfOptimal;
+    //
+    //        Graphics::BufferCreateInfo indexBufferCreateInfo;
+    //        indexBufferCreateInfo.size = indexBufferSize;
+    //        indexBufferCreateInfo.cached = false;
+    //        indexBufferCreateInfo.mapMode = Graphics::Buffer::MapMode::eIfOptimal;
+    //
+    //        gpuMesh.vertexBuffer = options.context.createBuffer(vertexBufferCreateInfo);
+    //        gpuMesh.indexBuffer = options.context.createBuffer(indexBufferCreateInfo);
+    //
+    //        std::span<const std::byte> vertexData = std::as_bytes(std::span(mesh.vertices));
+    //        std::span<const std::byte> indexData = std::as_bytes(std::span(mesh.indices));
+    //
+    //        if (gpuMesh.vertexBuffer->isMapped())
+    //        {
+    //            gpuMesh.vertexBuffer->write(vertexData, 0);
+    //        }
+    //        else
+    //        {
+    //            Graphics::BufferCreateInfo stagingBufferCreateInfo;
+    //            stagingBufferCreateInfo.size = vertexData.size();
+    //            stagingBufferCreateInfo.cached = false;
+    //            stagingBufferCreateInfo.mapMode = Graphics::Buffer::MapMode::eMapped;
+    //
+    //            auto stagingBuffer = options.context.createBuffer(stagingBufferCreateInfo);
+    //            stagingBuffer->write(vertexData, 0);
+    //
+    //            options.commandBuffer.copyBuffer(
+    //                stagingBuffer, gpuMesh.vertexBuffer, 0, 0, vertexData.size());
+    //            options.commandBuffer.bufferBarrier(gpuMesh.vertexBuffer,
+    //                                                Graphics::PipelineStageFlags::eTransfer,
+    //                                                options.pipelineStage,
+    //                                                Graphics::AccessFlags::eTransferWrite,
+    //                                                options.access,
+    //                                                Graphics::QueueOwnership::eUndefined,
+    //                                                Graphics::QueueOwnership::eUndefined);
+    //        }
+    //
+    //        if (gpuMesh.indexBuffer->isMapped())
+    //        {
+    //            gpuMesh.indexBuffer->write(indexData, 0);
+    //        }
+    //        else
+    //        {
+    //            Graphics::BufferCreateInfo stagingBufferCreateInfo;
+    //            stagingBufferCreateInfo.size = indexData.size();
+    //            stagingBufferCreateInfo.cached = false;
+    //            stagingBufferCreateInfo.mapMode = Graphics::Buffer::MapMode::eMapped;
+    //
+    //            auto stagingBuffer = options.context.createBuffer(stagingBufferCreateInfo);
+    //            stagingBuffer->write(indexData, 0);
+    //
+    //            options.commandBuffer.copyBuffer(
+    //                stagingBuffer, gpuMesh.indexBuffer, 0, 0, indexData.size());
+    //            options.commandBuffer.bufferBarrier(gpuMesh.indexBuffer,
+    //                                                Graphics::PipelineStageFlags::eTransfer,
+    //                                                options.pipelineStage,
+    //                                                Graphics::AccessFlags::eTransferWrite,
+    //                                                options.access,
+    //                                                Graphics::QueueOwnership::eUndefined,
+    //                                                Graphics::QueueOwnership::eUndefined);
+    //        }
+    //
+    //        return gpuMesh;
+    //    }
 
 }  // namespace exage::Renderer

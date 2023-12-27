@@ -43,19 +43,20 @@ namespace exage::Renderer
         // If supportedCompressedFormats is nullptr, the function will query the supported formats
     };
 
-    struct MeshUploadOptions
-    {
-        Graphics::Context& context;
-        Graphics::CommandBuffer& commandBuffer;
-
-        Graphics::Access access = Graphics::AccessFlags::eShaderRead;
-        Graphics::PipelineStage pipelineStage = Graphics::PipelineStageFlags::eFragmentShader;
-    };
+    //    struct MeshUploadOptions
+    //    {
+    //        Graphics::Context& context;
+    //        Graphics::CommandBuffer& commandBuffer;
+    //
+    //        Graphics::Access access = Graphics::AccessFlags::eShaderRead;
+    //        Graphics::PipelineStage pipelineStage = Graphics::PipelineStageFlags::eFragmentShader;
+    //    };
 
     [[nodiscard]] auto uploadTexture(const Texture& texture,
                                      const TextureUploadOptions& options) noexcept -> GPUTexture;
 
-    [[nodiscard]] auto uploadMesh(const StaticMesh& mesh, const MeshUploadOptions& options) noexcept
-        -> GPUStaticMesh;
+    //    [[nodiscard]] auto uploadMesh(const StaticMesh& mesh, const MeshUploadOptions& options)
+    //    noexcept
+    //        -> GPUStaticMesh;
 
 }  // namespace exage::Renderer

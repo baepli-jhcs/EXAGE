@@ -14,11 +14,11 @@ namespace exage::Renderer
 
     struct StaticMeshVertex
     {
-        glm::vec3 position {};
-        glm::vec3 normal {};
-        glm::vec2 uv {};
-        glm::vec3 tangent {};
-        glm::vec3 bitangent {};
+        glm::vec4 position {};
+        glm::vec4 normal {};
+        glm::vec4 uv {};
+        glm::vec4 tangent {};
+        glm::vec4 bitangent {};
     };
 
     struct MeshDetails
@@ -32,8 +32,8 @@ namespace exage::Renderer
 
     struct AABB
     {
-        glm::vec3 min {};
-        glm::vec3 max {};
+        glm::vec4 min {};
+        glm::vec4 max {};
     };
 
     struct StaticMesh
@@ -61,9 +61,6 @@ namespace exage::Renderer
 
         std::string materialPath;
         GPUMaterial material;
-
-        std::shared_ptr<Graphics::Buffer> vertexBuffer;
-        std::shared_ptr<Graphics::Buffer> indexBuffer;
 
         AABB aabb;
     };

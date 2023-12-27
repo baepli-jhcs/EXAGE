@@ -66,5 +66,9 @@ install(
 )
 
 if (PROJECT_IS_TOP_LEVEL)
+    if (EXAGE_BUILD_EDITOR)
+        set(CPACK_PACKAGE_EXECUTABLES "EXitor" "EXitor")
+    endif ()
+
     include(CPack)
 endif ()

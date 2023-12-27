@@ -189,6 +189,11 @@ namespace exitor
         {
             _projectSelector->handleFonts();
         }
+
+        else if (_levelEditor.has_value())
+        {
+            _levelEditor->handleFonts();
+        }
     }
 
     void Editor::tickGUI(float deltaTime) noexcept
@@ -203,6 +208,7 @@ namespace exitor
 
             LevelEditorCreateInfo levelEditorCreateInfo {
                 .context = _context.get(),
+                .fontManager = &*_fontManager,
                 .project = std::move(selectedProject->project),
                 .projectPath = std::move(selectedProject->path),
                 .projectDirectory = std::move(selectedProject->directory)};

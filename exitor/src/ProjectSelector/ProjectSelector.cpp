@@ -28,9 +28,9 @@ namespace exitor
 
     void ProjectSelector::handleFonts() noexcept
     {
-        _headerFont = _fontManager->getFont("Source Sans Pro Bold", 40.0F * dpiScale);
-        _recentProjectsFont = _fontManager->getFont("Source Sans Pro Bold", 26.0F * dpiScale);
-        _generalFont = _fontManager->getFont("Source Sans Pro Regular", 16.0F * dpiScale);
+        _headerFont = _fontManager->getFont("Source Sans Pro Bold", 40.0F * _dpiScale);
+        _recentProjectsFont = _fontManager->getFont("Source Sans Pro Bold", 26.0F * _dpiScale);
+        _generalFont = _fontManager->getFont("Source Sans Pro Regular", 16.0F * _dpiScale);
     }
 
     auto ProjectSelector::run() noexcept -> std::optional<ProjectReturn>
@@ -43,10 +43,10 @@ namespace exitor
         ImGui::SetNextWindowSize(viewport->Size);
         ImGui::SetNextWindowViewport(viewport->ID);
 
-        dpiScale = viewport->DpiScale;
+        _dpiScale = viewport->DpiScale;
         ImGuiStyle& style = ImGui::GetStyle();
         style = ImGuiStyle();
-        style.ScaleAllSizes(dpiScale);
+        style.ScaleAllSizes(_dpiScale);
 
         ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoTitleBar
             | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove
