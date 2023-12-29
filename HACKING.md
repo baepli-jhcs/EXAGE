@@ -27,7 +27,7 @@ You have a few options to pass `EXAGE_DEVELOPER_MODE` to the configure
 command, but this project prefers to use presets.
 
 As a developer, you should create a `CMakeUserPresets.json` file at the root of
-the project:
+the project. Here is an example for MSVC:
 
 ```json
 {
@@ -39,19 +39,44 @@ the project:
   },
   "configurePresets": [
     {
+      "name": "dev-common",
+      "hidden": true,
+      "cacheVariables": {
+        "BUILD_MCSS_DOCS": "ON"
+      }
+    },
+    {
+      "name": "dev-windows",
+      "binaryDir": "${sourceDir}/build/dev-windows",
+      "inherits": [
+        "dev-common",
+        "ci",
+        "flags-msvc",
+        "vcpkg",
+        "vcpkg-win64-static"
+      ],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreaded",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_C_COMPILER": "cl",
+        "CMAKE_CXX_COMPILER": "cl",
+        "LIBRARY_OUTPUT_PATH": "${sourceDir}/build/",
+        "EXECUTABLE_OUTPUT_PATH": "${sourceDir}/build/"
+      }
+    },
+    {
       "name": "dev",
       "binaryDir": "${sourceDir}/build/dev",
-      "inherits": ["dev-mode", "ci-<os>"],
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug"
-      }
+      "inherits": "dev-windows"
     }
   ],
   "buildPresets": [
     {
       "name": "dev",
       "configurePreset": "dev",
-      "configuration": "Debug"
+      "configuration": "Debug",
+      "jobs": 4
     }
   ],
   "testPresets": [
@@ -61,16 +86,15 @@ the project:
       "configuration": "Debug",
       "output": {
         "outputOnFailure": true
+      },
+      "execution": {
+        "jobs": 4,
+        "noTestsAction": "error"
       }
     }
   ]
 }
 ```
-
-You should replace `<os>` in your newly created presets file with the name of
-the operating system you have, which may be `win64`, `linux` or `darwin`. You
-can see what these correspond to in the
-[`CMakePresets.json`](CMakePresets.json) file.
 
 `CMakeUserPresets.json` is also the perfect place in which you can put all
 sorts of things that you would otherwise want to pass to the configure command
@@ -78,7 +102,7 @@ in the terminal.
 
 ### Dependency manager
 
-The above preset will make use of the conan dependency manager.
+The above preset will make use of the vcpkg dependency manager.
 
 ### Configure, build and test
 
@@ -135,4 +159,5 @@ them respectively. Customization available using the `SPELL_COMMAND` cache
 variable.
 
 [1]: https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html
+
 [2]: https://cmake.org/download/

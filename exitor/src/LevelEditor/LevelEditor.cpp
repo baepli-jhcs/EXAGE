@@ -57,6 +57,8 @@ namespace exitor
             ImGui::DockSpace(dockspaceId, ImVec2(0.0F, 0.0F), dockspaceFlags);
         }
 
+        _level.scene.updateHierarchy(true);
+
         menuBar();
         _levelPanel.run(commandBuffer, deltaTime);
         Entity selectedEntity = _hierarchyPanel.draw(_level.scene, entt::null);

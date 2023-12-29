@@ -14,7 +14,7 @@ namespace exage::Graphics
     VulkanQueue::VulkanQueue(VulkanContext& context,
                              const VulkanQueueCreateInfo& createInfo) noexcept
         : _context(context)
-        , _framesInFlight(createInfo.maxFramesInFlight)
+        , _framesInFlight(std::max(MAX_FRAMES_IN_FLIGHT, createInfo.preferredFramesInFlight))
         , _queue(createInfo.queue)
         , _familyIndex(createInfo.familyIndex)
     {
@@ -88,6 +88,8 @@ namespace exage::Graphics
 
         result = _context.get().getDevice().resetFences(1, &_renderFences[_currentFrame]);
         checkVulkan(result);
+
+        _context.get().processDeletions(_currentFrame);
     }
 
     void VulkanQueue::submit(CommandBuffer& commandBuffer) noexcept

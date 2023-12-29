@@ -22,11 +22,11 @@ namespace exage::Graphics
         EXAGE_DELETE_COPY(DynamicFixedBuffer);
         EXAGE_DEFAULT_MOVE(DynamicFixedBuffer);
 
-        void write(std::span<const std::byte> data, size_t offset) noexcept;
-
-        void update(CommandBuffer& commandBuffer,
-                    PipelineStage pipelineStage,
-                    Access access) noexcept;
+        void write(CommandBuffer& commandBuffer,
+                   std::span<const std::byte> data,
+                   size_t offset,
+                   PipelineStage pipelineStage,
+                   Access access) noexcept;
 
         [[nodiscard]] auto hasStagingBuffer() const noexcept -> bool
         {
@@ -40,12 +40,10 @@ namespace exage::Graphics
         [[nodiscard]] auto currentBuffer() const noexcept -> std::shared_ptr<Buffer>;
 
       private:
-        std::reference_wrapper<Queue> _queue;
-        std::vector<std::shared_ptr<Buffer>> _hostBuffers;
+        Context* _context;
+        size_t _size;
+        std::array<std::shared_ptr<Buffer>, MAX_FRAMES_IN_FLIGHT> _hostBuffers;
         std::shared_ptr<Buffer> _deviceBuffer;
-
-        std::vector<std::byte> _data;
-        std::vector<bool> _dirty;
     };
 
     struct ResizableBufferCreateInfo : public BufferCreateInfo
@@ -110,7 +108,7 @@ namespace exage::Graphics
       private:
         std::reference_wrapper<Context> _context;
         size_t _size;
-        std::vector<ResizableBuffer> _hostBuffers;
+        std::array<std::optional<ResizableBuffer>, MAX_FRAMES_IN_FLIGHT> _hostBuffers;
         std::optional<ResizableBuffer> _deviceBuffer;
     };
 

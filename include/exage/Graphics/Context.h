@@ -21,13 +21,15 @@ namespace exage::Graphics
         eVulkan,
     };
 
+    constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 5;
+
     struct ContextCreateInfo
     {
         API api = API::eVulkan;
         System::API windowAPI;
 
         System::Window* optionalWindow = nullptr;
-        uint32_t maxFramesInFlight = 2;
+        uint32_t preferredFramesInFlight = 2;
     };
 
     class CommandBuffer;

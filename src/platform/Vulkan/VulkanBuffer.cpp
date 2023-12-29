@@ -69,17 +69,17 @@ namespace exage::Graphics
     {
         if (_id.valid())
         {
-            _context.get().getResourceManager().unbindBuffer(_id);
+            _context.get().destroyBufferID(_id);
         }
 
         if (_buffer)
         {
-            _context.get().getDevice().destroyBuffer(_buffer);
+            _context.get().destroyBuffer(_buffer);
         }
 
         if (_allocation)
         {
-            _context.get().getAllocator().freeMemory(_allocation);
+            _context.get().destroyAllocation(_allocation);
         }
     }
 

@@ -227,7 +227,7 @@ namespace exage::Graphics
     {
         if (_pipeline)
         {
-            _context.get().getDevice().destroyPipeline(_pipeline);
+            _context.get().destroyPipeline(_pipeline);
         }
     }
 

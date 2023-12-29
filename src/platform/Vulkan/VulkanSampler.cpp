@@ -60,12 +60,12 @@ namespace exage::Graphics
     {
         if (_id.valid())
         {
-            _context.get().getResourceManager().unbindSampler(_id);
+            _context.get().destroySamplerID(_id);
         }
 
         if (_sampler)
         {
-            _context.get().getDevice().destroySampler(_sampler);
+            _context.get().destroySampler(_sampler);
         }
     }
 }  // namespace exage::Graphics

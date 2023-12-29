@@ -10,7 +10,7 @@ namespace exage::Graphics
 
     struct VulkanQueueCreateInfo
     {
-        uint32_t maxFramesInFlight;
+        uint32_t preferredFramesInFlight;
         vk::Queue queue;
         uint32_t familyIndex;
     };

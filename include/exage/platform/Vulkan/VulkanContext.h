@@ -114,6 +114,20 @@ namespace exage::Graphics
         [[nodiscard]] auto createVulkanCommandBuffer() noexcept -> vk::CommandBuffer;
         void destroyCommandBuffer(vk::CommandBuffer commandBuffer) noexcept;
 
+        void processDeletions(uint32_t frameIndex) noexcept;
+
+        void destroyBuffer(vk::Buffer buffer) noexcept;
+        void destroyImage(vk::Image image) noexcept;
+        void destroyImageView(vk::ImageView imageView) noexcept;
+        void destroySampler(vk::Sampler sampler) noexcept;
+        void destroyAllocation(vma::Allocation allocation) noexcept;
+        void destroySwapchain(vkb::Swapchain swapchain) noexcept;
+        void destroyPipeline(vk::Pipeline pipeline) noexcept;
+        void destroyPipelineLayout(vk::PipelineLayout pipelineLayout) noexcept;
+        void destroyBufferID(BufferID bufferID) noexcept;
+        void destroyTextureID(TextureID textureID) noexcept;
+        void destroySamplerID(SamplerID samplerID) noexcept;
+
         EXAGE_VULKAN_DERIVED
 
         struct PipelineLayoutInfo
@@ -147,5 +161,41 @@ namespace exage::Graphics
         std::unordered_map<size_t, vk::PipelineLayout> _pipelineLayoutCache;
 
         std::vector<vk::CommandBuffer> _freeCommandBuffers;
+
+        template<typename T>
+        struct DeletionQueue
+        {
+            std::mutex mutex {};
+            std::array<std::vector<T>, MAX_FRAMES_IN_FLIGHT> deletions {};
+
+            void push(VulkanContext& context, T object) noexcept
+            {
+                std::lock_guard<std::mutex> lock(mutex);
+                deletions[context._queue->currentFrame()].push_back(object);
+            }
+
+            template<typename F>
+            void process(uint32_t frameIndex, F&& function) noexcept
+            {
+                std::lock_guard<std::mutex> lock(mutex);
+                for (auto& object : deletions[frameIndex])
+                {
+                    function(object);
+                }
+                deletions[frameIndex].clear();
+            }
+        };
+
+        DeletionQueue<vk::Buffer> _bufferDeletionQueue;
+        DeletionQueue<vk::Image> _imageDeletionQueue;
+        DeletionQueue<vk::ImageView> _imageViewDeletionQueue;
+        DeletionQueue<vk::Sampler> _samplerDeletionQueue;
+        DeletionQueue<vma::Allocation> _allocationDeletionQueue;
+        DeletionQueue<vkb::Swapchain> _swapchainDeletionQueue;
+        DeletionQueue<vk::Pipeline> _pipelineDeletionQueue;
+        DeletionQueue<vk::PipelineLayout> _pipelineLayoutDeletionQueue;
+        DeletionQueue<BufferID> _bufferIDDeletionQueue;
+        DeletionQueue<TextureID> _textureIDDeletionQueue;
+        DeletionQueue<SamplerID> _samplerIDDeletionQueue;
     };
 }  // namespace exage::Graphics

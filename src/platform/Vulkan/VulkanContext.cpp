@@ -271,7 +271,7 @@ namespace exage::Graphics
         debugAssume(graphicsQueueAndIndex.has_value(), "Failed to create queue");
 
         VulkanQueueCreateInfo const queueCreateInfo {
-            .maxFramesInFlight = createInfo.maxFramesInFlight,
+            .preferredFramesInFlight = createInfo.preferredFramesInFlight,
             .queue = graphicsQueueAndIndex.value().queue,
             .familyIndex = graphicsQueueAndIndex.value().index,
         };
@@ -334,6 +334,13 @@ namespace exage::Graphics
 
     VulkanContext::~VulkanContext()
     {
+        waitIdle();
+
+        for (uint32_t frameIndex = 0; frameIndex < _queue->getFramesInFlight(); ++frameIndex)
+        {
+            processDeletions(frameIndex);
+        }
+
         for (auto& pipelineLayout : _pipelineLayoutCache)
         {
             getDevice().destroyPipelineLayout(pipelineLayout.second);
@@ -665,6 +672,93 @@ namespace exage::Graphics
 
         commandBuffer.reset();
         _freeCommandBuffers.push_back(commandBuffer);
+    }
+
+    void VulkanContext::processDeletions(uint32_t frameIndex) noexcept
+    {
+        _bufferDeletionQueue.process(
+            frameIndex, [this](vk::Buffer buffer) { getDevice().destroyBuffer(buffer); });
+        _imageDeletionQueue.process(frameIndex,
+                                    [this](vk::Image image) { getDevice().destroyImage(image); });
+        _imageViewDeletionQueue.process(frameIndex,
+                                        [this](vk::ImageView imageView)
+                                        { getDevice().destroyImageView(imageView); });
+        _samplerDeletionQueue.process(
+            frameIndex, [this](vk::Sampler sampler) { getDevice().destroySampler(sampler); });
+        _allocationDeletionQueue.process(frameIndex,
+                                         [this](vma::Allocation allocation)
+                                         { getAllocator().freeMemory(allocation); });
+        _swapchainDeletionQueue.process(
+            frameIndex, [this](vkb::Swapchain swapchain) { vkb::destroy_swapchain(swapchain); });
+        _pipelineDeletionQueue.process(
+            frameIndex, [this](vk::Pipeline pipeline) { getDevice().destroyPipeline(pipeline); });
+        _pipelineLayoutDeletionQueue.process(frameIndex,
+                                             [this](vk::PipelineLayout pipelineLayout) {
+                                                 getDevice().destroyPipelineLayout(pipelineLayout);
+                                             });
+        _bufferIDDeletionQueue.process(
+            frameIndex, [this](BufferID bufferID) { _resourceManager->unbindBuffer(bufferID); });
+        _textureIDDeletionQueue.process(frameIndex,
+                                        [this](TextureID textureID)
+                                        { _resourceManager->unbindTexture(textureID); });
+        _samplerIDDeletionQueue.process(frameIndex,
+                                        [this](SamplerID samplerID)
+                                        { _resourceManager->unbindSampler(samplerID); });
+    }
+
+    void VulkanContext::destroyBuffer(vk::Buffer buffer) noexcept
+    {
+        _bufferDeletionQueue.push(*this, buffer);
+    }
+
+    void VulkanContext::destroyImage(vk::Image image) noexcept
+    {
+        _imageDeletionQueue.push(*this, image);
+    }
+
+    void VulkanContext::destroyImageView(vk::ImageView imageView) noexcept
+    {
+        _imageViewDeletionQueue.push(*this, imageView);
+    }
+
+    void VulkanContext::destroySampler(vk::Sampler sampler) noexcept
+    {
+        _samplerDeletionQueue.push(*this, sampler);
+    }
+
+    void VulkanContext::destroyAllocation(vma::Allocation allocation) noexcept
+    {
+        _allocationDeletionQueue.push(*this, allocation);
+    }
+
+    void VulkanContext::destroySwapchain(vkb::Swapchain swapchain) noexcept
+    {
+        _swapchainDeletionQueue.push(*this, swapchain);
+    }
+
+    void VulkanContext::destroyPipeline(vk::Pipeline pipeline) noexcept
+    {
+        _pipelineDeletionQueue.push(*this, pipeline);
+    }
+
+    void VulkanContext::destroyPipelineLayout(vk::PipelineLayout pipelineLayout) noexcept
+    {
+        _pipelineLayoutDeletionQueue.push(*this, pipelineLayout);
+    }
+
+    void VulkanContext::destroyBufferID(BufferID bufferID) noexcept
+    {
+        _bufferIDDeletionQueue.push(*this, bufferID);
+    }
+
+    void VulkanContext::destroyTextureID(TextureID textureID) noexcept
+    {
+        _textureIDDeletionQueue.push(*this, textureID);
+    }
+
+    void VulkanContext::destroySamplerID(SamplerID samplerID) noexcept
+    {
+        _samplerIDDeletionQueue.push(*this, samplerID);
     }
 
 }  // namespace exage::Graphics

@@ -16,7 +16,7 @@ namespace exage::Graphics
         {
             if (id.valid())
             {
-                _context.get().getResourceManager().unbindTexture(id);
+                _context.get().destroyTextureID(id);
             }
         };
 
@@ -26,27 +26,27 @@ namespace exage::Graphics
 
         if (_firstImageView)
         {
-            _context.get().getDevice().destroyImageView(_firstImageView);
+            _context.get().destroyImageView(_firstImageView);
         }
 
         if (_secondImageView)
         {
-            _context.get().getDevice().destroyImageView(_secondImageView);
+            _context.get().destroyImageView(_secondImageView);
         }
 
         if (_depthStencilImageView)
         {
-            _context.get().getDevice().destroyImageView(_depthStencilImageView);
+            _context.get().destroyImageView(_depthStencilImageView);
         }
 
         if (_image)
         {
-            _context.get().getDevice().destroyImage(_image);
+            _context.get().destroyImage(_image);
         }
 
         if (_allocation)
         {
-            _context.get().getAllocator().freeMemory(_allocation);
+            _context.get().destroyAllocation(_allocation);
         }
     }
 

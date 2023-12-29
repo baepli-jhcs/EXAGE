@@ -93,8 +93,7 @@ namespace exage::Graphics
         _oldSwapchain = swapchain.swapchain;
         createSwapchain();
 
-        _context.get().waitIdle();
-        vkb::destroy_swapchain(swapchain);
+        _context.get().destroySwapchain(swapchain);
     }
 
     auto VulkanSwapchain::acquireNextImage() noexcept -> tl::expected<void, Error>

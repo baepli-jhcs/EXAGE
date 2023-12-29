@@ -8,7 +8,7 @@ namespace exage::Graphics
         for (uint32_t i = 0; i < _queue.get().getFramesInFlight(); i++)
         {
             std::unique_ptr commandBuffer = createInfo.context.createCommandBuffer();
-            _commandBuffers.emplace_back(std::move(commandBuffer));
+            _commandBuffers[i] = std::move(commandBuffer);
         }
     }
 

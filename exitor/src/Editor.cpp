@@ -41,7 +41,7 @@ namespace exitor
             .api = GRAPHICS_API,
             .windowAPI = WINDOW_API,
             .optionalWindow = _window.get(),
-            .maxFramesInFlight = 2,
+            .preferredFramesInFlight = 2,
         };
         contextInfo.optionalWindow = _window.get();
         contextInfo.api = GRAPHICS_API;

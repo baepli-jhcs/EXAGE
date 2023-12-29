@@ -26,6 +26,6 @@ namespace exage::Graphics
 
       private:
         std::reference_wrapper<Queue> _queue;
-        std::vector<std::unique_ptr<CommandBuffer>> _commandBuffers;
+        std::array<std::unique_ptr<CommandBuffer>, MAX_FRAMES_IN_FLIGHT> _commandBuffers;
     };
 }  // namespace exage::Graphics

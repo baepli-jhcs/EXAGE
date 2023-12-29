@@ -2,7 +2,7 @@
 
 ## Dependencies
 
-For a list of dependencies, please refer to [conanlist.txt](conanlist.txt).
+For a list of dependencies, please refer to [vcpkg.json](conanlist.txt).
 
 ## Build
 
@@ -28,7 +28,7 @@ cmake --build build --config Release
 ### Building with MSVC
 
 Note that MSVC by default is not standards compliant and you need to pass some
-flags to make it behave properly. See the `flags-windows` preset in the
+flags to make it behave properly. See the `flags-msvc` preset in the
 [CMakePresets.json](CMakePresets.json) file for the flags and with what
 variable to provide them to CMake during configuration.
 
@@ -75,8 +75,8 @@ find_package(EXAGE REQUIRED)
 # Declare the imported target as a build requirement using PRIVATE, where
 # project_target is a target created in the consuming project
 target_link_libraries(
-    project_target PRIVATE
-    EXAGE::EXAGE
+        project_target PRIVATE
+        EXAGE::EXAGE
 )
 ```
 
@@ -89,5 +89,7 @@ other libraries when installed to a common prefix. Please review the
 install rules.
 
 [1]: https://cmake.org/download/
+
 [2]: https://cmake.org/cmake/help/latest/manual/cmake.1.html#install-a-project
+
 [3]: https://cmake.org/cmake/help/latest/command/find_package.html
