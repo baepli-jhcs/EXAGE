@@ -661,7 +661,7 @@ namespace exage::System
 #endif
 #ifdef EXAGE_LINUX
 
-        return glfwGetX11Window(_window);
+        return reinterpret_cast<void*>(glfwGetX11Window(_window));
 #endif
     }
 

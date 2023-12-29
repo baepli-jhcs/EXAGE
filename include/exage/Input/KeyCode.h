@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+#include <limits>
+
 #include "exage/Core/Core.h"
 #include "exage/utils/flags.h"
 

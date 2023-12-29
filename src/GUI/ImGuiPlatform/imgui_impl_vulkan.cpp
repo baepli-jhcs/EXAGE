@@ -103,10 +103,10 @@
 #ifdef _MSC_VER
 #    pragma warning(disable : 4127)  // condition expression is constant
 #endif
-#include "ImGui.h"
 #include "exage/Graphics/Texture.h"
 #include "exage/platform/Vulkan/VulkanSampler.h"
 #include "exage/platform/Vulkan/VulkanTexture.h"
+#include "imgui.h"
 
 // Reusable buffers used for rendering 1 current in-flight frame, for
 // ImGui_ImplVulkan_RenderDrawData() [Please zero-clear before use!]

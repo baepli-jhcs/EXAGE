@@ -53,6 +53,6 @@ namespace exitor
 
         ImFont* _menuBarFont;
 
-        float _dpiScale;
+        float _dpiScale = 1.F;
     };
 }  // namespace exitor

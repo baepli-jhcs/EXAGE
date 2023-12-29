@@ -1,6 +1,6 @@
 ﻿#include "exage/GUI/ImGui.h"
 
-#include "ImGui.h"
+#include "imgui.h"
 #include "ImGuiPlatform/imgui_impl_glfw.h"
 #include "ImGuiPlatform/imgui_impl_vulkan.h"
 #include "exage/platform/GLFW/GLFWWindow.h"

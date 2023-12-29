@@ -20,7 +20,7 @@ install(
 )
 
 install(
-        TARGETS EXAGE_EXAGE ImGui bc7enc_rdo
+        TARGETS EXAGE_EXAGE ImGui bc7enc_rdo RmlCore
         EXPORT EXAGETargets
         RUNTIME #
         COMPONENT EXAGE_Runtime

@@ -1,6 +1,5 @@
 ﻿#pragma once
 
-#include "ImGui.h"
 #include "LevelEditor/LevelEditor.h"
 #include "ProjectSelector/ProjectSelector.h"
 #include "exage/Core/Core.h"
@@ -18,6 +17,7 @@
 #include "exage/Renderer/Scene/Loader/Converter.h"
 #include "exage/Renderer/Scene/Material.h"
 #include "exage/utils/classes.h"
+#include "imgui.h"
 
 namespace exitor
 {

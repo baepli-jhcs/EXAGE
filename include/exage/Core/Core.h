@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+#include <limits>
+
 #include <stdint.h>
 
 #include "exage/Core/Debug.h"

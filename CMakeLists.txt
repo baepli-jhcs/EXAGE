@@ -113,21 +113,20 @@ target_include_directories(
 
 target_compile_features(EXAGE_EXAGE PUBLIC cxx_std_20)
 
-add_subdirectory(external)
-
 find_package(alpaca REQUIRED)
 find_package(assimp REQUIRED)
 find_package(cereal REQUIRED)
 find_package(EnTT REQUIRED)
 find_package(fmt REQUIRED)
 find_package(freeimage REQUIRED)
+find_package(freetype REQUIRED)
 find_path(FP16_INCLUDE_DIRS "fp16.h")
 find_package(glfw3 REQUIRED)
 find_package(glm REQUIRED)
 # find_package(Ktx REQUIRED)
 find_package(nlohmann_json REQUIRED)
-find_package(RmlUi REQUIRED)
-find_package(rttr REQUIRED)
+#find_package(RmlUi REQUIRED)
+#find_package(rttr REQUIRED)
 find_package(Stb REQUIRED)
 find_package(unofficial-shaderc REQUIRED)
 find_package(tinyfiledialogs REQUIRED)
@@ -135,6 +134,15 @@ find_package(tl-expected REQUIRED)
 find_package(VulkanHeaders REQUIRED)
 find_package(unofficial-vulkan-memory-allocator-hpp REQUIRED)
 find_package(zstd REQUIRED)
+
+add_subdirectory(external)
+
+CPMAddPackage(
+        NAME RmlUi
+        GITHUB_REPOSITORY baepli-jhcs/RmlUi
+        VERSION 5.1
+        GIT_TAG 8889025cf4fb6f279ee39f4aa45c5bb631f31025
+)
 
 target_link_libraries(EXAGE_EXAGE PRIVATE
         assimp::assimp
@@ -155,7 +163,7 @@ target_link_libraries(EXAGE_EXAGE PUBLIC
         # KTX::ktx
         nlohmann_json::nlohmann_json
         RmlCore
-        RTTR::Core_Lib
+        #        RTTR::Core_Lib
         tl::expected
         tinyfiledialogs::tinyfiledialogs
         Vulkan::Headers

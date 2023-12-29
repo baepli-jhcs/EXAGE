@@ -1,3 +1,5 @@
+#include <mutex>
+
 #include "exage/Graphics/Utils/SlotBuffer.h"
 
 namespace exage::Graphics
